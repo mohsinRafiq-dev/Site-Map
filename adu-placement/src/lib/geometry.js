@@ -1,5 +1,5 @@
 // Geometry helpers — feet/lng-lat conversion, rectangle creation,
-// setback inset, point-in-polygon validation.
+// setback inset (rotation-aware), point-in-polygon validation.
 
 const METERS_PER_FOOT = 0.3048;
 const METERS_PER_DEG_LAT = 111320;
@@ -15,7 +15,7 @@ export function feetToLngLat(feetX, feetY, atLat) {
 }
 
 // Build a rectangle GeoJSON Feature centered at `center`,
-// with width × height in feet, rotated by `rotationDeg`.
+// width × height in feet, rotated by `rotationDeg`.
 export function makeRectangle(center, widthFt, heightFt, rotationDeg = 0) {
   const [lng, lat] = center;
   const halfW = widthFt / 2;
@@ -46,39 +46,35 @@ export function makeRectangle(center, widthFt, heightFt, rotationDeg = 0) {
   };
 }
 
-// Inset an axis-aligned rectangular lot by per-side setbacks (in feet).
+// Inset a (possibly rotated) rectangular lot by per-side setbacks (ft),
+// where front/back/left/right are relative to the lot's orientation.
 // Returns the inner buildable area as a GeoJSON Feature.
-export function applySetbacks(lotFeature, setbacks) {
-  const ring = lotFeature.geometry.coordinates[0];
-  let minLng = Infinity;
-  let maxLng = -Infinity;
-  let minLat = Infinity;
-  let maxLat = -Infinity;
-  for (const [lng, lat] of ring) {
-    if (lng < minLng) minLng = lng;
-    if (lng > maxLng) maxLng = lng;
-    if (lat < minLat) minLat = lat;
-    if (lat > maxLat) maxLat = lat;
-  }
-  const centerLat = (minLat + maxLat) / 2;
-  const [dLngLeft] = feetToLngLat(setbacks.left, 0, centerLat);
-  const [dLngRight] = feetToLngLat(setbacks.right, 0, centerLat);
-  const [, dLatBack] = feetToLngLat(0, setbacks.back, centerLat);
-  const [, dLatFront] = feetToLngLat(0, setbacks.front, centerLat);
+export function applySetbacksToRect(
+  center,
+  widthFt,
+  lengthFt,
+  rotationDeg,
+  setbacks
+) {
+  const newWidth = widthFt - setbacks.left - setbacks.right;
+  const newLength = lengthFt - setbacks.front - setbacks.back;
+  if (newWidth <= 0 || newLength <= 0) return null;
 
-  const inner = [
-    [minLng + dLngLeft, minLat + dLatBack],
-    [maxLng - dLngRight, minLat + dLatBack],
-    [maxLng - dLngRight, maxLat - dLatFront],
-    [minLng + dLngLeft, maxLat - dLatFront],
-    [minLng + dLngLeft, minLat + dLatBack],
-  ];
+  // Local-coord shift: x = east (right), y = north (front)
+  const dxLocal = (setbacks.left - setbacks.right) / 2;
+  const dyLocal = (setbacks.back - setbacks.front) / 2;
 
-  return {
-    type: "Feature",
-    geometry: { type: "Polygon", coordinates: [inner] },
-    properties: {},
-  };
+  const rad = (rotationDeg * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const dxRot = dxLocal * cos - dyLocal * sin;
+  const dyRot = dxLocal * sin + dyLocal * cos;
+
+  const [lng, lat] = center;
+  const [dLng, dLat] = feetToLngLat(dxRot, dyRot, lat);
+  const newCenter = [lng + dLng, lat + dLat];
+
+  return makeRectangle(newCenter, newWidth, newLength, rotationDeg);
 }
 
 // Ray-casting point in polygon test.
@@ -104,4 +100,17 @@ export function isFootprintInside(inner, outer) {
     if (!pointInPolygon(ring[i], outer)) return false;
   }
   return true;
+}
+
+// Compute centroid of a polygon (average of corners excluding closing).
+export function polygonCenter(feature) {
+  const ring = feature.geometry.coordinates[0];
+  let cx = 0;
+  let cy = 0;
+  const n = ring.length - 1;
+  for (let i = 0; i < n; i++) {
+    cx += ring[i][0];
+    cy += ring[i][1];
+  }
+  return [cx / n, cy / n];
 }

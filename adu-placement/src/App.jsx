@@ -10,18 +10,17 @@ import ValidationBadge from "./components/ValidationBadge";
 import DownloadButton from "./components/DownloadButton";
 import {
   makeRectangle,
-  applySetbacks,
+  applySetbacksToRect,
   isFootprintInside,
 } from "./lib/geometry";
 import "./App.css";
 
-const DEFAULT_LOT = { width: 60, length: 100 };
+const DEFAULT_LOT = { width: 60, length: 100, rotation: 0, center: null };
 const DEFAULT_SETBACKS = { front: 5, back: 5, left: 5, right: 5 };
 
 export default function App() {
-  // ---- State ----
   const [location, setLocation] = useState(null);
-  const [lotDims, setLotDims] = useState(DEFAULT_LOT);
+  const [lot, setLot] = useState(DEFAULT_LOT);
   const [lotConfirmed, setLotConfirmed] = useState(false);
   const [floorPlan, setFloorPlan] = useState(null);
   const [footprint, setFootprint] = useState(null); // {center, rotation}
@@ -31,19 +30,20 @@ export default function App() {
 
   // ---- Derived geometry ----
   const lotFeature = useMemo(() => {
-    if (!location) return null;
-    return makeRectangle(
-      [location.lng, location.lat],
-      lotDims.width,
-      lotDims.length,
-      0
-    );
-  }, [location, lotDims]);
+    if (!lot.center) return null;
+    return makeRectangle(lot.center, lot.width, lot.length, lot.rotation);
+  }, [lot]);
 
   const setbackFeature = useMemo(() => {
-    if (!lotFeature || !lotConfirmed) return null;
-    return applySetbacks(lotFeature, setbacks);
-  }, [lotFeature, lotConfirmed, setbacks]);
+    if (!lot.center || !lotConfirmed) return null;
+    return applySetbacksToRect(
+      lot.center,
+      lot.width,
+      lot.length,
+      lot.rotation,
+      setbacks
+    );
+  }, [lot, lotConfirmed, setbacks]);
 
   const footprintFeature = useMemo(() => {
     if (!footprint || !floorPlan) return null;
@@ -69,9 +69,29 @@ export default function App() {
   // ---- Handlers ----
   function handleSelectLocation(loc) {
     setLocation(loc);
+    setLot({
+      ...DEFAULT_LOT,
+      center: [loc.lng, loc.lat],
+    });
     setLotConfirmed(false);
     setFloorPlan(null);
     setFootprint(null);
+  }
+
+  function handleChangeLotDims(next) {
+    setLot((l) => ({ ...l, width: next.width, length: next.length }));
+  }
+
+  const handleDragLot = useCallback((newCenter) => {
+    setLot((l) => ({ ...l, center: newCenter }));
+  }, []);
+
+  function handleRotateLot(delta) {
+    setLot((l) => ({ ...l, rotation: (l.rotation + delta) % 360 }));
+  }
+
+  function handleResetLotRotation() {
+    setLot((l) => ({ ...l, rotation: 0 }));
   }
 
   function handleConfirmLot() {
@@ -86,8 +106,8 @@ export default function App() {
 
   function handleSelectFloorPlan(fp) {
     setFloorPlan(fp);
-    if (location) {
-      setFootprint({ center: [location.lng, location.lat], rotation: 0 });
+    if (lot.center) {
+      setFootprint({ center: lot.center, rotation: lot.rotation });
     }
   }
 
@@ -95,15 +115,15 @@ export default function App() {
     setFootprint((f) => (f ? { ...f, center: newCenter } : f));
   }, []);
 
-  function handleRotate(delta) {
+  function handleRotateFootprint(delta) {
     setFootprint((f) =>
       f ? { ...f, rotation: (f.rotation + delta) % 360 } : f
     );
   }
 
   function handleResetFootprint() {
-    if (location) {
-      setFootprint({ center: [location.lng, location.lat], rotation: 0 });
+    if (lot.center) {
+      setFootprint({ center: lot.center, rotation: lot.rotation });
     }
   }
 
@@ -111,7 +131,6 @@ export default function App() {
     await mapRef.current?.exportAsPng("adu-site-plan.png");
   }
 
-  // ---- Render ----
   return (
     <div className="app">
       <header className="app-header">
@@ -131,13 +150,7 @@ export default function App() {
 
       <div className="app-body">
         <aside className="sidebar">
-          {/* Step 1 */}
-          <Step
-            n={1}
-            title="Find your address"
-            done={step1Done}
-            active={!step1Done}
-          >
+          <Step n={1} title="Find your address" done={step1Done} active={!step1Done}>
             <AddressSearch onSelectLocation={handleSelectLocation} />
             {location && (
               <div className="selected-info">
@@ -149,24 +162,24 @@ export default function App() {
             )}
           </Step>
 
-          {/* Step 2 */}
           <Step
             n={2}
-            title="Confirm your lot"
+            title="Position & confirm your lot"
             done={step2Done}
             active={step1Done && !step2Done}
             locked={!step1Done}
           >
             <LotConfirmation
-              lotDims={lotDims}
-              onChangeDims={setLotDims}
+              lot={lot}
+              onChangeDims={handleChangeLotDims}
+              onRotate={handleRotateLot}
+              onResetRotation={handleResetLotRotation}
               confirmed={lotConfirmed}
               onConfirm={handleConfirmLot}
               onReset={handleEditLot}
             />
           </Step>
 
-          {/* Step 3 */}
           <Step
             n={3}
             title="Pick a floor plan"
@@ -181,10 +194,9 @@ export default function App() {
             />
           </Step>
 
-          {/* Step 4 */}
           <Step
             n={4}
-            title="Place & rotate"
+            title="Place & rotate ADU"
             done={!!footprint && step3Done}
             active={!!floorPlan}
             locked={!floorPlan}
@@ -192,13 +204,12 @@ export default function App() {
             {footprint && (
               <FootprintControls
                 rotation={footprint.rotation}
-                onRotate={handleRotate}
+                onRotate={handleRotateFootprint}
                 onReset={handleResetFootprint}
               />
             )}
           </Step>
 
-          {/* Step 5 */}
           <Step
             n={5}
             title="Set setbacks"
@@ -209,7 +220,6 @@ export default function App() {
             <SetbackInputs setbacks={setbacks} onChange={setSetbacks} />
           </Step>
 
-          {/* Step 6 */}
           <Step
             n={6}
             title="Download site plan"
@@ -235,7 +245,7 @@ export default function App() {
             setbackFeature={setbackFeature}
             footprintFeature={footprintFeature}
             isValid={isValid}
-            interactive={!!floorPlan && lotConfirmed}
+            onDragLot={handleDragLot}
             onDragFootprint={handleDragFootprint}
           />
           <NorthArrow />

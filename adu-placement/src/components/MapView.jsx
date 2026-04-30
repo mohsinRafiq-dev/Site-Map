@@ -6,10 +6,10 @@ import {
 } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { polygonCenter } from "../lib/geometry";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
-// Source / layer ids
 const LOT_SRC = "lot-src";
 const LOT_FILL = "lot-fill";
 const LOT_LINE = "lot-line";
@@ -19,6 +19,8 @@ const FP_SRC = "fp-src";
 const FP_FILL = "fp-fill";
 const FP_LINE = "fp-line";
 
+const MARKER_HIDE_MS = 7000;
+
 const MapView = forwardRef(function MapView(
   {
     location,
@@ -27,7 +29,7 @@ const MapView = forwardRef(function MapView(
     setbackFeature,
     footprintFeature,
     isValid,
-    interactive,
+    onDragLot,
     onDragFootprint,
   },
   ref
@@ -36,21 +38,29 @@ const MapView = forwardRef(function MapView(
   const mapRef = useRef(null);
   const markerRef = useRef(null);
   const styleReadyRef = useRef(false);
-  const dragStateRef = useRef(null);
 
   // Stable refs to latest props for inside event listeners
-  const footprintRef = useRef(footprintFeature);
-  const onDragRef = useRef(onDragFootprint);
-  const interactiveRef = useRef(interactive);
+  const lotFeatureRef = useRef(lotFeature);
+  const footprintFeatureRef = useRef(footprintFeature);
+  const lotConfirmedRef = useRef(lotConfirmed);
+  const onDragLotRef = useRef(onDragLot);
+  const onDragFpRef = useRef(onDragFootprint);
+
   useEffect(() => {
-    footprintRef.current = footprintFeature;
+    lotFeatureRef.current = lotFeature;
+  }, [lotFeature]);
+  useEffect(() => {
+    footprintFeatureRef.current = footprintFeature;
   }, [footprintFeature]);
   useEffect(() => {
-    onDragRef.current = onDragFootprint;
-  }, [onDragFootprint]);
+    lotConfirmedRef.current = lotConfirmed;
+  }, [lotConfirmed]);
   useEffect(() => {
-    interactiveRef.current = interactive;
-  }, [interactive]);
+    onDragLotRef.current = onDragLot;
+  }, [onDragLot]);
+  useEffect(() => {
+    onDragFpRef.current = onDragFootprint;
+  }, [onDragFootprint]);
 
   // ------- Init map (once) -------
   useEffect(() => {
@@ -61,27 +71,28 @@ const MapView = forwardRef(function MapView(
       style: "mapbox://styles/mapbox/satellite-streets-v12",
       center: [-98.5795, 39.8283],
       zoom: 3,
-      preserveDrawingBuffer: true, // required for image export
+      preserveDrawingBuffer: true,
     });
     mapRef.current = map;
 
     map.addControl(new mapboxgl.NavigationControl(), "top-right");
-    map.addControl(new mapboxgl.ScaleControl({ unit: "imperial" }), "bottom-left");
+    map.addControl(
+      new mapboxgl.ScaleControl({ unit: "imperial" }),
+      "bottom-left"
+    );
 
     map.on("load", () => {
       styleReadyRef.current = true;
 
-      // sources
       map.addSource(LOT_SRC, emptyFC());
       map.addSource(SB_SRC, emptyFC());
       map.addSource(FP_SRC, emptyFC());
 
-      // lot
       map.addLayer({
         id: LOT_FILL,
         type: "fill",
         source: LOT_SRC,
-        paint: { "fill-color": "#3b82f6", "fill-opacity": 0.12 },
+        paint: { "fill-color": "#3b82f6", "fill-opacity": 0.18 },
       });
       map.addLayer({
         id: LOT_LINE,
@@ -89,8 +100,6 @@ const MapView = forwardRef(function MapView(
         source: LOT_SRC,
         paint: { "line-color": "#3b82f6", "line-width": 2 },
       });
-
-      // setback (dashed yellow)
       map.addLayer({
         id: SB_LINE,
         type: "line",
@@ -101,8 +110,6 @@ const MapView = forwardRef(function MapView(
           "line-dasharray": [2, 2],
         },
       });
-
-      // footprint
       map.addLayer({
         id: FP_FILL,
         type: "fill",
@@ -114,7 +121,7 @@ const MapView = forwardRef(function MapView(
             "#10b981",
             "#ef4444",
           ],
-          "fill-opacity": 0.5,
+          "fill-opacity": 0.55,
         },
       });
       map.addLayer({
@@ -132,7 +139,8 @@ const MapView = forwardRef(function MapView(
         },
       });
 
-      attachDragHandlers(map);
+      attachDrag(map, "lot");
+      attachDrag(map, "fp");
     });
 
     return () => {
@@ -142,19 +150,14 @@ const MapView = forwardRef(function MapView(
     };
   }, []);
 
-  // ------- Expose imperative API -------
+  // ------- Imperative API for export -------
   useImperativeHandle(ref, () => ({
     exportAsPng: async (filename = "site-plan.png") => {
       const map = mapRef.current;
       if (!map) return;
-      // Make sure all tiles + layers are rendered first
       await new Promise((resolve) => {
-        if (map.loaded() && map.areTilesLoaded()) {
-          map.once("idle", resolve);
-          map.triggerRepaint();
-        } else {
-          map.once("idle", resolve);
-        }
+        map.once("idle", resolve);
+        map.triggerRepaint();
       });
       const sourceCanvas = map.getCanvas();
       const w = sourceCanvas.width;
@@ -165,7 +168,7 @@ const MapView = forwardRef(function MapView(
       const ctx = out.getContext("2d");
       ctx.drawImage(sourceCanvas, 0, 0);
       drawNorthArrow(ctx, w, h);
-      drawTitleBar(ctx, w, h);
+      drawTitleBar(ctx, w);
       const dataUrl = out.toDataURL("image/png");
       const a = document.createElement("a");
       a.href = dataUrl;
@@ -174,110 +177,149 @@ const MapView = forwardRef(function MapView(
     },
   }));
 
-  // ------- Fly to location -------
+  // ------- Fly to location + auto-hide marker -------
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !location) return;
+
     map.flyTo({
       center: [location.lng, location.lat],
       zoom: 19,
       speed: 1.2,
       essential: true,
     });
+
+    // Show marker briefly
     if (markerRef.current) {
-      markerRef.current.setLngLat([location.lng, location.lat]);
-    } else {
-      markerRef.current = new mapboxgl.Marker({ color: "#ef4444" })
-        .setLngLat([location.lng, location.lat])
-        .addTo(map);
+      markerRef.current.remove();
+      markerRef.current = null;
     }
+    const el = document.createElement("div");
+    el.className = "pin-marker";
+    markerRef.current = new mapboxgl.Marker({ element: el, anchor: "bottom" })
+      .setLngLat([location.lng, location.lat])
+      .addTo(map);
+
+    // Fade then remove after a short delay
+    const fadeTimer = setTimeout(() => {
+      if (markerRef.current) {
+        markerRef.current.getElement().classList.add("pin-marker-fading");
+      }
+    }, MARKER_HIDE_MS - 400);
+
+    const removeTimer = setTimeout(() => {
+      if (markerRef.current) {
+        markerRef.current.remove();
+        markerRef.current = null;
+      }
+    }, MARKER_HIDE_MS);
+
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(removeTimer);
+    };
   }, [location]);
 
-  // ------- Sync lot data -------
+  // ------- Sync sources to React state -------
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !styleReadyRef.current) {
-      const m = mapRef.current;
-      if (m) m.once("load", () => syncSrc(m, LOT_SRC, lotFeature));
-      return;
-    }
-    syncSrc(map, LOT_SRC, lotFeature);
-  }, [lotFeature, lotConfirmed]);
+    syncWhenReady(LOT_SRC, lotFeature);
+  }, [lotFeature]);
 
-  // ------- Sync setback data -------
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-    if (!styleReadyRef.current) {
-      map.once("load", () => syncSrc(map, SB_SRC, setbackFeature));
-      return;
-    }
-    syncSrc(map, SB_SRC, setbackFeature);
+    syncWhenReady(SB_SRC, setbackFeature);
   }, [setbackFeature]);
 
-  // ------- Sync footprint data with validity property -------
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
     const tagged = footprintFeature
       ? {
           ...footprintFeature,
           properties: { ...footprintFeature.properties, valid: !!isValid },
         }
       : null;
-    if (!styleReadyRef.current) {
-      map.once("load", () => syncSrc(map, FP_SRC, tagged));
-      return;
-    }
-    syncSrc(map, FP_SRC, tagged);
+    syncWhenReady(FP_SRC, tagged);
   }, [footprintFeature, isValid]);
 
+  function syncWhenReady(srcId, feature) {
+    const map = mapRef.current;
+    if (!map) return;
+    if (!styleReadyRef.current) {
+      map.once("load", () => syncSrc(map, srcId, feature));
+      return;
+    }
+    syncSrc(map, srcId, feature);
+  }
+
   // ------- Drag handlers (attached once at load) -------
-  function attachDragHandlers(map) {
-    function onMouseEnter() {
-      if (!interactiveRef.current) return;
-      map.getCanvas().style.cursor = "grab";
-    }
-    function onMouseLeave() {
-      if (!dragStateRef.current) map.getCanvas().style.cursor = "";
-    }
-    function onMouseDown(e) {
-      if (!interactiveRef.current || !footprintRef.current) return;
-      e.preventDefault();
-      const ring = footprintRef.current.geometry.coordinates[0];
-      let cx = 0;
-      let cy = 0;
-      for (let i = 0; i < ring.length - 1; i++) {
-        cx += ring[i][0];
-        cy += ring[i][1];
+  function attachDrag(map, kind) {
+    const layerId = kind === "lot" ? LOT_FILL : FP_FILL;
+    let dragState = null;
+
+    function isInteractive() {
+      if (kind === "lot") {
+        return !lotConfirmedRef.current && !!lotFeatureRef.current;
       }
-      cx /= ring.length - 1;
-      cy /= ring.length - 1;
-      dragStateRef.current = {
-        startLngLat: { lng: e.lngLat.lng, lat: e.lngLat.lat },
-        centerStart: [cx, cy],
-      };
-      map.getCanvas().style.cursor = "grabbing";
-      map.on("mousemove", onMouseMove);
-      map.once("mouseup", onMouseUp);
-    }
-    function onMouseMove(e) {
-      const ds = dragStateRef.current;
-      if (!ds) return;
-      const dLng = e.lngLat.lng - ds.startLngLat.lng;
-      const dLat = e.lngLat.lat - ds.startLngLat.lat;
-      const next = [ds.centerStart[0] + dLng, ds.centerStart[1] + dLat];
-      onDragRef.current?.(next);
-    }
-    function onMouseUp() {
-      dragStateRef.current = null;
-      map.off("mousemove", onMouseMove);
-      map.getCanvas().style.cursor = "";
+      return (
+        lotConfirmedRef.current && !!footprintFeatureRef.current
+      );
     }
 
-    map.on("mouseenter", FP_FILL, onMouseEnter);
-    map.on("mouseleave", FP_FILL, onMouseLeave);
-    map.on("mousedown", FP_FILL, onMouseDown);
+    function getFeature() {
+      return kind === "lot"
+        ? lotFeatureRef.current
+        : footprintFeatureRef.current;
+    }
+
+    function onDrag(newCenter) {
+      const cb = kind === "lot" ? onDragLotRef.current : onDragFpRef.current;
+      cb?.(newCenter);
+    }
+
+    map.on("mouseenter", layerId, () => {
+      if (isInteractive()) map.getCanvas().style.cursor = "grab";
+    });
+    map.on("mouseleave", layerId, () => {
+      if (!dragState) map.getCanvas().style.cursor = "";
+    });
+    map.on("mousedown", layerId, (e) => {
+      if (!isInteractive()) return;
+
+      // For the lot layer, defer to the footprint if the click is on it
+      if (kind === "lot") {
+        const onTop = map.queryRenderedFeatures(e.point, {
+          layers: [FP_FILL],
+        });
+        if (onTop.length > 0) return;
+      }
+
+      const feature = getFeature();
+      if (!feature) return;
+
+      e.preventDefault();
+      const center = polygonCenter(feature);
+      dragState = {
+        startLngLat: { lng: e.lngLat.lng, lat: e.lngLat.lat },
+        centerStart: center,
+      };
+      map.getCanvas().style.cursor = "grabbing";
+
+      function onMouseMove(ev) {
+        if (!dragState) return;
+        const dLng = ev.lngLat.lng - dragState.startLngLat.lng;
+        const dLat = ev.lngLat.lat - dragState.startLngLat.lat;
+        onDrag([
+          dragState.centerStart[0] + dLng,
+          dragState.centerStart[1] + dLat,
+        ]);
+      }
+      function onMouseUp() {
+        dragState = null;
+        map.off("mousemove", onMouseMove);
+        map.getCanvas().style.cursor = "";
+      }
+
+      map.on("mousemove", onMouseMove);
+      map.once("mouseup", onMouseUp);
+    });
   }
 
   return <div ref={containerRef} className="map-container" />;

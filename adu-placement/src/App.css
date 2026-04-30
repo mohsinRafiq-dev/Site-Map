@@ -370,7 +370,89 @@
   font-family: ui-monospace, "SF Mono", monospace;
 }
 
-/* ----------- Lot confirmation + dim grids ----------- */
+/* ----------- Lot confirmation ----------- */
+.lot-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.lc-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.lc-section-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-soft);
+}
+
+.rotate-main-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.rotate-btn {
+  flex: 0 0 72px;
+  justify-content: center;
+  text-align: center;
+  font-size: 13px;
+}
+
+.rotate-main-row .rotate-display {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 6px;
+}
+
+.rotate-main-row .rotate-display .rotate-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.rotate-fine-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.rotate-fine-row .btn.sm {
+  width: 100%;
+  text-align: center;
+  justify-content: center;
+}
+
+.lc-reset-btn {
+  align-self: flex-start;
+  padding: 0;
+  font-size: 12px;
+}
+
+.lc-action {
+  /* breathing room before the confirm button */
+}
+
+.w-full {
+  width: 100%;
+}
+
+/* ----------- Shared dim grid ----------- */
 .dim-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -478,13 +560,14 @@
   color: var(--text-soft);
 }
 
-/* ----------- Footprint controls ----------- */
+/* ----------- Footprint controls (Step 4) ----------- */
 .footprint-controls {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
+/* Re-use rotate-main-row / rotate-fine-row from LotConfirmation styles */
 .rotate-row {
   display: flex;
   align-items: center;
@@ -493,8 +576,9 @@
 }
 
 .rotate-row.sub {
-  justify-content: center;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
 }
 
 .rotate-display {
@@ -571,6 +655,24 @@
 .validation-badge.invalid .dot {
   background: var(--danger);
   box-shadow: 0 0 8px var(--danger);
+}
+
+/* ----------- Custom pin marker (auto-fade) ----------- */
+.pin-marker {
+  width: 22px;
+  height: 30px;
+  background: #ef4444;
+  border: 2px solid #ffffff;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.35);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  opacity: 1;
+}
+
+.pin-marker-fading {
+  opacity: 0;
+  transform: rotate(-45deg) translateY(-6px);
 }
 
 /* ----------- North arrow ----------- */
