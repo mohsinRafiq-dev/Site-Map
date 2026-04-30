@@ -11,27 +11,23 @@ export default function AddressSearch({ onSelectLocation }) {
   async function handleSearch(e) {
     e.preventDefault();
     if (!query.trim()) return;
-
     setLoading(true);
     setError("");
     setResults([]);
-
     try {
       const url =
         `https://api.mapbox.com/geocoding/v5/mapbox.places/` +
         `${encodeURIComponent(query)}.json` +
         `?access_token=${MAPBOX_TOKEN}` +
         `&limit=5&types=address`;
-
       const res = await fetch(url);
       const data = await res.json();
-
       if (!data.features || data.features.length === 0) {
         setError("No results found. Try a more specific address.");
       } else {
         setResults(data.features);
       }
-    } catch (err) {
+    } catch {
       setError("Search failed. Check your internet or token.");
     } finally {
       setLoading(false);
@@ -40,11 +36,7 @@ export default function AddressSearch({ onSelectLocation }) {
 
   function handlePick(feature) {
     const [lng, lat] = feature.center;
-    onSelectLocation({
-      lng,
-      lat,
-      placeName: feature.place_name,
-    });
+    onSelectLocation({ lng, lat, placeName: feature.place_name });
     setResults([]);
     setQuery(feature.place_name);
   }
@@ -52,14 +44,17 @@ export default function AddressSearch({ onSelectLocation }) {
   return (
     <div className="address-search">
       <form onSubmit={handleSearch}>
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Enter an address (e.g. 1600 Pennsylvania Ave NW, Washington DC)"
-        />
-        <button type="submit" disabled={loading}>
-          {loading ? "Searching..." : "Search"}
+        <div className="input-wrap">
+          <span className="input-icon" aria-hidden="true">⌕</span>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search any address…"
+          />
+        </div>
+        <button className="btn btn-primary" type="submit" disabled={loading}>
+          {loading ? "Searching…" : "Search"}
         </button>
       </form>
 
