@@ -7,6 +7,7 @@ import {
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { polygonCenter } from "../lib/geometry";
+import { renderFloorPlanSvgString } from "./FloorPlanSvg";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
@@ -18,8 +19,11 @@ const SB_LINE = "sb-line";
 const FP_SRC = "fp-src";
 const FP_FILL = "fp-fill";
 const FP_LINE = "fp-line";
+const FP_IMG_SRC = "fp-img-src";
+const FP_IMG_LAYER = "fp-img-layer";
 
 const MARKER_HIDE_MS = 7000;
+const PIXELS_PER_FOOT = 24; // raster resolution for the SVG → PNG conversion
 
 const MapView = forwardRef(function MapView(
   {
@@ -28,6 +32,7 @@ const MapView = forwardRef(function MapView(
     lotConfirmed,
     setbackFeature,
     footprintFeature,
+    floorPlan,
     isValid,
     onDragLot,
     onDragFootprint,
@@ -38,6 +43,7 @@ const MapView = forwardRef(function MapView(
   const mapRef = useRef(null);
   const markerRef = useRef(null);
   const styleReadyRef = useRef(false);
+  const currentImagePlanIdRef = useRef(null);
 
   // Stable refs to latest props for inside event listeners
   const lotFeatureRef = useRef(lotFeature);
@@ -110,6 +116,8 @@ const MapView = forwardRef(function MapView(
           "line-dasharray": [2, 2],
         },
       });
+      // FP_FILL is now mostly used as a click target + invalid-state warning tint.
+      // The visual representation comes from the FP_IMG_LAYER (SVG floor plan).
       map.addLayer({
         id: FP_FILL,
         type: "fill",
@@ -121,7 +129,12 @@ const MapView = forwardRef(function MapView(
             "#10b981",
             "#ef4444",
           ],
-          "fill-opacity": 0.55,
+          "fill-opacity": [
+            "case",
+            ["==", ["get", "valid"], true],
+            0.0,
+            0.35,
+          ],
         },
       });
       map.addLayer({
@@ -132,7 +145,7 @@ const MapView = forwardRef(function MapView(
           "line-color": [
             "case",
             ["==", ["get", "valid"], true],
-            "#047857",
+            "#3f7a3a",
             "#b91c1c",
           ],
           "line-width": 2.5,
@@ -147,6 +160,7 @@ const MapView = forwardRef(function MapView(
       map.remove();
       mapRef.current = null;
       styleReadyRef.current = false;
+      currentImagePlanIdRef.current = null;
     };
   }, []);
 
@@ -189,7 +203,6 @@ const MapView = forwardRef(function MapView(
       essential: true,
     });
 
-    // Show marker briefly
     if (markerRef.current) {
       markerRef.current.remove();
       markerRef.current = null;
@@ -200,7 +213,6 @@ const MapView = forwardRef(function MapView(
       .setLngLat([location.lng, location.lat])
       .addTo(map);
 
-    // Fade then remove after a short delay
     const fadeTimer = setTimeout(() => {
       if (markerRef.current) {
         markerRef.current.getElement().classList.add("pin-marker-fading");
@@ -239,6 +251,69 @@ const MapView = forwardRef(function MapView(
     syncWhenReady(FP_SRC, tagged);
   }, [footprintFeature, isValid]);
 
+  // ------- Floor plan image overlay (the actual rendered floor plan as SVG → PNG) -------
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const run = () => {
+      // No floor plan: clear the overlay
+      if (!floorPlan || !footprintFeature) {
+        removeImageLayer(map);
+        currentImagePlanIdRef.current = null;
+        return;
+      }
+
+      const coords = imageCoordinatesFromFootprint(footprintFeature);
+      if (!coords) return;
+
+      // If same plan is already loaded, just reposition.
+      if (currentImagePlanIdRef.current === floorPlan.id) {
+        const src = map.getSource(FP_IMG_SRC);
+        if (src && typeof src.setCoordinates === "function") {
+          src.setCoordinates(coords);
+        }
+        return;
+      }
+
+      // Otherwise rasterize SVG → PNG and add as image source.
+      rasterizeFloorPlan(floorPlan).then((pngUrl) => {
+        if (!mapRef.current) return;
+        removeImageLayer(map);
+        try {
+          map.addSource(FP_IMG_SRC, {
+            type: "image",
+            url: pngUrl,
+            coordinates: coords,
+          });
+          // Place the image layer just under the outline so the line stays on top
+          const beforeId = map.getLayer(FP_LINE) ? FP_LINE : undefined;
+          map.addLayer(
+            {
+              id: FP_IMG_LAYER,
+              type: "raster",
+              source: FP_IMG_SRC,
+              paint: {
+                "raster-opacity": 0.95,
+                "raster-fade-duration": 0,
+                "raster-resampling": "linear",
+              },
+            },
+            beforeId
+          );
+          currentImagePlanIdRef.current = floorPlan.id;
+        } catch (err) {
+          console.warn("Failed to add floor plan overlay", err);
+        }
+      });
+    };
+
+    if (!styleReadyRef.current) {
+      map.once("load", run);
+    } else {
+      run();
+    }
+  }, [floorPlan, footprintFeature]);
+
   function syncWhenReady(srcId, feature) {
     const map = mapRef.current;
     if (!map) return;
@@ -258,9 +333,7 @@ const MapView = forwardRef(function MapView(
       if (kind === "lot") {
         return !lotConfirmedRef.current && !!lotFeatureRef.current;
       }
-      return (
-        lotConfirmedRef.current && !!footprintFeatureRef.current
-      );
+      return lotConfirmedRef.current && !!footprintFeatureRef.current;
     }
 
     function getFeature() {
@@ -283,7 +356,6 @@ const MapView = forwardRef(function MapView(
     map.on("mousedown", layerId, (e) => {
       if (!isInteractive()) return;
 
-      // For the lot layer, defer to the footprint if the click is on it
       if (kind === "lot") {
         const onTop = map.queryRenderedFeatures(e.point, {
           layers: [FP_FILL],
@@ -320,6 +392,13 @@ const MapView = forwardRef(function MapView(
       map.on("mousemove", onMouseMove);
       map.once("mouseup", onMouseUp);
     });
+
+    // Double-click on footprint overlay area = also draggable (image overlay does not block events)
+    if (kind === "fp") {
+      map.on("mousedown", FP_IMG_LAYER, () => {
+        // no-op; event will already fire on FP_FILL beneath
+      });
+    }
   }
 
   return <div ref={containerRef} className="map-container" />;
@@ -327,7 +406,7 @@ const MapView = forwardRef(function MapView(
 
 export default MapView;
 
-// ---------- helpers ----------
+/* ---------- helpers ---------- */
 function emptyFC() {
   return {
     type: "geojson",
@@ -341,6 +420,51 @@ function syncSrc(map, srcId, feature) {
   src.setData({
     type: "FeatureCollection",
     features: feature ? [feature] : [],
+  });
+}
+
+function removeImageLayer(map) {
+  if (map.getLayer(FP_IMG_LAYER)) map.removeLayer(FP_IMG_LAYER);
+  if (map.getSource(FP_IMG_SRC)) map.removeSource(FP_IMG_SRC);
+}
+
+// Mapbox image source needs [TL, TR, BR, BL] in image-space orientation.
+// Our footprint polygon ring is [SW, SE, NE, NW, SW] (rotation = 0).
+// We treat image-top = "north" / back of the home in unrotated state, so:
+//   TL = NW = ring[3]
+//   TR = NE = ring[2]
+//   BR = SE = ring[1]
+//   BL = SW = ring[0]
+function imageCoordinatesFromFootprint(feature) {
+  if (!feature) return null;
+  const ring = feature.geometry.coordinates[0];
+  if (!ring || ring.length < 4) return null;
+  return [ring[3], ring[2], ring[1], ring[0]];
+}
+
+// Rasterize the SVG floor plan into a high-resolution PNG dataURL.
+// Mapbox's image source accepts dataURLs reliably as PNG.
+function rasterizeFloorPlan(plan) {
+  return new Promise((resolve, reject) => {
+    const svg = renderFloorPlanSvgString(plan);
+    const svgUrl = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(plan.width * PIXELS_PER_FOOT);
+      canvas.height = Math.round(plan.depth * PIXELS_PER_FOOT);
+      const ctx = canvas.getContext("2d");
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      try {
+        resolve(canvas.toDataURL("image/png"));
+      } catch (e) {
+        reject(e);
+      }
+    };
+    img.onerror = reject;
+    img.src = svgUrl;
   });
 }
 
@@ -372,14 +496,14 @@ function drawNorthArrow(ctx, w, h) {
 
 function drawTitleBar(ctx, w) {
   ctx.save();
-  ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
+  ctx.fillStyle = "rgba(31, 42, 24, 0.92)";
   ctx.fillRect(0, 0, w, 56);
   ctx.fillStyle = "#ffffff";
   ctx.font = "600 22px system-ui, sans-serif";
   ctx.textBaseline = "middle";
-  ctx.fillText("ADU Site Plan", 24, 28);
+  ctx.fillText("My Site Plan — FrameUpNow", 24, 28);
   ctx.font = "400 13px system-ui, sans-serif";
-  ctx.fillStyle = "#cbd5e1";
+  ctx.fillStyle = "#cdd9c0";
   const stamp = new Date().toLocaleString();
   ctx.fillText(`Generated ${stamp}`, 24, 46);
   ctx.restore();
