@@ -462,10 +462,11 @@ export function useFloorPlanDataUrl(plan) {
 }
 
 // Server-style renderer used for image source on the map.
-// Mirrors the React variant. Per-plan custom renderers are delegated.
-export function renderFloorPlanSvgString(plan) {
+// forMap=true strips decks so the SVG viewBox exactly matches the footprint
+// dimensions (W × D) — no content bleeds outside the geo-rect on the map.
+export function renderFloorPlanSvgString(plan, { forMap = false } = {}) {
   if (plan.customRenderer === "absolute") {
-    return renderAbsoluteSvgString({ withDecks: true });
+    return renderAbsoluteSvgString({ withDecks: !forMap });
   }
   const { width, depth, layout } = plan;
   const wallStroke = Math.max(0.35, Math.min(width, depth) / 60);

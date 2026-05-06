@@ -7,11 +7,14 @@
 //   - keySpecs (the marketing block: bedrooms / bathrooms / floors / etc.)
 //   - description + features (long-form copy for the detail panel)
 //   - layout (rooms, walls, doors, decks) used by FloorPlanSvg.jsx
+//   - image (optional) — Vite-imported asset URL used everywhere instead of SVG renderer
 //
 // Notes:
 //   - Bottom edge (y = 0) is the FRONT of the home (front door / street side).
 //   - Back deck sits along the top edge (y = depth).
 //   - Coordinates use feet; SVG viewBox in the renderer matches W × D.
+
+import absoluteFloorPlanImage from "../Floor Plans/Floor Plan Absolute.jpg";
 
 export const FLOOR_PLANS = [
   {
@@ -23,6 +26,7 @@ export const FLOOR_PLANS = [
     depth: 18,
     sqft: 774,
     customRenderer: "absolute",
+    image: absoluteFloorPlanImage,
     frontVector: [0, 1], // front door is on the +y (south) edge of the SVG
     keySpecs: {
       livableSqft: 774,

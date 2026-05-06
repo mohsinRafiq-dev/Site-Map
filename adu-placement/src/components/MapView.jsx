@@ -199,26 +199,41 @@ const MapView = forwardRef(function MapView(
       try {
         const center = { lng: centerLngLat[0], lat: centerLngLat[1] };
         const px = map.project(center);
-        const r = 120;
+        const r = 200; // generous search radius in pixels
         const bbox = [
           [px.x - r, px.y - r],
           [px.x + r, px.y + r],
         ];
+
+        // Try a targeted road-layer query first
         const styleLayers = map.getStyle()?.layers || [];
-        const candidateLayers = styleLayers
+        const roadLayerIds = styleLayers
           .filter(
             (l) =>
               l.type === "line" &&
-              /(road|street|highway|motorway|primary|secondary|tertiary|residential|service)/i.test(
+              /(road|street|highway|motorway|primary|secondary|tertiary|residential|service|path|track)/i.test(
                 l["source-layer"] || l.id
               )
           )
           .map((l) => l.id);
-        if (!candidateLayers.length) return null;
-        const features = map.queryRenderedFeatures(bbox, {
-          layers: candidateLayers,
-        });
+
+        let features = roadLayerIds.length
+          ? map.queryRenderedFeatures(bbox, { layers: roadLayerIds })
+          : [];
+
+        // Fallback: query every rendered feature and keep only LineStrings
+        if (!features.length) {
+          features = map
+            .queryRenderedFeatures(bbox)
+            .filter(
+              (f) =>
+                f.geometry?.type === "LineString" ||
+                f.geometry?.type === "MultiLineString"
+            );
+        }
+
         if (!features.length) return null;
+
         let best = { dist: Infinity, bearing: null };
         for (const f of features) {
           const coords =
@@ -341,8 +356,12 @@ const MapView = forwardRef(function MapView(
         return;
       }
 
-      // Otherwise rasterize SVG → PNG and add as image source.
-      rasterizeFloorPlan(floorPlan).then((pngUrl) => {
+      // Use the plan's bundled image URL directly when available (fastest, highest quality).
+      // Fall back to SVG rasterization for plans without a photo.
+      const imageUrlPromise = floorPlan.image
+        ? Promise.resolve(floorPlan.image)
+        : rasterizeFloorPlan(floorPlan);
+      imageUrlPromise.then((pngUrl) => {
         if (!mapRef.current) return;
         removeImageLayer(map);
         try {
@@ -512,7 +531,7 @@ function imageCoordinatesFromFootprint(feature) {
 // Mapbox's image source accepts dataURLs reliably as PNG.
 function rasterizeFloorPlan(plan) {
   return new Promise((resolve, reject) => {
-    const svg = renderFloorPlanSvgString(plan);
+    const svg = renderFloorPlanSvgString(plan, { forMap: true });
     const svgUrl = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
     const img = new Image();
     img.onload = () => {

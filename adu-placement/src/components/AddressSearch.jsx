@@ -171,7 +171,7 @@ export default function AddressSearch({ onSelectLocation }) {
             }}
             onFocus={() => results.length > 0 && setOpen(true)}
             onKeyDown={handleKeyDown}
-            placeholder="Start typing your address…"
+            placeholder="Address, city, or ZIP code…"
             autoComplete="off"
             spellCheck="false"
           />

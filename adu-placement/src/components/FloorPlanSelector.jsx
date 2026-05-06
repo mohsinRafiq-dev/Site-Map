@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { FLOOR_PLANS } from "../lib/floorPlans";
 import FloorPlanSvg from "./FloorPlanSvg";
 
@@ -22,13 +23,17 @@ export default function FloorPlanSelector({ value, onChange, disabled }) {
               onClick={() => onChange(plan)}
             >
               <div className="fp-card-thumb">
-                <FloorPlanSvg
-                  plan={plan}
-                  variant="thumb"
-                  showLabels={false}
-                  showDecks={false}
-                  showDimensions={false}
-                />
+                {plan.image ? (
+                  <img src={plan.image} alt={plan.name} className="fp-card-img" />
+                ) : (
+                  <FloorPlanSvg
+                    plan={plan}
+                    variant="thumb"
+                    showLabels={false}
+                    showDecks={false}
+                    showDimensions={false}
+                  />
+                )}
                 <span className="fp-card-series">{plan.series}</span>
               </div>
               <div className="fp-card-body">
@@ -62,6 +67,8 @@ export default function FloorPlanSelector({ value, onChange, disabled }) {
 }
 
 function SelectedPlanDetail({ plan }) {
+  const [lightbox, setLightbox] = useState(false);
+
   return (
     <article className="fp-detail">
       <div className="fp-detail-head">
@@ -74,15 +81,76 @@ function SelectedPlanDetail({ plan }) {
       </div>
 
       <div className="fp-detail-image-wrap">
-        <FloorPlanSvg
-          plan={plan}
-          variant="full"
-          showLabels
-          showDecks
-          showDimensions
-          ariaLabel={`Floor plan of ${plan.name}`}
-        />
+        {plan.image ? (
+          <img
+            src={plan.image}
+            alt={`Floor plan of ${plan.name}`}
+            className="fp-detail-img"
+          />
+        ) : (
+          <FloorPlanSvg
+            plan={plan}
+            variant="full"
+            showLabels
+            showDecks
+            showDimensions
+            ariaLabel={`Floor plan of ${plan.name}`}
+          />
+        )}
+        <div className="fp-img-dims">{plan.width}&apos; × {plan.depth}&apos;</div>
+        <button
+          type="button"
+          className="fp-img-zoom-btn"
+          onClick={() => setLightbox(true)}
+          aria-label="View full floor plan"
+          title="Zoom in"
+        >
+          <ZoomIcon />
+        </button>
       </div>
+
+      {lightbox && (
+        <div
+          className="fp-lightbox"
+          onClick={() => setLightbox(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Floor plan of ${plan.name}`}
+        >
+          <div className="fp-lightbox-inner" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="fp-lightbox-close"
+              onClick={() => setLightbox(false)}
+              aria-label="Close"
+            >
+              ✕
+            </button>
+            <div className="fp-lightbox-header">
+              <span className="fp-lightbox-name">{plan.name}</span>
+              <span className="fp-lightbox-dims">{plan.width}&apos; × {plan.depth}&apos;</span>
+              <span className="fp-lightbox-sqft">{plan.sqft} sf</span>
+            </div>
+            {plan.image ? (
+              <img
+                src={plan.image}
+                alt={`Floor plan of ${plan.name}`}
+                className="fp-lightbox-img"
+              />
+            ) : (
+              <FloorPlanSvg
+                plan={plan}
+                variant="full"
+                showLabels
+                showDecks
+                showDimensions
+                ariaLabel={`Floor plan of ${plan.name}`}
+                className="fp-lightbox-svg"
+              />
+            )}
+          </div>
+        </div>
+      )}
 
       <KeySpecs specs={plan.keySpecs} />
 
@@ -132,7 +200,7 @@ const FILL = "#3f7a3a";
 
 function IconTape() {
   return (
-    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke={STROKE} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke={STROKE} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
       <rect x="2" y="6" width="20" height="12" rx="3" />
       <circle cx="8" cy="12" r="2.5" />
       <path d="M11 12h9" strokeDasharray="2 2" />
@@ -142,7 +210,7 @@ function IconTape() {
 }
 function IconBed() {
   return (
-    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke={STROKE} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke={STROKE} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 18V8" />
       <path d="M3 13h18v5" />
       <path d="M21 18V11a3 3 0 0 0-3-3H10v5" />
@@ -152,7 +220,7 @@ function IconBed() {
 }
 function IconBath() {
   return (
-    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke={STROKE} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke={STROKE} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
       <path d="M4 12h17v3a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-3z" />
       <path d="M6 12V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1" />
       <path d="M5 19l-1 2M20 19l1 2" />
@@ -161,7 +229,7 @@ function IconBath() {
 }
 function IconHouse() {
   return (
-    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke={STROKE} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke={STROKE} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 11l9-7 9 7" />
       <path d="M5 10v10h14V10" />
       <circle cx="9" cy="15" r="1" />
@@ -172,7 +240,7 @@ function IconHouse() {
 }
 function IconGarage() {
   return (
-    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke={STROKE} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke={STROKE} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 21V8l9-5 9 5v13" />
       <rect x="6" y="11" width="12" height="10" rx="1" />
       <path d="M6 14h12M6 17h12" />
@@ -181,10 +249,20 @@ function IconGarage() {
 }
 function IconStud() {
   return (
-    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke={STROKE} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke={STROKE} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 20l4-12h4l4 12" />
       <path d="M11 20l4-12h4l2 12" />
       <circle cx="20" cy="5" r="2" fill={FILL} stroke="none" />
+    </svg>
+  );
+}
+
+function ZoomIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M21 21l-4.35-4.35" />
+      <path d="M9 11h4M11 9v4" />
     </svg>
   );
 }
