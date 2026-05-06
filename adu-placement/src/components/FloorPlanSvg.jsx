@@ -11,6 +11,9 @@
 //   variant="full"  → for detail panel + map overlay (with labels & decks)
 
 import { useMemo } from "react";
+import AbsoluteFloorPlanSvg, {
+  renderAbsoluteSvgString,
+} from "./plans/AbsoluteFloorPlan";
 
 const ROOM_COLORS = {
   default: "#fefdf9",
@@ -28,6 +31,20 @@ export default function FloorPlanSvg({
   className = "",
   ariaLabel,
 }) {
+  // Delegate to per-plan custom renderer when available.
+  if (plan.customRenderer === "absolute") {
+    return (
+      <AbsoluteFloorPlanSvg
+        variant={variant}
+        showLabels={showLabels}
+        showDecks={showDecks}
+        showDimensions={showDimensions}
+        className={className}
+        ariaLabel={ariaLabel}
+      />
+    );
+  }
+
   const { width, depth, layout } = plan;
 
   // Add margin around for decks + dimension text in full variant
@@ -445,10 +462,11 @@ export function useFloorPlanDataUrl(plan) {
 }
 
 // Server-style renderer used for image source on the map.
-// Mirrors the React variant but emits a string with NO labels/decks/dimensions —
-// because the map overlay must stay strictly inside the building footprint
-// per the client's request ("no detail outside the boundary of the floor plan").
+// Mirrors the React variant. Per-plan custom renderers are delegated.
 export function renderFloorPlanSvgString(plan) {
+  if (plan.customRenderer === "absolute") {
+    return renderAbsoluteSvgString({ withDecks: true });
+  }
   const { width, depth, layout } = plan;
   const wallStroke = Math.max(0.35, Math.min(width, depth) / 60);
   const intStroke = wallStroke * 0.55;

@@ -114,3 +114,189 @@ export function polygonCenter(feature) {
   }
   return [cx / n, cy / n];
 }
+
+// ---- Lot-local feet conversion (axis-aligned space inside the lot) ----
+//
+// Convert a world lng/lat point into lot-local FEET coordinates,
+// where +x is "right along the lot's width" and +y is "up along the lot's depth".
+// In this space the lot is centered on the origin and axis-aligned, which
+// makes setback clamping a trivial bounding-box operation.
+const M_PER_FOOT = 0.3048;
+const M_PER_DEG_LAT = 111320;
+
+export function worldToLotLocalFeet(point, lotCenter, lotRotationDeg) {
+  const [lng, lat] = point;
+  const [lngC, latC] = lotCenter;
+  const dLng = lng - lngC;
+  const dLat = lat - latC;
+  const mPerDegLng = M_PER_DEG_LAT * Math.cos((latC * Math.PI) / 180);
+  const fx = (dLng * mPerDegLng) / M_PER_FOOT;
+  const fy = (dLat * M_PER_DEG_LAT) / M_PER_FOOT;
+  // Un-rotate by lot rotation
+  const rad = (-lotRotationDeg * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  return [fx * cos - fy * sin, fx * sin + fy * cos];
+}
+
+export function lotLocalFeetToWorld(localPt, lotCenter, lotRotationDeg) {
+  const [lx, ly] = localPt;
+  // Rotate forward by lot rotation
+  const rad = (lotRotationDeg * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const fx = lx * cos - ly * sin;
+  const fy = lx * sin + ly * cos;
+  // Convert feet back to lng/lat
+  const [lngC, latC] = lotCenter;
+  const mPerDegLng = M_PER_DEG_LAT * Math.cos((latC * Math.PI) / 180);
+  const dLng = (fx * M_PER_FOOT) / mPerDegLng;
+  const dLat = (fy * M_PER_FOOT) / M_PER_DEG_LAT;
+  return [lngC + dLng, latC + dLat];
+}
+
+// Half-extents of an axis-aligned bounding box around a rotated W x D rectangle.
+export function rotatedAabbHalf(widthFt, depthFt, rotationDeg) {
+  const rad = (rotationDeg * Math.PI) / 180;
+  const c = Math.abs(Math.cos(rad));
+  const s = Math.abs(Math.sin(rad));
+  const halfW = widthFt / 2;
+  const halfD = depthFt / 2;
+  return {
+    halfX: halfW * c + halfD * s,
+    halfY: halfW * s + halfD * c,
+  };
+}
+
+// Clamp a proposed footprint center (in world lng/lat) so that the
+// AXIS-ALIGNED BOUNDING BOX of the rotated footprint lies entirely
+// within the buildable area defined by `setbacks` inside the lot.
+//
+// Returns { center: [lng, lat], snapped: { left, right, front, back } } where
+// `snapped.*` flags indicate which edge(s) the clamp pinned the footprint to.
+// If the footprint is too big to fit, returns { center: input, snapped: null }
+// so the caller can show an "outside" warning instead of fighting the user.
+export function clampFootprintToSetbacks({
+  proposedCenter,
+  footprintWidth,
+  footprintDepth,
+  footprintRotationDeg,
+  lot,
+  setbacks,
+}) {
+  if (!lot || !lot.center || !setbacks) {
+    return { center: proposedCenter, snapped: null };
+  }
+
+  // Buildable area (axis-aligned in lot-local feet)
+  const bWidth = lot.width - setbacks.left - setbacks.right;
+  const bDepth = lot.length - setbacks.front - setbacks.back;
+  if (bWidth <= 0 || bDepth <= 0) {
+    return { center: proposedCenter, snapped: null };
+  }
+
+  // Buildable center is offset because front/back/left/right may be unequal.
+  // Match the convention in applySetbacksToRect:
+  //   x = east (right), y = north (front of lot)
+  const bcx = (setbacks.left - setbacks.right) / 2;
+  const bcy = (setbacks.back - setbacks.front) / 2;
+  const bHalfX = bWidth / 2;
+  const bHalfY = bDepth / 2;
+
+  // Footprint AABB half (relative to lot frame)
+  const fpRotInLot = footprintRotationDeg - lot.rotation;
+  const { halfX: fHalfX, halfY: fHalfY } = rotatedAabbHalf(
+    footprintWidth,
+    footprintDepth,
+    fpRotInLot
+  );
+
+  // Footprint won't fit at this rotation
+  if (fHalfX > bHalfX || fHalfY > bHalfY) {
+    return { center: proposedCenter, snapped: null };
+  }
+
+  const minX = bcx - bHalfX + fHalfX;
+  const maxX = bcx + bHalfX - fHalfX;
+  const minY = bcy - bHalfY + fHalfY;
+  const maxY = bcy + bHalfY - fHalfY;
+
+  const local = worldToLotLocalFeet(proposedCenter, lot.center, lot.rotation);
+  const clampedX = Math.max(minX, Math.min(maxX, local[0]));
+  const clampedY = Math.max(minY, Math.min(maxY, local[1]));
+
+  const snapped = {
+    left: clampedX === minX,
+    right: clampedX === maxX,
+    front: clampedY === minY,
+    back: clampedY === maxY,
+  };
+
+  // If nothing changed, no snap occurred
+  const moved = clampedX !== local[0] || clampedY !== local[1];
+
+  const world = lotLocalFeetToWorld(
+    [clampedX, clampedY],
+    lot.center,
+    lot.rotation
+  );
+  return { center: world, snapped: moved ? snapped : null };
+}
+
+// Compute confidence: distance (in feet) from each footprint corner to the
+// nearest setback edge. Used by the Confidence Meter.
+//   < 0  → outside buildable area
+//   0..1 → tight (within 1 ft)
+//   ≥1   → great
+export function footprintFitMargin({
+  footprintCenter,
+  footprintWidth,
+  footprintDepth,
+  footprintRotationDeg,
+  lot,
+  setbacks,
+}) {
+  if (!lot || !lot.center || !setbacks) return null;
+
+  const bWidth = lot.width - setbacks.left - setbacks.right;
+  const bDepth = lot.length - setbacks.front - setbacks.back;
+  if (bWidth <= 0 || bDepth <= 0) return -Infinity;
+
+  const bcx = (setbacks.left - setbacks.right) / 2;
+  const bcy = (setbacks.back - setbacks.front) / 2;
+
+  const fpRotInLot = footprintRotationDeg - lot.rotation;
+  const local = worldToLotLocalFeet(
+    footprintCenter,
+    lot.center,
+    lot.rotation
+  );
+
+  // Build the footprint corners in lot-local feet
+  const halfW = footprintWidth / 2;
+  const halfD = footprintDepth / 2;
+  const rad = (fpRotInLot * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const corners = [
+    [-halfW, -halfD],
+    [halfW, -halfD],
+    [halfW, halfD],
+    [-halfW, halfD],
+  ].map(([x, y]) => [
+    local[0] + x * cos - y * sin,
+    local[1] + x * sin + y * cos,
+  ]);
+
+  // Distance from each corner to the nearest setback edge (negative = outside)
+  let minMargin = Infinity;
+  const minX = bcx - bWidth / 2;
+  const maxX = bcx + bWidth / 2;
+  const minY = bcy - bDepth / 2;
+  const maxY = bcy + bDepth / 2;
+  for (const [x, y] of corners) {
+    const m = Math.min(x - minX, maxX - x, y - minY, maxY - y);
+    if (m < minMargin) minMargin = m;
+  }
+  return minMargin;
+}

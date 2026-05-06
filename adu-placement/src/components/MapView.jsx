@@ -34,6 +34,7 @@ const MapView = forwardRef(function MapView(
     footprintFeature,
     floorPlan,
     isValid,
+    viewMode = "full",
     onDragLot,
     onDragFootprint,
   },
@@ -164,7 +165,7 @@ const MapView = forwardRef(function MapView(
     };
   }, []);
 
-  // ------- Imperative API for export -------
+  // ------- Imperative API -------
   useImperativeHandle(ref, () => ({
     exportAsPng: async (filename = "site-plan.png") => {
       const map = mapRef.current;
@@ -188,6 +189,65 @@ const MapView = forwardRef(function MapView(
       a.href = dataUrl;
       a.download = filename;
       a.click();
+    },
+    // Find the nearest road segment to the given lng/lat and return
+    // the segment's compass bearing (0..360, 0=N, increasing clockwise).
+    // Returns null if no road feature is rendered nearby.
+    getStreetBearing: (centerLngLat) => {
+      const map = mapRef.current;
+      if (!map || !centerLngLat) return null;
+      try {
+        const center = { lng: centerLngLat[0], lat: centerLngLat[1] };
+        const px = map.project(center);
+        const r = 120;
+        const bbox = [
+          [px.x - r, px.y - r],
+          [px.x + r, px.y + r],
+        ];
+        const styleLayers = map.getStyle()?.layers || [];
+        const candidateLayers = styleLayers
+          .filter(
+            (l) =>
+              l.type === "line" &&
+              /(road|street|highway|motorway|primary|secondary|tertiary|residential|service)/i.test(
+                l["source-layer"] || l.id
+              )
+          )
+          .map((l) => l.id);
+        if (!candidateLayers.length) return null;
+        const features = map.queryRenderedFeatures(bbox, {
+          layers: candidateLayers,
+        });
+        if (!features.length) return null;
+        let best = { dist: Infinity, bearing: null };
+        for (const f of features) {
+          const coords =
+            f.geometry?.type === "LineString"
+              ? [f.geometry.coordinates]
+              : f.geometry?.type === "MultiLineString"
+              ? f.geometry.coordinates
+              : [];
+          for (const line of coords) {
+            for (let i = 0; i < line.length - 1; i++) {
+              const a = line[i];
+              const b = line[i + 1];
+              const d = pointToSegmentDist(
+                [center.lng, center.lat],
+                a,
+                b
+              );
+              if (d < best.dist) {
+                best.dist = d;
+                best.bearing = compassBearing(a, b);
+              }
+            }
+          }
+        }
+        return best.bearing;
+      } catch (err) {
+        console.warn("getStreetBearing failed", err);
+        return null;
+      }
     },
   }));
 
@@ -256,6 +316,12 @@ const MapView = forwardRef(function MapView(
     const map = mapRef.current;
     if (!map) return;
     const run = () => {
+      // View mode "footprint" hides the rendered floor plan entirely.
+      if (viewMode === "footprint") {
+        removeImageLayer(map);
+        currentImagePlanIdRef.current = null;
+        return;
+      }
       // No floor plan: clear the overlay
       if (!floorPlan || !footprintFeature) {
         removeImageLayer(map);
@@ -312,7 +378,7 @@ const MapView = forwardRef(function MapView(
     } else {
       run();
     }
-  }, [floorPlan, footprintFeature]);
+  }, [floorPlan, footprintFeature, viewMode]);
 
   function syncWhenReady(srcId, feature) {
     const map = mapRef.current;
@@ -466,6 +532,40 @@ function rasterizeFloorPlan(plan) {
     img.onerror = reject;
     img.src = svgUrl;
   });
+}
+
+function pointToSegmentDist(p, a, b) {
+  const [px, py] = p;
+  const [ax, ay] = a;
+  const [bx, by] = b;
+  const dx = bx - ax;
+  const dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  if (len2 === 0) {
+    const ex = px - ax;
+    const ey = py - ay;
+    return Math.sqrt(ex * ex + ey * ey);
+  }
+  let t = ((px - ax) * dx + (py - ay) * dy) / len2;
+  t = Math.max(0, Math.min(1, t));
+  const cx = ax + t * dx;
+  const cy = ay + t * dy;
+  const ex = px - cx;
+  const ey = py - cy;
+  return Math.sqrt(ex * ex + ey * ey);
+}
+
+function compassBearing(a, b) {
+  // Compass bearing from a to b: 0=N, 90=E, 180=S, 270=W
+  const φ1 = (a[1] * Math.PI) / 180;
+  const φ2 = (b[1] * Math.PI) / 180;
+  const Δλ = ((b[0] - a[0]) * Math.PI) / 180;
+  const y = Math.sin(Δλ) * Math.cos(φ2);
+  const x =
+    Math.cos(φ1) * Math.sin(φ2) -
+    Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+  const θ = Math.atan2(y, x);
+  return ((θ * 180) / Math.PI + 360) % 360;
 }
 
 function drawNorthArrow(ctx, w, h) {

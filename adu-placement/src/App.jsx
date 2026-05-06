@@ -8,10 +8,13 @@ import MapView from "./components/MapView";
 import NorthArrow from "./components/NorthArrow";
 import ValidationBadge from "./components/ValidationBadge";
 import DownloadButton from "./components/DownloadButton";
+import ConfidenceMeter from "./components/ConfidenceMeter";
 import {
   makeRectangle,
   applySetbacksToRect,
   isFootprintInside,
+  clampFootprintToSetbacks,
+  footprintFitMargin,
 } from "./lib/geometry";
 import "./App.css";
 
@@ -25,6 +28,9 @@ export default function App() {
   const [floorPlan, setFloorPlan] = useState(null);
   const [footprint, setFootprint] = useState(null); // {center, rotation}
   const [setbacks, setSetbacks] = useState(DEFAULT_SETBACKS);
+  const [snapToSetbacks, setSnapToSetbacks] = useState(true);
+  const [viewMode, setViewMode] = useState("full"); // "full" | "footprint"
+  const [alignBusy, setAlignBusy] = useState(false);
 
   const mapRef = useRef(null);
 
@@ -50,7 +56,7 @@ export default function App() {
     return makeRectangle(
       footprint.center,
       floorPlan.width,
-      floorPlan.height,
+      floorPlan.depth,
       footprint.rotation
     );
   }, [footprint, floorPlan]);
@@ -59,6 +65,18 @@ export default function App() {
     if (!footprintFeature || !setbackFeature) return true;
     return isFootprintInside(footprintFeature, setbackFeature);
   }, [footprintFeature, setbackFeature]);
+
+  const fitMargin = useMemo(() => {
+    if (!footprint || !floorPlan || !lotConfirmed) return null;
+    return footprintFitMargin({
+      footprintCenter: footprint.center,
+      footprintWidth: floorPlan.width,
+      footprintDepth: floorPlan.depth,
+      footprintRotationDeg: footprint.rotation,
+      lot,
+      setbacks,
+    });
+  }, [footprint, floorPlan, lot, setbacks, lotConfirmed]);
 
   // ---- Step status ----
   const step1Done = !!location;
@@ -111,14 +129,70 @@ export default function App() {
     }
   }
 
-  const handleDragFootprint = useCallback((newCenter) => {
-    setFootprint((f) => (f ? { ...f, center: newCenter } : f));
-  }, []);
+  // Drag the home. If snap-to-setbacks is on, clamp the position so the
+  // axis-aligned bounding box of the rotated home stays inside the buildable
+  // area (the dashed yellow line). Per the doc's MVP recommendation.
+  const handleDragFootprint = useCallback(
+    (newCenter) => {
+      setFootprint((f) => {
+        if (!f) return f;
+        if (!snapToSetbacks || !floorPlan || !lotConfirmed) {
+          return { ...f, center: newCenter };
+        }
+        const { center: clamped } = clampFootprintToSetbacks({
+          proposedCenter: newCenter,
+          footprintWidth: floorPlan.width,
+          footprintDepth: floorPlan.depth,
+          footprintRotationDeg: f.rotation,
+          lot,
+          setbacks,
+        });
+        return { ...f, center: clamped };
+      });
+    },
+    [snapToSetbacks, floorPlan, lot, setbacks, lotConfirmed]
+  );
 
   function handleRotateFootprint(delta) {
     setFootprint((f) =>
       f ? { ...f, rotation: (f.rotation + delta) % 360 } : f
     );
+  }
+
+  // Snap rotation to nearest 0/90/180/270 (per doc).
+  function handleSnap90() {
+    setFootprint((f) => {
+      if (!f) return f;
+      const n = ((f.rotation % 360) + 360) % 360;
+      const target = [0, 90, 180, 270].reduce((p, c) =>
+        Math.abs(n - c) < Math.abs(n - p) ? c : p
+      );
+      return { ...f, rotation: target };
+    });
+  }
+
+  // Auto-align to street: query nearest road, set footprint rotation so
+  // the long axis is parallel to the street, then snap to nearest 90°.
+  async function handleAlignStreet() {
+    if (!footprint?.center || !mapRef.current) return;
+    setAlignBusy(true);
+    try {
+      const bearing = mapRef.current.getStreetBearing(footprint.center);
+      if (bearing == null) return;
+      // Convert compass bearing → our CCW rotation convention
+      // (compass increases CW; our θ increases CCW; θ_align = -bearing).
+      // Snap to nearest 90°.
+      const target = -bearing;
+      const angles = [0, 90, 180, 270];
+      const snap = angles.reduce((p, c) => {
+        const dp = Math.abs(((p - target + 540) % 360) - 180);
+        const dc = Math.abs(((c - target + 540) % 360) - 180);
+        return dc < dp ? c : p;
+      }, 0);
+      setFootprint((f) => (f ? { ...f, rotation: snap } : f));
+    } finally {
+      setAlignBusy(false);
+    }
   }
 
   function handleResetFootprint() {
@@ -135,13 +209,33 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <div className="brand">
-          <div className="brand-mark">A</div>
+          <div className="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32" width="22" height="22">
+              <path
+                d="M4 16 L16 6 L28 16 L28 26 L20 26 L20 18 L12 18 L12 26 L4 26 Z"
+                fill="white"
+                stroke="white"
+                strokeWidth="1.2"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
           <div className="brand-text">
-            <h1>ADU Placement</h1>
-            <span className="brand-sub">Site planning, simplified</span>
+            <h1>FrameUpNow</h1>
+            <span className="brand-sub">
+              Place your ADU. See it on your land. Make it real.
+            </span>
           </div>
         </div>
         <div className="header-meta">
+          {floorPlan && (
+            <div className="header-plan-pill">
+              <span className="hpp-series">{floorPlan.series}</span>
+              <span className="hpp-name">{floorPlan.name}</span>
+              <span className="hpp-sep">·</span>
+              <span className="hpp-sqft">{floorPlan.sqft} sf</span>
+            </div>
+          )}
           {footprintFeature && setbackFeature && (
             <ValidationBadge isValid={isValid} />
           )}
@@ -196,17 +290,25 @@ export default function App() {
 
           <Step
             n={4}
-            title="Place & rotate ADU"
+            title="Place & rotate your home"
             done={!!footprint && step3Done}
             active={!!floorPlan}
             locked={!floorPlan}
           >
             {footprint && (
-              <FootprintControls
-                rotation={footprint.rotation}
-                onRotate={handleRotateFootprint}
-                onReset={handleResetFootprint}
-              />
+              <>
+                <FootprintControls
+                  rotation={footprint.rotation}
+                  onRotate={handleRotateFootprint}
+                  onReset={handleResetFootprint}
+                  onSnap90={handleSnap90}
+                  onAlignStreet={handleAlignStreet}
+                  alignBusy={alignBusy}
+                  snapToSetbacks={snapToSetbacks}
+                  onToggleSnap={() => setSnapToSetbacks((v) => !v)}
+                />
+                <ConfidenceMeter marginFt={fitMargin} />
+              </>
             )}
           </Step>
 
@@ -244,10 +346,16 @@ export default function App() {
             lotConfirmed={lotConfirmed}
             setbackFeature={setbackFeature}
             footprintFeature={footprintFeature}
+            floorPlan={floorPlan}
             isValid={isValid}
+            viewMode={viewMode}
             onDragLot={handleDragLot}
             onDragFootprint={handleDragFootprint}
           />
+          {!location && <Hero />}
+          {floorPlan && footprintFeature && (
+            <ViewToggle value={viewMode} onChange={setViewMode} />
+          )}
           <NorthArrow />
           <Legend
             showLot={!!lotFeature}
@@ -255,6 +363,9 @@ export default function App() {
             showFootprint={!!footprintFeature}
             isValid={isValid}
           />
+          {floorPlan && footprintFeature && (
+            <PlanFloatCard plan={floorPlan} valid={isValid} margin={fitMargin} />
+          )}
         </main>
       </div>
     </div>
@@ -281,6 +392,107 @@ function Step({ n, title, done, active, locked, children }) {
   );
 }
 
+function Hero() {
+  return (
+    <div className="hero">
+      <div className="hero-card">
+        <span className="hero-eyebrow">DESIGN. PLACE. BUILD.</span>
+        <h2 className="hero-title">
+          See your future ADU on your land — <em>before</em> the first board is cut.
+        </h2>
+        <p className="hero-sub">
+          Drop in your address, drag the floor plan, and watch the rooms, decks
+          and front door fall into place — exactly where the sun rises and the
+          street meets your driveway.
+        </p>
+        <div className="hero-row">
+          <Bullet>Real floor plans, not boxes</Bullet>
+          <Bullet>Setback-aware placement</Bullet>
+          <Bullet>Export a shareable site plan</Bullet>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Bullet({ children }) {
+  return (
+    <span className="hero-bullet">
+      <span className="hero-bullet-dot" />
+      {children}
+    </span>
+  );
+}
+
+function ViewToggle({ value, onChange }) {
+  return (
+    <div className="view-toggle" role="tablist" aria-label="View mode">
+      <button
+        type="button"
+        role="tab"
+        aria-selected={value === "full"}
+        className={value === "full" ? "active" : ""}
+        onClick={() => onChange("full")}
+      >
+        Full floor plan
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={value === "footprint"}
+        className={value === "footprint" ? "active" : ""}
+        onClick={() => onChange("footprint")}
+      >
+        Footprint only
+      </button>
+    </div>
+  );
+}
+
+function PlanFloatCard({ plan, valid, margin }) {
+  const fitText =
+    margin == null
+      ? null
+      : margin < 0
+      ? `Outside setback by ${Math.abs(margin).toFixed(1)} ft`
+      : margin < 1
+      ? `Tight fit · ${margin.toFixed(1)} ft clearance`
+      : `Great placement · ${margin.toFixed(1)} ft clearance`;
+  return (
+    <div className={`plan-float ${valid ? "" : "invalid"}`}>
+      <div className="plan-float-head">
+        <span className="plan-float-series">{plan.series}</span>
+        <h4>{plan.name}</h4>
+      </div>
+      <div className="plan-float-stats">
+        <Stat value={plan.keySpecs.livableSqft} label="sq ft" />
+        <Stat value={plan.keySpecs.bedrooms} label="bed" />
+        <Stat value={plan.keySpecs.bathrooms} label="bath" />
+        <Stat value={`${plan.width}'×${plan.depth}'`} label="size" />
+      </div>
+      {fitText && (
+        <div className={`plan-float-fit ${valid ? "ok" : "bad"}`}>
+          {fitText}
+        </div>
+      )}
+      {!valid && (
+        <div className="plan-float-warn">
+          ⚠ Outside buildable area — drag inside the dashed yellow setback line.
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Stat({ value, label }) {
+  return (
+    <div className="plan-float-stat">
+      <span className="pfs-value">{value}</span>
+      <span className="pfs-label">{label}</span>
+    </div>
+  );
+}
+
 function Legend({ showLot, showSetback, showFootprint, isValid }) {
   if (!showLot && !showSetback && !showFootprint) return null;
   return (
@@ -301,7 +513,7 @@ function Legend({ showLot, showSetback, showFootprint, isValid }) {
           <span
             className={`swatch ${isValid ? "swatch-valid" : "swatch-invalid"}`}
           />{" "}
-          ADU footprint
+          Your home
         </div>
       )}
     </div>

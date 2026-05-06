@@ -22,6 +22,8 @@ export const FLOOR_PLANS = [
     width: 30,
     depth: 18,
     sqft: 774,
+    customRenderer: "absolute",
+    frontVector: [0, 1], // front door is on the +y (south) edge of the SVG
     keySpecs: {
       livableSqft: 774,
       bedrooms: 1,
