@@ -1,11 +1,14 @@
-import { useMemo, useRef, useState, useCallback } from "react";
+import { useMemo, useRef, useState, useCallback, useEffect } from "react";
 import AddressSearch from "./components/AddressSearch";
 import LotConfirmation from "./components/LotConfirmation";
 import FloorPlanSelector from "./components/FloorPlanSelector";
 import FootprintControls from "./components/FootprintControls";
 import SetbackInputs from "./components/SetbackInputs";
 import MapView from "./components/MapView";
-import NorthArrow from "./components/NorthArrow";
+import Compass from "./components/Compass";
+import MapControls from "./components/MapControls";
+import CameraActions from "./components/CameraActions";
+import LotInfoCard from "./components/LotInfoCard";
 import ValidationBadge from "./components/ValidationBadge";
 import DownloadButton from "./components/DownloadButton";
 import ConfidenceMeter from "./components/ConfidenceMeter";
@@ -31,6 +34,57 @@ export default function App() {
   const [snapToSetbacks, setSnapToSetbacks] = useState(true);
   const [viewMode, setViewMode] = useState("full"); // "full" | "footprint"
   const [alignBusy, setAlignBusy] = useState(false);
+  const [alignFlash, setAlignFlash] = useState(null); // { kind: "ok" | "warn", text }
+  const [mapBearing, setMapBearing] = useState(0);
+  const [mapStyle, setMapStyle] = useState("satellite");
+  const [is3D, setIs3D] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [showPlacementHint, setShowPlacementHint] = useState(false);
+  const [pulseHome, setPulseHome] = useState(false);
+  const mapWrapperRef = useRef(null);
+  const lastZoomedPlanRef = useRef(null);
+
+  // Track fullscreen state (browser may exit on Esc)
+  useEffect(() => {
+    function handleFsChange() {
+      setFullscreen(!!document.fullscreenElement);
+    }
+    document.addEventListener("fullscreenchange", handleFsChange);
+    return () => document.removeEventListener("fullscreenchange", handleFsChange);
+  }, []);
+
+  // Auto-zoom to the floor plan when it's first selected, and trigger the
+  // pulse + drag-hint UI flourishes. We track the last-zoomed plan id so
+  // that simply dragging the home around doesn't keep re-zooming.
+  useEffect(() => {
+    if (!floorPlan?.id || !footprint) return;
+    if (lastZoomedPlanRef.current === floorPlan.id) return;
+    lastZoomedPlanRef.current = floorPlan.id;
+
+    const flyTimer = setTimeout(() => {
+      mapRef.current?.flyToFootprint(60);
+    }, 240);
+
+    setPulseHome(true);
+    const pulseTimer = setTimeout(() => setPulseHome(false), 1800);
+
+    setShowPlacementHint(true);
+    const hintTimer = setTimeout(() => setShowPlacementHint(false), 5500);
+
+    return () => {
+      clearTimeout(flyTimer);
+      clearTimeout(pulseTimer);
+      clearTimeout(hintTimer);
+    };
+  }, [floorPlan?.id, footprint]);
+
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      mapWrapperRef.current?.requestFullscreen?.().catch(() => {});
+    } else {
+      document.exitFullscreen?.().catch(() => {});
+    }
+  }
 
   const mapRef = useRef(null);
 
@@ -172,24 +226,36 @@ export default function App() {
   }
 
   // Auto-align to street: query nearest road, set footprint rotation so
-  // the long axis is parallel to the street, then snap to nearest 90°.
+  // the home's depth-axis is perpendicular to the street (front door faces
+  // the road), then snap to the nearest 90°.
+  //
+  // Why target = 90 - bearing:
+  //   • compass bearing measures the road's direction (0=N, 90=E, CW)
+  //   • the home's width-axis runs E-W when rotation=0 (CCW rotation convention)
+  //   • for the home to be parallel to the road, width must align to road bearing
+  //   • the conversion between the two conventions is: θ = 90 - bearing
   async function handleAlignStreet() {
     if (!footprint?.center || !mapRef.current) return;
     setAlignBusy(true);
+    setAlignFlash(null);
     try {
       const bearing = mapRef.current.getStreetBearing(footprint.center);
-      if (bearing == null) return;
-      // Convert compass bearing → our CCW rotation convention
-      // (compass increases CW; our θ increases CCW; θ_align = -bearing).
-      // Snap to nearest 90°.
-      const target = -bearing;
+      if (bearing == null) {
+        setAlignFlash({ kind: "warn", text: "No street found nearby — zoom out a touch and try again." });
+        setTimeout(() => setAlignFlash(null), 3200);
+        return;
+      }
+      const target = 90 - bearing;
       const angles = [0, 90, 180, 270];
       const snap = angles.reduce((p, c) => {
         const dp = Math.abs(((p - target + 540) % 360) - 180);
         const dc = Math.abs(((c - target + 540) % 360) - 180);
         return dc < dp ? c : p;
       }, 0);
-      setFootprint((f) => (f ? { ...f, rotation: snap } : f));
+      const norm = ((snap % 360) + 360) % 360;
+      setFootprint((f) => (f ? { ...f, rotation: norm } : f));
+      setAlignFlash({ kind: "ok", text: `Aligned to street · ${Math.round(((bearing % 360) + 360) % 360)}°` });
+      setTimeout(() => setAlignFlash(null), 2400);
     } finally {
       setAlignBusy(false);
     }
@@ -338,7 +404,7 @@ export default function App() {
           </Step>
         </aside>
 
-        <main className="map-wrapper">
+        <main className="map-wrapper" ref={mapWrapperRef}>
           <MapView
             ref={mapRef}
             location={location}
@@ -349,22 +415,89 @@ export default function App() {
             floorPlan={floorPlan}
             isValid={isValid}
             viewMode={viewMode}
+            mapStyle={mapStyle}
+            is3D={is3D}
             onDragLot={handleDragLot}
             onDragFootprint={handleDragFootprint}
+            onBearingChange={setMapBearing}
           />
           {!location && <Hero />}
+
+          <MapControls
+            is3D={is3D}
+            onToggle3D={() => setIs3D((v) => !v)}
+            mapStyle={mapStyle}
+            onChangeStyle={setMapStyle}
+            onZoomIn={() => mapRef.current?.zoomIn()}
+            onZoomOut={() => mapRef.current?.zoomOut()}
+            onFullscreen={toggleFullscreen}
+            fullscreenActive={fullscreen}
+          />
+
+          <Compass
+            bearing={mapBearing}
+            onResetNorth={() => mapRef.current?.resetNorth()}
+          />
+
           {floorPlan && footprintFeature && (
             <ViewToggle value={viewMode} onChange={setViewMode} />
           )}
-          <NorthArrow />
+
+          {lot.center && lotConfirmed && (
+            <LotInfoCard lot={lot} setbacks={setbacks} floorPlan={floorPlan} />
+          )}
+
           <Legend
             showLot={!!lotFeature}
             showSetback={!!setbackFeature}
             showFootprint={!!footprintFeature}
             isValid={isValid}
           />
+
           {floorPlan && footprintFeature && (
             <PlanFloatCard plan={floorPlan} valid={isValid} margin={fitMargin} />
+          )}
+
+          <CameraActions
+            hasFootprint={!!footprintFeature}
+            hasLot={!!lotFeature}
+            hasLocation={!!location}
+            onFrameHome={() => mapRef.current?.flyToFootprint(60)}
+            onFrameLot={() => mapRef.current?.fitToLot(80)}
+            onRecenterAddress={() =>
+              location && mapRef.current?.flyToLocation(location.lng, location.lat, 19)
+            }
+          />
+
+          {pulseHome && footprintFeature && (
+            <div className="home-pulse" aria-hidden="true">
+              <span />
+              <span />
+            </div>
+          )}
+
+          {showPlacementHint && footprintFeature && (
+            <div className="placement-hint" role="status">
+              <span className="placement-hint-icon">✋</span>
+              <span><b>Drag the home</b> to position it on your lot — it stays inside the dashed setback line.</span>
+              <button
+                type="button"
+                className="placement-hint-close"
+                onClick={() => setShowPlacementHint(false)}
+                aria-label="Dismiss tip"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {alignFlash && (
+            <div className={`align-flash align-flash-${alignFlash.kind}`} role="status">
+              <span className="align-flash-icon">
+                {alignFlash.kind === "ok" ? "🧭" : "⚠️"}
+              </span>
+              <span>{alignFlash.text}</span>
+            </div>
           )}
         </main>
       </div>

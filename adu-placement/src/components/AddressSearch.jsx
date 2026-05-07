@@ -16,10 +16,19 @@ export default function AddressSearch({ onSelectLocation }) {
   const debounceRef = useRef(null);
   const aborterRef = useRef(null);
   const wrapRef = useRef(null);
+  // When the user picks a suggestion (or hits "My location"), we set the
+  // query field to the chosen place name. That state change would otherwise
+  // re-trigger the debounced search and reopen the dropdown — this flag
+  // tells the next search to no-op exactly once.
+  const skipNextSearchRef = useRef(false);
 
   // ---- Live autocomplete (debounced) ----
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (skipNextSearchRef.current) {
+      skipNextSearchRef.current = false;
+      return;
+    }
     if (!query || query.trim().length < MIN_CHARS) {
       setResults([]);
       setError("");
@@ -82,10 +91,12 @@ export default function AddressSearch({ onSelectLocation }) {
   function handlePick(feature) {
     const [lng, lat] = feature.center;
     onSelectLocation({ lng, lat, placeName: feature.place_name });
+    skipNextSearchRef.current = true;
     setQuery(feature.place_name);
     setResults([]);
     setOpen(false);
     setActiveIdx(-1);
+    if (aborterRef.current) aborterRef.current.abort();
   }
 
   function handleKeyDown(e) {
@@ -130,15 +141,17 @@ export default function AddressSearch({ onSelectLocation }) {
             data?.features?.[0]?.place_name ||
             `Lat ${lat.toFixed(5)}, Lng ${lng.toFixed(5)}`;
           onSelectLocation({ lng, lat, placeName });
+          skipNextSearchRef.current = true;
           setQuery(placeName);
           setResults([]);
           setOpen(false);
         } catch {
-          onSelectLocation({
-            lng,
-            lat,
-            placeName: `Lat ${lat.toFixed(5)}, Lng ${lng.toFixed(5)}`,
-          });
+          skipNextSearchRef.current = true;
+          const fallback = `Lat ${lat.toFixed(5)}, Lng ${lng.toFixed(5)}`;
+          onSelectLocation({ lng, lat, placeName: fallback });
+          setQuery(fallback);
+          setResults([]);
+          setOpen(false);
         } finally {
           setGeoBusy(false);
         }
@@ -157,11 +170,15 @@ export default function AddressSearch({ onSelectLocation }) {
     );
   }
 
+  const showHint = !query && !error && !loading;
+
   return (
     <div className="address-search" ref={wrapRef}>
       <div className="address-search-row">
         <div className="input-wrap">
-          <span className="input-icon" aria-hidden="true">⌕</span>
+          <span className="input-icon" aria-hidden="true">
+            <SearchIcon />
+          </span>
           <input
             type="text"
             value={query}
@@ -176,6 +193,22 @@ export default function AddressSearch({ onSelectLocation }) {
             spellCheck="false"
           />
           {loading && <span className="input-spinner" aria-hidden="true" />}
+          {!loading && query && (
+            <button
+              type="button"
+              className="input-clear"
+              onClick={() => {
+                setQuery("");
+                setResults([]);
+                setOpen(false);
+                setError("");
+              }}
+              aria-label="Clear search"
+              title="Clear"
+            >
+              ✕
+            </button>
+          )}
         </div>
         <button
           type="button"
@@ -194,6 +227,14 @@ export default function AddressSearch({ onSelectLocation }) {
         </button>
       </div>
 
+      {showHint && (
+        <p className="address-hint">
+          <span className="address-hint-icon" aria-hidden="true">💡</span>
+          Try a full street address for the best result — e.g.&nbsp;
+          <em>1600 Pennsylvania Ave, Washington DC</em>.
+        </p>
+      )}
+
       {error && <p className="error">{error}</p>}
 
       {open && results.length > 0 && (
@@ -210,18 +251,38 @@ export default function AddressSearch({ onSelectLocation }) {
                 handlePick(f);
               }}
             >
-              <span className="result-pin" aria-hidden="true">📍</span>
+              <span className="result-pin" aria-hidden="true">
+                <PinIcon />
+              </span>
               <span className="result-text">
                 <b>{f.text || f.place_name.split(",")[0]}</b>
                 <span className="result-sub">
                   {f.place_name.replace(/^[^,]+,?\s*/, "")}
                 </span>
               </span>
+              <span className="result-arrow" aria-hidden="true">↵</span>
             </li>
           ))}
         </ul>
       )}
     </div>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M21 21l-4.35-4.35" />
+    </svg>
+  );
+}
+
+function PinIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z" />
+    </svg>
   );
 }
 

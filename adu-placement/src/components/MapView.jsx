@@ -25,6 +25,13 @@ const FP_IMG_LAYER = "fp-img-layer";
 const MARKER_HIDE_MS = 7000;
 const PIXELS_PER_FOOT = 24; // raster resolution for the SVG → PNG conversion
 
+const MAP_STYLES = {
+  satellite: "mapbox://styles/mapbox/satellite-streets-v12",
+  streets: "mapbox://styles/mapbox/streets-v12",
+  outdoors: "mapbox://styles/mapbox/outdoors-v12",
+  light: "mapbox://styles/mapbox/light-v11",
+};
+
 const MapView = forwardRef(function MapView(
   {
     location,
@@ -35,8 +42,11 @@ const MapView = forwardRef(function MapView(
     floorPlan,
     isValid,
     viewMode = "full",
+    mapStyle = "satellite",
+    is3D = false,
     onDragLot,
     onDragFootprint,
+    onBearingChange,
   },
   ref
 ) {
@@ -45,6 +55,7 @@ const MapView = forwardRef(function MapView(
   const markerRef = useRef(null);
   const styleReadyRef = useRef(false);
   const currentImagePlanIdRef = useRef(null);
+  const currentStyleUrlRef = useRef(null);
 
   // Stable refs to latest props for inside event listeners
   const lotFeatureRef = useRef(lotFeature);
@@ -73,24 +84,40 @@ const MapView = forwardRef(function MapView(
   useEffect(() => {
     if (mapRef.current) return;
 
+    const initialStyleUrl = MAP_STYLES[mapStyle] || MAP_STYLES.satellite;
     const map = new mapboxgl.Map({
       container: containerRef.current,
-      style: "mapbox://styles/mapbox/satellite-streets-v12",
+      style: initialStyleUrl,
       center: [-98.5795, 39.8283],
       zoom: 3,
+      pitch: is3D ? 55 : 0,
       preserveDrawingBuffer: true,
     });
     mapRef.current = map;
+    currentStyleUrlRef.current = initialStyleUrl;
 
-    map.addControl(new mapboxgl.NavigationControl(), "top-right");
+    // Custom-styled controls — we keep the scale control (it's important
+    // and well-designed) but use our own custom Compass + zoom buttons
+    // so we control the look completely.
     map.addControl(
       new mapboxgl.ScaleControl({ unit: "imperial" }),
       "bottom-left"
     );
 
-    map.on("load", () => {
-      styleReadyRef.current = true;
+    // Track map bearing so the compass can rotate in real time
+    const fireBearing = () => {
+      if (typeof onBearingChange === "function") {
+        onBearingChange(map.getBearing());
+      }
+    };
+    map.on("rotate", fireBearing);
+    map.on("rotateend", fireBearing);
+    map.on("load", fireBearing);
 
+    // Idempotent layer setup — runs on initial style.load AND every
+    // subsequent setStyle() swap (which destroys all custom sources/layers).
+    function ensureLayers() {
+      if (map.getSource(LOT_SRC)) return;
       map.addSource(LOT_SRC, emptyFC());
       map.addSource(SB_SRC, emptyFC());
       map.addSource(FP_SRC, emptyFC());
@@ -117,7 +144,7 @@ const MapView = forwardRef(function MapView(
           "line-dasharray": [2, 2],
         },
       });
-      // FP_FILL is now mostly used as a click target + invalid-state warning tint.
+      // FP_FILL is mostly a click target + invalid-state warning tint.
       // The visual representation comes from the FP_IMG_LAYER (SVG floor plan).
       map.addLayer({
         id: FP_FILL,
@@ -152,7 +179,25 @@ const MapView = forwardRef(function MapView(
           "line-width": 2.5,
         },
       });
+    }
 
+    function onStyleLoad() {
+      ensureLayers();
+      styleReadyRef.current = true;
+      // Re-sync feature data after a style swap (which clears sources)
+      syncSrc(map, LOT_SRC, lotFeatureRef.current);
+      syncSrc(map, FP_SRC, footprintFeatureRef.current);
+      // Note: setbackFeature isn't tracked in a ref; the SB_SRC effect
+      // re-syncs whenever its dep changes, which is sufficient.
+    }
+
+    map.on("style.load", onStyleLoad);
+
+    map.on("load", () => {
+      // Drag handlers are attached ONCE — they survive style changes
+      // because Mapbox layer-filtered events are map-level, not layer-bound.
+      ensureLayers();
+      styleReadyRef.current = true;
       attachDrag(map, "lot");
       attachDrag(map, "fp");
     });
@@ -165,8 +210,81 @@ const MapView = forwardRef(function MapView(
     };
   }, []);
 
+  // ------- Sync style when prop changes (track URL in a ref to avoid
+  // calling getStyle() before the style finished loading) -------
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const target = MAP_STYLES[mapStyle] || MAP_STYLES.satellite;
+    if (currentStyleUrlRef.current === target) return;
+    currentStyleUrlRef.current = target;
+    styleReadyRef.current = false;
+    currentImagePlanIdRef.current = null;
+    map.setStyle(target);
+  }, [mapStyle]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.easeTo({ pitch: is3D ? 55 : 0, duration: 500 });
+  }, [is3D]);
+
   // ------- Imperative API -------
   useImperativeHandle(ref, () => ({
+    resetNorth: () => {
+      const map = mapRef.current;
+      if (!map) return;
+      map.easeTo({ bearing: 0, pitch: 0, duration: 600 });
+    },
+    setBearing: (deg) => mapRef.current?.easeTo({ bearing: deg, duration: 400 }),
+    zoomIn: () => mapRef.current?.zoomIn({ duration: 250 }),
+    zoomOut: () => mapRef.current?.zoomOut({ duration: 250 }),
+    flyToLocation: (lng, lat, zoom = 19) =>
+      mapRef.current?.flyTo({ center: [lng, lat], zoom, speed: 1.4, essential: true }),
+    // Frame the footprint as tightly as possible — fitBounds with small padding
+    // so the home fills the visible area, capped at max zoom 22.
+    flyToFootprint: (padding = 50) => {
+      const map = mapRef.current;
+      const fp = footprintFeatureRef.current;
+      if (!map || !fp) return;
+      const ring = fp.geometry.coordinates[0];
+      let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity;
+      for (const [lng, lat] of ring) {
+        if (lng < minLng) minLng = lng;
+        if (lng > maxLng) maxLng = lng;
+        if (lat < minLat) minLat = lat;
+        if (lat > maxLat) maxLat = lat;
+      }
+      map.fitBounds(
+        [
+          [minLng, minLat],
+          [maxLng, maxLat],
+        ],
+        { padding, duration: 900, maxZoom: 22, essential: true }
+      );
+    },
+    // Fit the lot polygon into view with comfortable padding
+    fitToLot: (padding = 80) => {
+      const map = mapRef.current;
+      const lot = lotFeatureRef.current;
+      if (!map || !lot) return;
+      const ring = lot.geometry.coordinates[0];
+      let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity;
+      for (const [lng, lat] of ring) {
+        if (lng < minLng) minLng = lng;
+        if (lng > maxLng) maxLng = lng;
+        if (lat < minLat) minLat = lat;
+        if (lat > maxLat) maxLat = lat;
+      }
+      map.fitBounds(
+        [
+          [minLng, minLat],
+          [maxLng, maxLat],
+        ],
+        { padding, duration: 800, essential: true }
+      );
+    },
+    getMapInstance: () => mapRef.current,
     exportAsPng: async (filename = "site-plan.png") => {
       const map = mapRef.current;
       if (!map) return;
