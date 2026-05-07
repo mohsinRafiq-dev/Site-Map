@@ -1,24 +1,30 @@
 // Floating camera quick-action panel: one-click recenter on the home,
 // frame the entire lot, or jump back to the original address. Pinned
 // to the bottom-center of the map and only renders when relevant.
+//
+// Acts as a segmented control: the green "primary" highlight moves to
+// whichever action was clicked most recently — clicking "Frame lot"
+// removes the green from "Frame home" and applies it to "Frame lot".
 
 export default function CameraActions({
   hasFootprint,
   hasLot,
   hasLocation,
-  onFrameHome,
-  onFrameLot,
-  onRecenterAddress,
+  active,        // "home" | "lot" | "address" | null
+  onAction,      // (id) => void
 }) {
   if (!hasLocation) return null;
+
+  const cls = (id) => `cam-btn ${active === id ? "cam-btn-primary" : ""}`;
 
   return (
     <div className="cam-actions" role="toolbar" aria-label="Camera shortcuts">
       {hasFootprint && (
         <button
           type="button"
-          className="cam-btn cam-btn-primary"
-          onClick={onFrameHome}
+          className={cls("home")}
+          onClick={() => onAction("home")}
+          aria-pressed={active === "home"}
           title="Zoom in tight on the home"
         >
           <HomeIcon /> <span>Frame home</span>
@@ -27,8 +33,9 @@ export default function CameraActions({
       {hasLot && (
         <button
           type="button"
-          className="cam-btn"
-          onClick={onFrameLot}
+          className={cls("lot")}
+          onClick={() => onAction("lot")}
+          aria-pressed={active === "lot"}
           title="Fit the entire lot in view"
         >
           <LotIcon /> <span>Frame lot</span>
@@ -36,8 +43,9 @@ export default function CameraActions({
       )}
       <button
         type="button"
-        className="cam-btn"
-        onClick={onRecenterAddress}
+        className={cls("address")}
+        onClick={() => onAction("address")}
+        aria-pressed={active === "address"}
         title="Jump back to the address"
       >
         <PinIcon /> <span>Address</span>

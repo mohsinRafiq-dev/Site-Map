@@ -1,6 +1,7 @@
 import {
   useEffect,
   useRef,
+  useState,
   forwardRef,
   useImperativeHandle,
 } from "react";
@@ -56,6 +57,10 @@ const MapView = forwardRef(function MapView(
   const styleReadyRef = useRef(false);
   const currentImagePlanIdRef = useRef(null);
   const currentStyleUrlRef = useRef(null);
+  // Bumped every time the map's style finishes loading. Used as a dep
+  // for the floor-plan image overlay effect so that swapping styles
+  // (which clears all custom layers) reliably triggers a re-add.
+  const [styleEpoch, setStyleEpoch] = useState(0);
 
   // Stable refs to latest props for inside event listeners
   const lotFeatureRef = useRef(lotFeature);
@@ -187,8 +192,11 @@ const MapView = forwardRef(function MapView(
       // Re-sync feature data after a style swap (which clears sources)
       syncSrc(map, LOT_SRC, lotFeatureRef.current);
       syncSrc(map, FP_SRC, footprintFeatureRef.current);
-      // Note: setbackFeature isn't tracked in a ref; the SB_SRC effect
-      // re-syncs whenever its dep changes, which is sufficient.
+      // The floor-plan image overlay was destroyed by setStyle.
+      // Reset its cached id and bump the epoch so the overlay effect
+      // re-fires and re-adds the layer with the same coordinates.
+      currentImagePlanIdRef.current = null;
+      setStyleEpoch((e) => e + 1);
     }
 
     map.on("style.load", onStyleLoad);
@@ -400,15 +408,16 @@ const MapView = forwardRef(function MapView(
       markerRef.current.remove();
       markerRef.current = null;
     }
-    const el = document.createElement("div");
-    el.className = "pin-marker";
-    markerRef.current = new mapboxgl.Marker({ element: el, anchor: "bottom" })
+    // Use Mapbox's default red drop-pin SVG — it's the recognizable
+    // marker users expect from Google Maps / Mapbox.
+    markerRef.current = new mapboxgl.Marker({ color: "#ef4444", anchor: "bottom" })
       .setLngLat([location.lng, location.lat])
       .addTo(map);
 
     const fadeTimer = setTimeout(() => {
       if (markerRef.current) {
-        markerRef.current.getElement().classList.add("pin-marker-fading");
+        markerRef.current.getElement().style.transition = "opacity 0.4s ease";
+        markerRef.current.getElement().style.opacity = "0";
       }
     }, MARKER_HIDE_MS - 400);
 
@@ -515,7 +524,7 @@ const MapView = forwardRef(function MapView(
     } else {
       run();
     }
-  }, [floorPlan, footprintFeature, viewMode]);
+  }, [floorPlan, footprintFeature, viewMode, styleEpoch]);
 
   function syncWhenReady(srcId, feature) {
     const map = mapRef.current;

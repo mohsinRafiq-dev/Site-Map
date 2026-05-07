@@ -41,8 +41,15 @@ export default function App() {
   const [fullscreen, setFullscreen] = useState(false);
   const [showPlacementHint, setShowPlacementHint] = useState(false);
   const [pulseHome, setPulseHome] = useState(false);
+  // Increments every time a plan card is clicked — even if it's the same
+  // plan. This guarantees the auto-zoom effect re-fires (otherwise React
+  // bails on setFloorPlan(samePlan) and the user wouldn't see the zoom).
+  const [placementId, setPlacementId] = useState(0);
+  // Which CameraActions pill is currently "active" (green). Acts like a
+  // segmented control — the highlight moves to whichever button was
+  // clicked most recently.
+  const [activeCamAction, setActiveCamAction] = useState(null);
   const mapWrapperRef = useRef(null);
-  const lastZoomedPlanRef = useRef(null);
 
   // Track fullscreen state (browser may exit on Esc)
   useEffect(() => {
@@ -53,17 +60,19 @@ export default function App() {
     return () => document.removeEventListener("fullscreenchange", handleFsChange);
   }, []);
 
-  // Auto-zoom to the floor plan when it's first selected, and trigger the
-  // pulse + drag-hint UI flourishes. We track the last-zoomed plan id so
-  // that simply dragging the home around doesn't keep re-zooming.
+  // Auto-zoom + pulse + drag-hint every time the user clicks a floor plan
+  // card. We key off `placementId` (which always increments) instead of
+  // `floorPlan.id` so the zoom fires reliably even on a same-plan re-click.
+  // Dragging changes `footprint` but NOT `placementId`, so drags don't
+  // re-trigger the camera fly-in.
   useEffect(() => {
-    if (!floorPlan?.id || !footprint) return;
-    if (lastZoomedPlanRef.current === floorPlan.id) return;
-    lastZoomedPlanRef.current = floorPlan.id;
+    if (placementId === 0) return;
+    if (!floorPlan?.id) return;
 
     const flyTimer = setTimeout(() => {
       mapRef.current?.flyToFootprint(60);
     }, 240);
+    setActiveCamAction("home"); // camera is now framing the home
 
     setPulseHome(true);
     const pulseTimer = setTimeout(() => setPulseHome(false), 1800);
@@ -76,7 +85,20 @@ export default function App() {
       clearTimeout(pulseTimer);
       clearTimeout(hintTimer);
     };
-  }, [floorPlan?.id, footprint]);
+  }, [placementId]);
+
+  // Single handler for the bottom camera pill bar — moves the camera
+  // AND moves the green "active" highlight to that button.
+  function handleCamAction(id) {
+    setActiveCamAction(id);
+    if (id === "home") {
+      mapRef.current?.flyToFootprint(60);
+    } else if (id === "lot") {
+      mapRef.current?.fitToLot(80);
+    } else if (id === "address" && location) {
+      mapRef.current?.flyToLocation(location.lng, location.lat, 19);
+    }
+  }
 
   function toggleFullscreen() {
     if (!document.fullscreenElement) {
@@ -181,6 +203,9 @@ export default function App() {
     if (lot.center) {
       setFootprint({ center: lot.center, rotation: lot.rotation });
     }
+    // Always increment so the auto-zoom effect re-fires, even when the
+    // user clicks the same card twice.
+    setPlacementId((p) => p + 1);
   }
 
   // Drag the home. If snap-to-setbacks is on, clamp the position so the
@@ -462,11 +487,8 @@ export default function App() {
             hasFootprint={!!footprintFeature}
             hasLot={!!lotFeature}
             hasLocation={!!location}
-            onFrameHome={() => mapRef.current?.flyToFootprint(60)}
-            onFrameLot={() => mapRef.current?.fitToLot(80)}
-            onRecenterAddress={() =>
-              location && mapRef.current?.flyToLocation(location.lng, location.lat, 19)
-            }
+            active={activeCamAction}
+            onAction={handleCamAction}
           />
 
           {pulseHome && footprintFeature && (
