@@ -16,6 +16,55 @@
 
 import absoluteFloorPlanImage from "../Floor Plans/Floor Plan Absolute.jpg";
 
+// --- Joshua's batch (review samples, 2026-05-20) ---
+import sample_1055 from "../../Sample Floor Plans/1055_17x35.png";
+import sample_1056 from "../../Sample Floor Plans/1056_17x35.png";
+import sample_1057 from "../../Sample Floor Plans/1057_31x40.png";
+import sample_1058 from "../../Sample Floor Plans/1058_31x40.png";
+import sample_1059 from "../../Sample Floor Plans/1059_44x46.png";
+import sample_1060 from "../../Sample Floor Plans/1060_44x46.png";
+import sample_5712 from "../../Sample Floor Plans/5712_23x25.png";
+import sample_5713 from "../../Sample Floor Plans/5713_24x32.png";
+import sample_5714 from "../../Sample Floor Plans/5714_35x28.png";
+import sample_5715 from "../../Sample Floor Plans/5715_37x27.png";
+
+function sampleEntry(id, image, width, depth, label) {
+  return {
+    id: `sample-${id}`,
+    series: "Joshua Batch",
+    name: `Sample ${id}${label ? ` (${label})` : ""}`,
+    tagline: `${width}' × ${depth}' — review sample`,
+    width,
+    depth,
+    sqft: width * depth,
+    image,
+    keySpecs: {
+      livableSqft: width * depth,
+      bedrooms: "-",
+      bathrooms: "-",
+      floors: 1,
+      garage: 0,
+      studs: "-",
+    },
+    description: `Joshua's sample ${id}. Declared ${width} ft (W) × ${depth} ft (D).`,
+    features: [],
+    layout: { rooms: [], decks: [], doors: [] },
+  };
+}
+
+export const SAMPLE_PLANS = [
+  sampleEntry("1055", sample_1055, 17, 35, "open corners"),
+  sampleEntry("1056", sample_1056, 17, 35, "closed corners"),
+  sampleEntry("1057", sample_1057, 31, 40, "L clean"),
+  sampleEntry("1058", sample_1058, 31, 40, "L floating walls"),
+  sampleEntry("1059", sample_1059, 44, 46, "L A"),
+  sampleEntry("1060", sample_1060, 44, 46, "L B"),
+  sampleEntry("5712", sample_5712, 23, 25),
+  sampleEntry("5713", sample_5713, 24, 32, "high-res"),
+  sampleEntry("5714", sample_5714, 35, 28),
+  sampleEntry("5715", sample_5715, 37, 27, "aspect mismatch"),
+];
+
 export const FLOOR_PLANS = [
   {
     id: "absolute-30x18",
@@ -161,6 +210,7 @@ export const FLOOR_PLANS = [
       ],
     },
   },
+  ...SAMPLE_PLANS,
 ];
 
 export function getFloorPlanById(id) {

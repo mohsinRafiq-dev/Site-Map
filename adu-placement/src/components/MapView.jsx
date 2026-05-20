@@ -505,7 +505,7 @@ const MapView = forwardRef(function MapView(
               type: "raster",
               source: FP_IMG_SRC,
               paint: {
-                "raster-opacity": 0.95,
+                "raster-opacity": 1,
                 "raster-fade-duration": 0,
                 "raster-resampling": "linear",
               },
