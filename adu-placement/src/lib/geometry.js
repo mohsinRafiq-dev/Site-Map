@@ -211,9 +211,28 @@ export function clampFootprintToSetbacks({
     fpRotInLot
   );
 
-  // Footprint won't fit at this rotation
+  // Plan is bigger than the buildable area in some axis. Fall back to
+  // clamping inside the LOT itself so the home at least stays on the
+  // property — the validation badge will still flag "outside buildable
+  // area" which is the user-visible signal that they need to reduce
+  // setbacks or pick a smaller plan.
   if (fHalfX > bHalfX || fHalfY > bHalfY) {
-    return { center: proposedCenter, snapped: null };
+    const lotHalfX = lot.width / 2;
+    const lotHalfY = lot.length / 2;
+    // If the plan is bigger than the lot itself, we genuinely can't help —
+    // return the proposed center untouched.
+    if (fHalfX > lotHalfX || fHalfY > lotHalfY) {
+      return { center: proposedCenter, snapped: null };
+    }
+    const lminX = -lotHalfX + fHalfX;
+    const lmaxX = lotHalfX - fHalfX;
+    const lminY = -lotHalfY + fHalfY;
+    const lmaxY = lotHalfY - fHalfY;
+    const lLocal = worldToLotLocalFeet(proposedCenter, lot.center, lot.rotation);
+    const cx = Math.max(lminX, Math.min(lmaxX, lLocal[0]));
+    const cy = Math.max(lminY, Math.min(lmaxY, lLocal[1]));
+    const lWorld = lotLocalFeetToWorld([cx, cy], lot.center, lot.rotation);
+    return { center: lWorld, snapped: null };
   }
 
   const minX = bcx - bHalfX + fHalfX;
@@ -298,5 +317,11 @@ export function footprintFitMargin({
     const m = Math.min(x - minX, maxX - x, y - minY, maxY - y);
     if (m < minMargin) minMargin = m;
   }
+  // Floating-point precision from world ↔ lot-local round trips can leave
+  // a corner that's been snapped exactly ON the setback line reading as
+  // -0.0003 ft instead of 0. Treat anything within 1 cm of the line as
+  // exactly on it — touching the setback is a valid placement in real
+  // construction, not "outside by 0.0 ft".
+  if (minMargin < 0 && minMargin > -0.033) minMargin = 0;
   return minMargin;
 }

@@ -293,23 +293,96 @@ const MapView = forwardRef(function MapView(
       );
     },
     getMapInstance: () => mapRef.current,
-    exportAsPng: async (filename = "site-plan.png") => {
+    exportAsPng: async (input = {}) => {
       const map = mapRef.current;
       if (!map) return;
+      // Accept either a plain filename string (legacy) or a context object
+      const opts =
+        typeof input === "string" ? { filename: input } : input;
+      const {
+        filename = "adu-site-plan.png",
+        title = "Site Plan",
+        address = "",
+        lot,
+        setbacks,
+        floorPlan,
+        footprint,
+        fitMargin,
+        isValid,
+        scale = 2,
+        includeInfoPanel = true,
+        includeScaleBar = true,
+        includeNorthArrow = true,
+        includeLegend = true,
+      } = opts;
+
       await new Promise((resolve) => {
         map.once("idle", resolve);
         map.triggerRepaint();
       });
       const sourceCanvas = map.getCanvas();
-      const w = sourceCanvas.width;
-      const h = sourceCanvas.height;
+      const mapW = sourceCanvas.width;
+      const mapH = sourceCanvas.height;
+
+      // Render at requested upscale factor for crisper print output.
+      const r = Math.max(1, Math.min(3, scale));
+      const PANEL_W = includeInfoPanel ? Math.round(320 * r) : 0;
+      const HEADER_H = Math.round(72 * r);
+      const FOOTER_H = Math.round(36 * r);
+      const outW = mapW + PANEL_W;
+      const outH = HEADER_H + mapH + FOOTER_H;
+
       const out = document.createElement("canvas");
-      out.width = w;
-      out.height = h;
+      out.width = outW;
+      out.height = outH;
       const ctx = out.getContext("2d");
-      ctx.drawImage(sourceCanvas, 0, 0);
-      drawNorthArrow(ctx, w, h);
-      drawTitleBar(ctx, w);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+
+      // Page background — soft warm white so the map sits nicely
+      ctx.fillStyle = "#f6f6f3";
+      ctx.fillRect(0, 0, outW, outH);
+
+      // Map area
+      ctx.drawImage(sourceCanvas, 0, HEADER_H, mapW, mapH);
+
+      // Compute meters-per-pixel at the map's current center (for the scale bar)
+      const center = map.getCenter();
+      const mPerPx =
+        (40075016.686 * Math.cos((center.lat * Math.PI) / 180)) /
+        Math.pow(2, map.getZoom() + 8);
+
+      // Draw all the chrome
+      drawHeader(ctx, outW, HEADER_H, { title, address, r });
+      if (includeInfoPanel) {
+        drawInfoPanel(ctx, mapW, HEADER_H, PANEL_W, mapH, {
+          lot,
+          setbacks,
+          floorPlan,
+          footprint,
+          fitMargin,
+          isValid,
+          address,
+          mapCenter: center,
+          r,
+          includeLegend,
+        });
+      }
+      if (includeNorthArrow) {
+        drawNorthArrow2(
+          ctx,
+          HEADER_H,
+          mapW,
+          mapH,
+          map.getBearing(),
+          r
+        );
+      }
+      if (includeScaleBar) {
+        drawScaleBar(ctx, HEADER_H, mapH, mPerPx, r);
+      }
+      drawFooter(ctx, outW, outH, FOOTER_H, { mapCenter: center, r });
+
       const dataUrl = out.toDataURL("image/png");
       const a = document.createElement("a");
       a.href = dataUrl;
@@ -714,43 +787,384 @@ function compassBearing(a, b) {
   return ((θ * 180) / Math.PI + 360) % 360;
 }
 
-function drawNorthArrow(ctx, w, h) {
-  const cx = w - 70;
-  const cy = h - 90;
+/* ---------- Site-plan export drawing helpers ---------- */
+
+function drawHeader(ctx, outW, h, { title, address, r }) {
   ctx.save();
-  ctx.fillStyle = "rgba(255,255,255,0.95)";
-  ctx.strokeStyle = "#0f172a";
-  ctx.lineWidth = 2;
+  // Brand green bar
+  const grad = ctx.createLinearGradient(0, 0, outW, 0);
+  grad.addColorStop(0, "#1f3a1c");
+  grad.addColorStop(1, "#2c5a28");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, outW, h);
+
+  // Brand mark (small house icon)
+  const ix = 18 * r;
+  const iy = h / 2;
+  ctx.fillStyle = "#ffffff";
   ctx.beginPath();
-  ctx.arc(cx, cy, 32, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
-  ctx.fillStyle = "#0f172a";
-  ctx.beginPath();
-  ctx.moveTo(cx, cy - 28);
-  ctx.lineTo(cx - 12, cy + 16);
-  ctx.lineTo(cx, cy + 8);
-  ctx.lineTo(cx + 12, cy + 16);
+  const s = 13 * r;
+  ctx.moveTo(ix, iy);
+  ctx.lineTo(ix + s, iy - s);
+  ctx.lineTo(ix + 2 * s, iy);
+  ctx.lineTo(ix + 2 * s, iy + s);
+  ctx.lineTo(ix + 1.4 * s, iy + s);
+  ctx.lineTo(ix + 1.4 * s, iy + 0.2 * s);
+  ctx.lineTo(ix + 0.6 * s, iy + 0.2 * s);
+  ctx.lineTo(ix + 0.6 * s, iy + s);
+  ctx.lineTo(ix, iy + s);
   ctx.closePath();
   ctx.fill();
-  ctx.font = "bold 16px system-ui, sans-serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText("N", cx, cy + 24);
+
+  // Title text
+  const textX = ix + 2 * s + 14 * r;
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `700 ${22 * r}px system-ui, -apple-system, sans-serif`;
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText("FrameUpNow", textX, h / 2 - 4 * r);
+  ctx.font = `500 ${12 * r}px system-ui, -apple-system, sans-serif`;
+  ctx.fillStyle = "rgba(220, 232, 210, 0.85)";
+  ctx.fillText(
+    `${title}${address ? " · " + address : ""}`,
+    textX,
+    h / 2 + 14 * r
+  );
+
+  // Right-side badge: date
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+  ctx.font = `600 ${12 * r}px system-ui, -apple-system, sans-serif`;
+  ctx.textAlign = "right";
+  ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
+  ctx.fillText(dateStr, outW - 20 * r, h / 2 + 4 * r);
   ctx.restore();
 }
 
-function drawTitleBar(ctx, w) {
+function drawInfoPanel(
+  ctx,
+  mapW,
+  headerH,
+  panelW,
+  mapH,
+  {
+    lot,
+    setbacks,
+    floorPlan,
+    footprint,
+    fitMargin,
+    isValid,
+    address,
+    mapCenter,
+    r,
+    includeLegend,
+  }
+) {
   ctx.save();
-  ctx.fillStyle = "rgba(31, 42, 24, 0.92)";
-  ctx.fillRect(0, 0, w, 56);
+  // Panel background
   ctx.fillStyle = "#ffffff";
-  ctx.font = "600 22px system-ui, sans-serif";
-  ctx.textBaseline = "middle";
-  ctx.fillText("My Site Plan — FrameUpNow", 24, 28);
-  ctx.font = "400 13px system-ui, sans-serif";
-  ctx.fillStyle = "#cdd9c0";
-  const stamp = new Date().toLocaleString();
-  ctx.fillText(`Generated ${stamp}`, 24, 46);
+  ctx.fillRect(mapW, headerH, panelW, mapH);
+  // Left divider
+  ctx.fillStyle = "rgba(31, 58, 28, 0.12)";
+  ctx.fillRect(mapW, headerH, 1, mapH);
+
+  const px = mapW + 24 * r;
+  let py = headerH + 28 * r;
+
+  const sectionTitle = (text) => {
+    ctx.font = `800 ${10 * r}px system-ui, sans-serif`;
+    ctx.fillStyle = "#3f7a3a";
+    ctx.textAlign = "left";
+    ctx.fillText(text.toUpperCase(), px, py);
+    py += 6 * r;
+    // Underline accent
+    ctx.fillStyle = "rgba(63, 122, 58, 0.25)";
+    ctx.fillRect(px, py, 24 * r, 2 * r);
+    py += 14 * r;
+  };
+
+  const row = (label, value) => {
+    ctx.font = `400 ${11 * r}px system-ui, sans-serif`;
+    ctx.fillStyle = "#64748b";
+    ctx.fillText(label, px, py);
+    ctx.font = `700 ${13 * r}px system-ui, sans-serif`;
+    ctx.fillStyle = "#0f172a";
+    ctx.textAlign = "right";
+    ctx.fillText(value, mapW + panelW - 24 * r, py);
+    ctx.textAlign = "left";
+    py += 20 * r;
+  };
+
+  const fmt = (n) =>
+    Number.isFinite(n) ? Math.round(n).toLocaleString("en-US") : "—";
+
+  // PROPERTY section
+  sectionTitle("Property");
+  if (address) {
+    ctx.font = `500 ${11 * r}px system-ui, sans-serif`;
+    ctx.fillStyle = "#0f172a";
+    ctx.textAlign = "left";
+    wrapText(ctx, address, px, py, panelW - 48 * r, 14 * r);
+    py += 30 * r;
+  }
+  if (mapCenter) {
+    row(
+      "Coordinates",
+      `${mapCenter.lat.toFixed(5)}, ${mapCenter.lng.toFixed(5)}`
+    );
+  }
+  py += 8 * r;
+
+  // LOT section
+  if (lot && Number.isFinite(lot.width) && Number.isFinite(lot.length)) {
+    sectionTitle("Lot");
+    const lotSqFt = lot.width * lot.length;
+    row("Dimensions", `${lot.width}' × ${lot.length}'`);
+    row("Area", `${fmt(lotSqFt)} sq ft`);
+    row("Acres", `${(lotSqFt / 43560).toFixed(3)}`);
+    py += 8 * r;
+  }
+
+  // SETBACKS section
+  if (setbacks) {
+    sectionTitle("Setbacks");
+    row("Front / Back", `${setbacks.front}' / ${setbacks.back}'`);
+    row("Left / Right", `${setbacks.left}' / ${setbacks.right}'`);
+    if (lot) {
+      const bW = lot.width - setbacks.left - setbacks.right;
+      const bD = lot.length - setbacks.front - setbacks.back;
+      row("Buildable", `${bW}' × ${bD}'  (${fmt(bW * bD)} sf)`);
+    }
+    py += 8 * r;
+  }
+
+  // PLAN section
+  if (floorPlan) {
+    sectionTitle("Floor Plan");
+    if (floorPlan.series) row("Collection", floorPlan.series);
+    row("Name", floorPlan.name || "—");
+    row("Footprint", `${floorPlan.width}' × ${floorPlan.depth}'`);
+    row(
+      "Area",
+      `${fmt(floorPlan.sqft || floorPlan.width * floorPlan.depth)} sq ft`
+    );
+    if (floorPlan.keySpecs?.bedrooms && floorPlan.keySpecs.bedrooms !== "—") {
+      row(
+        "Bed / Bath",
+        `${floorPlan.keySpecs.bedrooms} bd / ${floorPlan.keySpecs.bathrooms} ba`
+      );
+    }
+    if (footprint && Number.isFinite(footprint.rotation)) {
+      row("Rotation", `${Math.round(footprint.rotation)}°`);
+    }
+    if (lot && floorPlan) {
+      const cov =
+        (floorPlan.width * floorPlan.depth) / (lot.width * lot.length);
+      row("Lot coverage", `${(cov * 100).toFixed(1)}%`);
+    }
+    py += 8 * r;
+  }
+
+  // PLACEMENT section
+  if (fitMargin != null) {
+    sectionTitle("Placement");
+    const status = isValid
+      ? fitMargin >= 1
+        ? "Compliant · room to spare"
+        : "Compliant · tight fit"
+      : "Outside setback";
+    row("Status", status);
+    row(
+      "Clearance",
+      fitMargin < 0
+        ? `−${Math.abs(fitMargin).toFixed(1)} ft (over)`
+        : `${fitMargin.toFixed(1)} ft`
+    );
+    // Color dot for status
+    const dotX = px;
+    const dotY = py - 56 * r;
+    ctx.beginPath();
+    ctx.fillStyle = isValid ? "#3f7a3a" : "#c0392b";
+    ctx.arc(dotX + 64 * r, dotY, 4 * r, 0, Math.PI * 2);
+    ctx.fill();
+    py += 8 * r;
+  }
+
+  // LEGEND
+  if (includeLegend) {
+    sectionTitle("Legend");
+    const drawSwatch = (color, label, dashed = false) => {
+      ctx.fillStyle = color;
+      if (dashed) {
+        // Draw dashed bar
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2 * r;
+        ctx.setLineDash([4 * r, 3 * r]);
+        ctx.beginPath();
+        ctx.moveTo(px, py - 4 * r);
+        ctx.lineTo(px + 18 * r, py - 4 * r);
+        ctx.stroke();
+        ctx.restore();
+      } else {
+        ctx.fillRect(px, py - 9 * r, 18 * r, 8 * r);
+      }
+      ctx.font = `500 ${11 * r}px system-ui, sans-serif`;
+      ctx.fillStyle = "#334155";
+      ctx.textAlign = "left";
+      ctx.fillText(label, px + 26 * r, py - 2 * r);
+      py += 18 * r;
+    };
+    drawSwatch("#3b82f6", "Lot boundary");
+    drawSwatch("#facc15", "Buildable area (setbacks)", true);
+    drawSwatch(isValid ? "#3f7a3a" : "#c0392b", "Your home");
+  }
+
   ctx.restore();
+}
+
+function drawNorthArrow2(ctx, headerH, mapW, mapH, bearingDeg, r) {
+  const cx = mapW - 56 * r;
+  const cy = headerH + 56 * r;
+  ctx.save();
+  // Background disc
+  ctx.fillStyle = "rgba(255, 255, 255, 0.97)";
+  ctx.strokeStyle = "rgba(31, 58, 28, 0.5)";
+  ctx.lineWidth = 1.5 * r;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 30 * r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  // Rotate to compensate for map bearing — North needle always points up
+  ctx.translate(cx, cy);
+  ctx.rotate((-bearingDeg * Math.PI) / 180);
+  // North arrow body (red top, white bottom — classic compass look)
+  ctx.beginPath();
+  ctx.fillStyle = "#c0392b";
+  ctx.moveTo(0, -22 * r);
+  ctx.lineTo(-7 * r, 0);
+  ctx.lineTo(0, -3 * r);
+  ctx.lineTo(7 * r, 0);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.fillStyle = "#475569";
+  ctx.moveTo(0, 22 * r);
+  ctx.lineTo(-7 * r, 0);
+  ctx.lineTo(0, 3 * r);
+  ctx.lineTo(7 * r, 0);
+  ctx.closePath();
+  ctx.fill();
+  // N label
+  ctx.rotate((bearingDeg * Math.PI) / 180); // unrotate so label is upright
+  ctx.fillStyle = "#0f172a";
+  ctx.font = `800 ${13 * r}px system-ui, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("N", 0, -34 * r);
+  ctx.restore();
+}
+
+function drawScaleBar(ctx, headerH, mapH, mPerPx, r) {
+  // Target a ~140 px wide bar at the export scale, rounded to a nice
+  // feet number (10, 20, 25, 50, 100, etc.)
+  const targetPx = 140 * r;
+  const ftPerPx = mPerPx / 0.3048;
+  const targetFt = targetPx * ftPerPx;
+  const niceFt = niceRoundNumber(targetFt);
+  const barPx = niceFt / ftPerPx;
+
+  const x = 20 * r;
+  const y = headerH + mapH - 36 * r;
+
+  ctx.save();
+  // White backing pill so it's readable on any map color
+  ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+  ctx.strokeStyle = "rgba(31, 58, 28, 0.3)";
+  ctx.lineWidth = 1 * r;
+  roundRect(ctx, x - 8 * r, y - 8 * r, barPx + 16 * r, 28 * r, 6 * r);
+  ctx.fill();
+  ctx.stroke();
+
+  // Two-tone scale bar
+  ctx.fillStyle = "#0f172a";
+  ctx.fillRect(x, y, barPx / 2, 8 * r);
+  ctx.fillStyle = "#ffffff";
+  ctx.strokeStyle = "#0f172a";
+  ctx.lineWidth = 1 * r;
+  ctx.fillRect(x + barPx / 2, y, barPx / 2, 8 * r);
+  ctx.strokeRect(x + barPx / 2, y, barPx / 2, 8 * r);
+
+  ctx.fillStyle = "#0f172a";
+  ctx.font = `700 ${10 * r}px system-ui, sans-serif`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText("0", x, y + 20 * r);
+  ctx.textAlign = "right";
+  ctx.fillText(`${niceFt} ft`, x + barPx, y + 20 * r);
+  ctx.restore();
+}
+
+function drawFooter(ctx, outW, outH, footerH, { mapCenter, r }) {
+  ctx.save();
+  ctx.fillStyle = "#1f3a1c";
+  ctx.fillRect(0, outH - footerH, outW, footerH);
+  ctx.fillStyle = "rgba(220, 232, 210, 0.85)";
+  ctx.font = `500 ${10 * r}px system-ui, sans-serif`;
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "left";
+  const stamp = new Date().toLocaleString();
+  ctx.fillText(`Generated ${stamp}`, 18 * r, outH - footerH / 2);
+  ctx.textAlign = "right";
+  ctx.fillText(
+    "frameupnow.com  ·  Not for construction use",
+    outW - 18 * r,
+    outH - footerH / 2
+  );
+  ctx.restore();
+}
+
+function niceRoundNumber(n) {
+  const candidates = [
+    5, 10, 15, 20, 25, 30, 40, 50, 75, 100, 150, 200, 250, 300, 500, 750,
+    1000,
+  ];
+  for (const c of candidates) {
+    if (c >= n * 0.6 && c <= n * 1.2) return c;
+  }
+  // Fallback — round to nearest 10
+  return Math.max(5, Math.round(n / 10) * 10);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  const words = text.split(" ");
+  let line = "";
+  for (const word of words) {
+    const test = line + word + " ";
+    if (ctx.measureText(test).width > maxWidth && line !== "") {
+      ctx.fillText(line.trim(), x, y);
+      line = word + " ";
+      y += lineHeight;
+    } else {
+      line = test;
+    }
+  }
+  ctx.fillText(line.trim(), x, y);
 }

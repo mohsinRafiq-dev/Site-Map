@@ -2299,6 +2299,490 @@ body {
 }
 
 /* ================================================================
+   EXPORT FEATURE — prominent button + perks list + dialog
+   ================================================================ */
+
+.btn-export-prominent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #fff;
+  background: linear-gradient(135deg, #2c5a28 0%, #3f7a3a 100%);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow:
+    0 6px 18px rgba(63, 122, 58, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  transition: transform 0.12s, box-shadow 0.18s, filter 0.15s;
+}
+.btn-export-prominent:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  box-shadow:
+    0 10px 24px rgba(63, 122, 58, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+.btn-export-prominent:active:not(:disabled) {
+  transform: translateY(0);
+}
+.btn-export-prominent:disabled {
+  background: #d4d7d0;
+  color: #94a3b8;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.btn-export-prominent svg {
+  flex-shrink: 0;
+}
+
+.export-perks {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  background: #f6f8f3;
+  border: 1px solid rgba(63, 122, 58, 0.18);
+  border-radius: 10px;
+  display: grid;
+  gap: 6px;
+}
+.export-perks li {
+  font-size: 12.5px;
+  color: #334155;
+  font-weight: 500;
+}
+
+/* --- Modal dialog --- */
+.export-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 28, 0.55);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: exportFadeIn 0.18s ease;
+}
+@keyframes exportFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.export-dialog {
+  width: 100%;
+  max-width: 520px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow:
+    0 24px 60px rgba(15, 23, 28, 0.35),
+    0 0 0 1px rgba(31, 58, 28, 0.08);
+  display: flex;
+  flex-direction: column;
+  animation: exportSlideUp 0.22s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+@keyframes exportSlideUp {
+  from { transform: translateY(12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.export-dialog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px 14px;
+  border-bottom: 1px solid #ecefe8;
+}
+.export-dialog-eyebrow {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #3f7a3a;
+  margin-bottom: 4px;
+}
+.export-dialog-head h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+}
+.export-dialog-sub {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  color: #64748b;
+  line-height: 1.45;
+  max-width: 380px;
+}
+.export-dialog-close {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  color: #94a3b8;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.export-dialog-close:hover {
+  background: #f1f5f0;
+  color: #0f172a;
+}
+
+.export-dialog-body {
+  padding: 18px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.export-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.export-field-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+.export-field input[type="text"] {
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 13.5px;
+  color: #0f172a;
+  background: #f6f8f3;
+  border: 1.5px solid #e1e7dc;
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+.export-field input[type="text"]:focus {
+  border-color: #3f7a3a;
+  background: #fff;
+}
+
+.export-quality-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.export-quality {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1.5px solid #e1e7dc;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.export-quality:hover { border-color: #94c08f; }
+.export-quality.active {
+  border-color: #3f7a3a;
+  background: #f1f7ee;
+}
+.export-quality input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.export-quality-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.export-quality-hint {
+  font-size: 10.5px;
+  color: #64748b;
+  font-weight: 500;
+}
+.export-quality-tag {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  background: #3f7a3a;
+  color: #fff;
+  border-radius: 999px;
+}
+
+.export-toggle-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.export-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1.5px solid #e1e7dc;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.export-toggle:hover { border-color: #94c08f; }
+.export-toggle.active {
+  border-color: #3f7a3a;
+  background: #f1f7ee;
+}
+.export-toggle input {
+  margin-top: 2px;
+  accent-color: #3f7a3a;
+  flex-shrink: 0;
+}
+.export-toggle-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.export-toggle-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #0f172a;
+}
+.export-toggle-hint {
+  font-size: 10.5px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.export-dialog-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 24px 20px;
+  border-top: 1px solid #ecefe8;
+}
+.export-dialog-foot .btn {
+  min-width: 110px;
+}
+.export-dialog-foot .btn-accent {
+  background: linear-gradient(135deg, #2c5a28 0%, #3f7a3a 100%);
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.export-dialog-foot .btn-ghost {
+  background: transparent;
+  color: #64748b;
+  border: 1.5px solid #e1e7dc;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.export-dialog-foot .btn-ghost:hover { color: #0f172a; border-color: #cbd5be; }
+
+@media (max-width: 640px) {
+  .export-quality-row { grid-template-columns: 1fr; }
+  .export-toggle-grid { grid-template-columns: 1fr; }
+}
+
+/* ================================================================
+   STEP NAVIGATOR — sticky mini-progress at top of sidebar
+   ================================================================ */
+.step-nav {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 12px 14px;
+  margin: -16px -16px 12px;
+  background: rgba(246, 246, 243, 0.92);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(31, 58, 28, 0.08);
+}
+.step-nav-dot {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 2px 2px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-muted, #64748b);
+  transition: color 0.15s;
+}
+.step-nav-dot:hover:not(:disabled) { color: var(--green-800, #2c5a28); }
+.step-nav-dot:disabled, .step-nav-dot.locked {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.step-nav-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #e1e7dc;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  transition: background 0.18s, color 0.18s, transform 0.12s;
+}
+.step-nav-dot.done .step-nav-num {
+  background: var(--green-700, #3f7a3a);
+  color: #fff;
+}
+.step-nav-dot.active .step-nav-num {
+  background: var(--green-800, #2c5a28);
+  color: #fff;
+  transform: scale(1.12);
+  box-shadow: 0 0 0 4px rgba(63, 122, 58, 0.18);
+}
+.step-nav-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.step-nav-dot.active .step-nav-label { color: var(--green-800, #2c5a28); }
+.step-nav-dot.done .step-nav-label { color: var(--green-700, #3f7a3a); }
+.step-nav-bar {
+  position: absolute;
+  top: 14px;
+  left: 60%;
+  width: 80%;
+  height: 2px;
+  background: #e1e7dc;
+  z-index: -1;
+}
+.step-nav-dot.done .step-nav-bar { background: var(--green-700, #3f7a3a); }
+
+/* ================================================================
+   EXPORT FAB — floating action button on the map
+   ================================================================ */
+.export-fab {
+  position: absolute;
+  bottom: 56px;
+  right: 16px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px 10px 14px;
+  border: none;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #2c5a28 0%, #3f7a3a 100%);
+  color: #fff;
+  cursor: pointer;
+  box-shadow:
+    0 10px 28px rgba(31, 58, 28, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+  transform: translateY(0);
+  animation: fabSlideIn 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition: transform 0.18s, box-shadow 0.18s, filter 0.15s;
+}
+.export-fab:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+  box-shadow:
+    0 14px 36px rgba(31, 58, 28, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+.export-fab:active {
+  transform: translateY(0);
+}
+.export-fab-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.18);
+  flex-shrink: 0;
+}
+.export-fab-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  text-align: left;
+}
+.export-fab-label {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+.export-fab-sub {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(220, 232, 210, 0.88);
+}
+.export-fab-shine {
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 80%;
+  height: 100%;
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.18) 50%,
+    transparent 70%
+  );
+  transform: skewX(-20deg);
+  animation: fabShine 3.2s ease-in-out 0.6s infinite;
+}
+@keyframes fabSlideIn {
+  from { transform: translateY(20px) scale(0.92); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+@keyframes fabShine {
+  0% { left: -120%; }
+  60%, 100% { left: 120%; }
+}
+@media (max-width: 1100px) {
+  .export-fab { bottom: 56px; right: 12px; padding: 8px 14px 8px 10px; }
+  .export-fab-icon { width: 32px; height: 32px; }
+  .export-fab-label { font-size: 12px; }
+}
+@media (max-width: 720px) {
+  .export-fab-body { display: none; }
+  .export-fab { padding: 10px; border-radius: 999px; }
+  .export-fab-icon { width: 24px; height: 24px; background: transparent; }
+}
+
+/* ================================================================
    MAP OVERLAY LAYOUT — final pass
    Keep the center clear so the floor plan is never blocked by chrome.
    Information panels live on the LEFT, controls on the RIGHT.
