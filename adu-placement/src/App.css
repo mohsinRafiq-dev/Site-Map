@@ -577,6 +577,64 @@ body {
    ---------------------------------------------------------------- */
 .floor-plan-picker { display: flex; flex-direction: column; gap: 16px; }
 
+/* Jurisdiction filter pill bar — horizontally scrollable so 11+ jurisdictions
+   stay browseable without wrapping into a tall stack. */
+.fp-filter-bar {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding: 2px 0 8px;
+  margin: 0 -2px;
+  border-bottom: 1px solid var(--border);
+}
+.fp-filter-bar::-webkit-scrollbar { height: 6px; }
+.fp-filter-bar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.fp-filter-pill {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.fp-filter-pill:hover:not(:disabled) {
+  border-color: var(--green-700, #3f7a3a);
+  color: var(--green-800, #2c5a28);
+}
+.fp-filter-pill.active {
+  background: var(--green-800, #2c5a28);
+  border-color: var(--green-800, #2c5a28);
+  color: #fff;
+}
+.fp-filter-pill.active .fp-filter-count {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+.fp-filter-pill:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.fp-filter-count {
+  display: inline-block;
+  min-width: 18px;
+  padding: 1px 6px;
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  background: var(--border);
+  color: var(--text-muted, #64748b);
+  border-radius: 999px;
+}
+
 .fp-gallery {
   display: grid;
   grid-template-columns: 1fr;
@@ -2238,4 +2296,98 @@ body {
     transform: scale(14);
     opacity: 0;
   }
+}
+
+/* ================================================================
+   MAP OVERLAY LAYOUT — final pass
+   Keep the center clear so the floor plan is never blocked by chrome.
+   Information panels live on the LEFT, controls on the RIGHT.
+   ================================================================ */
+
+/* LotInfoCard moves from top-center → top-left, becomes a compact card */
+.lot-info-card {
+  top: 14px;
+  left: 14px;
+  transform: none;
+  min-width: 0;
+  max-width: 320px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  box-shadow:
+    0 6px 18px rgba(31, 58, 28, 0.18),
+    inset 0 0 0 1px rgba(31, 58, 28, 0.08);
+}
+.lot-info-grid {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 14px;
+}
+.lot-info-card .lot-stat-value { font-size: 13.5px; }
+.lot-info-card .lot-stat-sub { font-size: 10px; }
+.lot-info-card .lot-stat:not(:last-child)::after { display: none; }
+.lot-info-card .lot-stat { padding-right: 0; }
+
+/* CameraActions stays as a horizontal pill bar at the bottom-center, but
+   sits lower (closer to the map edge) so it doesn't crowd the floor plan. */
+.cam-actions {
+  bottom: 10px;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  flex-direction: row;
+  padding: 5px;
+  gap: 4px;
+  border-radius: 999px;
+}
+.cam-btn {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  justify-content: center;
+}
+
+/* View Toggle: keep centered at the top, no longer needs to push down for LotInfoCard */
+.lot-info-card ~ .view-toggle { top: 18px; }
+
+/* Legend: tuck under MapControls on the right (compass + controls span y ~16-300px,
+   so legend at 320 sits below them and above the CameraActions). */
+.legend {
+  top: 320px;
+  bottom: auto;
+  left: auto;
+  right: 14px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 11.5px;
+}
+.legend h4 { font-size: 10px; margin-bottom: 6px; }
+.legend-row { font-size: 11.5px; padding: 2px 0; }
+/* Override the older rule that moved legend to bottom-right when plan-float is shown */
+.plan-float ~ .legend {
+  top: 320px;
+  bottom: auto;
+  right: 14px;
+  left: auto;
+}
+
+/* PlanFloatCard slightly more compact, stays at bottom-left */
+.plan-float {
+  bottom: 22px;
+  left: 14px;
+  min-width: 250px;
+  padding: 12px 14px;
+  border-radius: 14px;
+}
+.plan-float-stats { gap: 6px; }
+.plan-float-stat { padding: 5px 3px; }
+
+/* Mobile / narrow widths */
+@media (max-width: 1100px) {
+  .cam-actions { bottom: 10px; }
+  .legend { top: auto; bottom: 64px; right: 14px; }
+  .plan-float ~ .legend { top: auto; bottom: 64px; right: 14px; }
+}
+@media (max-width: 720px) {
+  .lot-info-card { max-width: calc(100vw - 28px); }
 }

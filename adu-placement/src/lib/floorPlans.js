@@ -16,54 +16,76 @@
 
 import absoluteFloorPlanImage from "../Floor Plans/Floor Plan Absolute.jpg";
 
-// --- Joshua's batch (review samples, 2026-05-20) ---
-import sample_1055 from "../../Sample Floor Plans/1055_17x35.png";
-import sample_1056 from "../../Sample Floor Plans/1056_17x35.png";
-import sample_1057 from "../../Sample Floor Plans/1057_31x40.png";
-import sample_1058 from "../../Sample Floor Plans/1058_31x40.png";
-import sample_1059 from "../../Sample Floor Plans/1059_44x46.png";
-import sample_1060 from "../../Sample Floor Plans/1060_44x46.png";
-import sample_5712 from "../../Sample Floor Plans/5712_23x25.png";
-import sample_5713 from "../../Sample Floor Plans/5713_24x32.png";
-import sample_5714 from "../../Sample Floor Plans/5714_35x28.png";
-import sample_5715 from "../../Sample Floor Plans/5715_37x27.png";
+// --- Production catalog: Week 1 delivery from Joshua's team ---
+// Vite scans the Week 1 folder at build time and provides each PNG as a URL.
+// New jurisdictions/plans dropped into this folder are picked up automatically.
+const weeklyDeliveryModules = import.meta.glob(
+  "../../Week1 - 41 FloorPlans/**/*.png",
+  { eager: true, query: "?url", import: "default" }
+);
 
-function sampleEntry(id, image, width, depth, label) {
+// Parse "<jurisdiction>/<id>_<W>x<D>.png" from each path.
+function parseDeliveryPath(path) {
+  const m = path.match(
+    /Week1 - 41 FloorPlans\/([^/]+)\/(\d+)_([\d.]+)x([\d.]+)\.png$/
+  );
+  if (!m) return null;
   return {
-    id: `sample-${id}`,
-    series: "Joshua Batch",
-    name: `Sample ${id}${label ? ` (${label})` : ""}`,
-    tagline: `${width}' × ${depth}' — review sample`,
+    jurisdiction: m[1],
+    planId: m[2],
+    width: parseFloat(m[3]),
+    depth: parseFloat(m[4]),
+  };
+}
+
+function deliveryEntry(jurisdiction, planId, width, depth, image) {
+  const slug = jurisdiction.toLowerCase().replace(/\s+/g, "-");
+  const sqft = Math.round(width * depth);
+  return {
+    id: `${slug}-${planId}`,
+    series: jurisdiction,
+    name: `Plan ${planId}`,
+    tagline: `${width}' × ${depth}' — ${jurisdiction}`,
     width,
     depth,
-    sqft: width * depth,
+    sqft,
     image,
     keySpecs: {
-      livableSqft: width * depth,
-      bedrooms: "-",
-      bathrooms: "-",
+      livableSqft: sqft,
+      bedrooms: "—",
+      bathrooms: "—",
       floors: 1,
       garage: 0,
-      studs: "-",
+      studs: "—",
     },
-    description: `Joshua's sample ${id}. Declared ${width} ft (W) × ${depth} ft (D).`,
+    description: `${jurisdiction} jurisdiction · Plan #${planId}. Footprint ${width} ft (W) × ${depth} ft (D).`,
     features: [],
     layout: { rooms: [], decks: [], doors: [] },
   };
 }
 
-export const SAMPLE_PLANS = [
-  sampleEntry("1055", sample_1055, 17, 35, "open corners"),
-  sampleEntry("1056", sample_1056, 17, 35, "closed corners"),
-  sampleEntry("1057", sample_1057, 31, 40, "L clean"),
-  sampleEntry("1058", sample_1058, 31, 40, "L floating walls"),
-  sampleEntry("1059", sample_1059, 44, 46, "L A"),
-  sampleEntry("1060", sample_1060, 44, 46, "L B"),
-  sampleEntry("5712", sample_5712, 23, 25),
-  sampleEntry("5713", sample_5713, 24, 32, "high-res"),
-  sampleEntry("5714", sample_5714, 35, 28),
-  sampleEntry("5715", sample_5715, 37, 27, "aspect mismatch"),
-];
+export const DELIVERY_PLANS = Object.entries(weeklyDeliveryModules)
+  .map(([path, url]) => {
+    const meta = parseDeliveryPath(path);
+    if (!meta) return null;
+    return deliveryEntry(
+      meta.jurisdiction,
+      meta.planId,
+      meta.width,
+      meta.depth,
+      url
+    );
+  })
+  .filter(Boolean)
+  .sort(
+    (a, b) =>
+      a.series.localeCompare(b.series) || a.id.localeCompare(b.id)
+  );
+
+// Unique jurisdictions in delivery order — used by the picker's filter pills.
+export const JURISDICTIONS = Array.from(
+  new Set(DELIVERY_PLANS.map((p) => p.series))
+).sort((a, b) => a.localeCompare(b));
 
 export const FLOOR_PLANS = [
   {
@@ -210,7 +232,7 @@ export const FLOOR_PLANS = [
       ],
     },
   },
-  ...SAMPLE_PLANS,
+  ...DELIVERY_PLANS,
 ];
 
 export function getFloorPlanById(id) {

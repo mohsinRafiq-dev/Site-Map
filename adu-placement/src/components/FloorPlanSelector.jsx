@@ -1,16 +1,68 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { FLOOR_PLANS } from "../lib/floorPlans";
 import FloorPlanSvg from "./FloorPlanSvg";
 
-// Zillow-style floor plan picker:
-//  • Horizontal gallery of cards (each shows the plan thumbnail + headline)
+// Zillow-style floor plan picker with jurisdiction filter:
+//  • Pill bar at the top — "All" plus one pill per jurisdiction with plan count
+//  • Horizontal gallery of cards (filtered by the selected pill)
 //  • Tapping a card selects it and reveals a rich detail panel below
 //    with key specs, large floor plan, description and features.
+const ALL_FILTER = "__all__";
+
 export default function FloorPlanSelector({ value, onChange, disabled }) {
+  const [filter, setFilter] = useState(ALL_FILTER);
+
+  // Group plans by series so we can build pills with accurate counts.
+  const groups = useMemo(() => {
+    const map = new Map();
+    for (const plan of FLOOR_PLANS) {
+      if (!map.has(plan.series)) map.set(plan.series, []);
+      map.get(plan.series).push(plan);
+    }
+    return Array.from(map.entries()).map(([series, plans]) => ({
+      series,
+      plans,
+    }));
+  }, []);
+
+  const visiblePlans = useMemo(() => {
+    if (filter === ALL_FILTER) return FLOOR_PLANS;
+    return FLOOR_PLANS.filter((p) => p.series === filter);
+  }, [filter]);
+
   return (
     <div className="floor-plan-picker">
+      <div className="fp-filter-bar" role="tablist" aria-label="Filter by jurisdiction">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={filter === ALL_FILTER}
+          className={`fp-filter-pill ${filter === ALL_FILTER ? "active" : ""}`}
+          disabled={disabled}
+          onClick={() => setFilter(ALL_FILTER)}
+        >
+          All
+          <span className="fp-filter-count">{FLOOR_PLANS.length}</span>
+        </button>
+        {groups.map(({ series, plans }) => (
+          <button
+            key={series}
+            type="button"
+            role="tab"
+            aria-selected={filter === series}
+            className={`fp-filter-pill ${filter === series ? "active" : ""}`}
+            disabled={disabled}
+            onClick={() => setFilter(series)}
+            title={series}
+          >
+            {series}
+            <span className="fp-filter-count">{plans.length}</span>
+          </button>
+        ))}
+      </div>
+
       <div className="fp-gallery" role="listbox" aria-label="Floor plans">
-        {FLOOR_PLANS.map((plan) => {
+        {visiblePlans.map((plan) => {
           const isActive = value?.id === plan.id;
           return (
             <button
