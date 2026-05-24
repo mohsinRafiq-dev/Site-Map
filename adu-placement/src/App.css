@@ -577,6 +577,90 @@ body {
    ---------------------------------------------------------------- */
 .floor-plan-picker { display: flex; flex-direction: column; gap: 16px; }
 
+.fp-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.fp-search-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-muted, #64748b);
+  pointer-events: none;
+}
+.fp-search-input {
+  width: 100%;
+  padding: 10px 36px 10px 36px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text, #0f172a);
+  font-size: 14px;
+  line-height: 1.2;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+.fp-search-input:focus {
+  outline: none;
+  border-color: var(--green-700, #3f7a3a);
+  box-shadow: 0 0 0 3px rgba(63, 122, 58, 0.18);
+}
+.fp-search-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.fp-search-input::-webkit-search-cancel-button { display: none; }
+.fp-search-clear {
+  position: absolute;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: var(--border);
+  color: var(--text-muted, #64748b);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.fp-search-clear:hover {
+  background: var(--green-800, #2c5a28);
+  color: #fff;
+}
+.fp-search-meta {
+  font-size: 12.5px;
+  color: var(--text-muted, #64748b);
+  margin: -6px 0 -4px;
+}
+.fp-empty {
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: 28px 16px;
+  text-align: center;
+  background: var(--surface);
+}
+.fp-empty-title {
+  margin: 0 0 4px;
+  font-weight: 600;
+  color: var(--text, #0f172a);
+}
+.fp-empty-sub {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted, #64748b);
+}
+.fp-empty-reset {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--green-800, #2c5a28);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
 /* Jurisdiction filter pill bar — horizontally scrollable so 11+ jurisdictions
    stay browseable without wrapping into a tall stack. */
 .fp-filter-bar {

@@ -11,6 +11,7 @@ const ALL_FILTER = "__all__";
 
 export default function FloorPlanSelector({ value, onChange, disabled }) {
   const [filter, setFilter] = useState(ALL_FILTER);
+  const [query, setQuery] = useState("");
 
   // Group plans by series so we can build pills with accurate counts.
   const groups = useMemo(() => {
@@ -26,12 +27,58 @@ export default function FloorPlanSelector({ value, onChange, disabled }) {
   }, []);
 
   const visiblePlans = useMemo(() => {
-    if (filter === ALL_FILTER) return FLOOR_PLANS;
-    return FLOOR_PLANS.filter((p) => p.series === filter);
-  }, [filter]);
+    const q = query.trim().toLowerCase();
+    return FLOOR_PLANS.filter((p) => {
+      if (filter !== ALL_FILTER && p.series !== filter) return false;
+      if (!q) return true;
+      return (
+        p.name?.toLowerCase().includes(q) ||
+        p.series?.toLowerCase().includes(q) ||
+        p.tagline?.toLowerCase().includes(q) ||
+        String(p.sqft || "").includes(q)
+      );
+    });
+  }, [filter, query]);
 
   return (
     <div className="floor-plan-picker">
+      <div className="fp-search-wrap">
+        <svg
+          className="fp-search-icon"
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="11" cy="11" r="7" />
+          <path d="M21 21l-4.35-4.35" />
+        </svg>
+        <input
+          type="search"
+          className="fp-search-input"
+          placeholder={`Search ${FLOOR_PLANS.length.toLocaleString()} plans by name, series, or sq. ft.`}
+          value={query}
+          disabled={disabled}
+          onChange={(e) => setQuery(e.target.value)}
+          aria-label="Search floor plans"
+        />
+        {query && (
+          <button
+            type="button"
+            className="fp-search-clear"
+            onClick={() => setQuery("")}
+            aria-label="Clear search"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
       <div className="fp-filter-bar" role="tablist" aria-label="Filter by jurisdiction">
         <button
           type="button"
@@ -61,6 +108,31 @@ export default function FloorPlanSelector({ value, onChange, disabled }) {
         ))}
       </div>
 
+      {query.trim() && (
+        <div className="fp-search-meta" aria-live="polite">
+          {visiblePlans.length.toLocaleString()} of {FLOOR_PLANS.length.toLocaleString()} plans match &ldquo;{query.trim()}&rdquo;
+        </div>
+      )}
+
+      {visiblePlans.length === 0 ? (
+        <div className="fp-empty">
+          <p className="fp-empty-title">No plans match your search.</p>
+          <p className="fp-empty-sub">
+            Try a different keyword, or{" "}
+            <button
+              type="button"
+              className="fp-empty-reset"
+              onClick={() => {
+                setQuery("");
+                setFilter(ALL_FILTER);
+              }}
+            >
+              reset filters
+            </button>
+            .
+          </p>
+        </div>
+      ) : (
       <div className="fp-gallery" role="listbox" aria-label="Floor plans">
         {visiblePlans.map((plan) => {
           const isActive = value?.id === plan.id;
@@ -112,6 +184,7 @@ export default function FloorPlanSelector({ value, onChange, disabled }) {
           );
         })}
       </div>
+      )}
 
       {value && <SelectedPlanDetail plan={value} />}
     </div>
