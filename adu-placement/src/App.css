@@ -2959,3 +2959,334 @@ body {
 @media (max-width: 720px) {
   .lot-info-card { max-width: calc(100vw - 28px); }
 }
+
+/* ================================================================
+   RESPONSIVE PASS — comprehensive mobile + tablet refinement
+   Source order matters: these blocks override earlier rules at
+   equal specificity. Breakpoints chosen for real devices:
+     ≤1280  tablet landscape (sidebar shrinks)
+     ≤1024  tablet portrait (tighter sidebar, smaller overlays)
+     ≤820   stack to single column (sidebar above, map below)
+     ≤640   phone (compact header, dockable overlays)
+     ≤430   small phone (icon-only FAB, hide secondary copy)
+   ================================================================ */
+
+/* ---- ≤1280px: tablet landscape ---- */
+@media (max-width: 1280px) {
+  .app-header { padding: 12px 22px; }
+  .sidebar { width: 400px; padding: 18px; }
+  .brand-text h1 { font-size: 18px; }
+  .brand-sub { font-size: 12px; }
+}
+
+/* ---- ≤1024px: tablet portrait ---- */
+@media (max-width: 1024px) {
+  .sidebar { width: 360px; padding: 16px; gap: 12px; }
+  .step { padding: 16px; }
+  .step-header h2 { font-size: 15px; }
+  .compass { width: 64px; height: 64px; top: 14px; right: 14px; }
+  .map-controls { top: 90px; right: 14px; }
+  .legend { top: 14px; left: 14px; padding: 10px 12px; }
+  .lot-info-card { padding: 10px 14px; }
+  .plan-float { min-width: 240px; padding: 12px 14px; }
+  .export-fab { right: 16px; bottom: 16px; }
+}
+
+/* ---- ≤820px: STACKED LAYOUT (sidebar above map) ---- */
+@media (max-width: 820px) {
+  /* Allow the page to grow with content; body scroll handles the long page. */
+  .app {
+    height: auto;
+    min-height: 100vh;
+    width: 100%;
+  }
+  html, body, #root { height: auto; min-height: 100%; }
+
+  /* Header collapses into a single row with tighter spacing. */
+  .app-header {
+    padding: 10px 16px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .brand { gap: 10px; }
+  .brand-mark { width: 36px; height: 36px; border-radius: 10px; }
+  .brand-mark svg { width: 18px; height: 18px; }
+  .brand-text h1 { font-size: 17px; }
+  .brand-sub { font-size: 11.5px; }
+  .header-meta { gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+
+  /* Body becomes a normal vertical stack — no internal scroll competing
+     with the page scroll. Sidebar grows naturally; map gets a defined
+     height so the user can interact with it and Mapbox can size itself. */
+  .app-body {
+    flex-direction: column;
+    flex: initial;
+    min-height: 0;
+  }
+  .sidebar {
+    width: 100%;
+    max-height: none;
+    max-width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    overflow-y: visible;
+    padding: 16px;
+    box-shadow: none;
+  }
+  .map-wrapper {
+    flex: initial;
+    width: 100%;
+    height: 70vh;
+    min-height: 480px;
+  }
+
+  /* Step nav scrolls horizontally and stays compact. */
+  .step-nav { padding: 4px 0 12px; }
+  .step-nav-dot { padding: 6px 10px; }
+  .step-nav-label { font-size: 12px; }
+
+  /* Map overlays — relocate so they don't collide on a narrow map. */
+  .compass { width: 56px; height: 56px; top: 12px; right: 12px; }
+  .map-controls { top: 76px; right: 12px; gap: 6px; }
+  .map-controls .mc-btn,
+  .map-controls button {
+    width: 36px;
+    height: 36px;
+  }
+
+  .legend,
+  .plan-float ~ .legend {
+    top: 12px;
+    left: 12px;
+    right: auto;
+    bottom: auto;
+    padding: 8px 10px;
+    font-size: 12px;
+    max-width: calc(100vw - 96px);
+  }
+  .legend h4 { font-size: 10px; margin-bottom: 6px; }
+
+  /* Floating plan card docks bottom-full-width with safe-area inset. */
+  .plan-float {
+    left: 12px;
+    right: 12px;
+    bottom: 70px;
+    min-width: 0;
+    transform: none;
+    padding: 12px 14px;
+  }
+  .plan-float-stats { gap: 6px; }
+  .plan-float-stat { padding: 6px 4px; }
+  .plan-float-head h4 { font-size: 15px; }
+
+  /* Lot info pill drops below the legend on tablet portrait so the two
+     don't collide on a narrow viewport. */
+  .lot-info-card {
+    top: 70px;
+    left: 12px;
+    right: 12px;
+    transform: none;
+    max-width: none;
+    padding: 8px 12px;
+  }
+  .lot-info-grid { gap: 8px; }
+
+  /* View toggle docks just above the camera pill bar at the bottom. */
+  .view-toggle {
+    top: auto;
+    bottom: 64px;
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+  }
+  .view-toggle button { padding: 6px 10px; font-size: 12px; }
+
+  /* Camera action pill bar — explicitly reset stale `top` from older rules
+     so the pill doesn't stretch vertically when both `top` and `bottom`
+     end up applied. Stays a short horizontal row at the bottom-center. */
+  .cam-actions {
+    top: auto;
+    bottom: 14px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    flex-direction: row;
+    padding: 4px;
+    gap: 4px;
+    height: auto;
+    width: auto;
+    max-width: calc(100vw - 24px);
+  }
+  .cam-actions .cam-btn,
+  .cam-actions button {
+    height: 32px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+
+  /* Placement hint becomes a top banner — no longer center-screen. */
+  .placement-hint {
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    transform: none;
+    max-width: none;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  .align-flash {
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    transform: none;
+    padding: 10px 12px;
+    font-size: 13px;
+    justify-content: flex-start;
+  }
+
+  /* Hero card scales down to fit a phone-sized map area. */
+  .hero-card { padding: 22px; max-width: calc(100vw - 32px); }
+  .hero-title { font-size: 20px; line-height: 1.25; }
+  .hero-sub { font-size: 13.5px; }
+  .hero-row { flex-wrap: wrap; gap: 8px; }
+}
+
+/* ---- ≤640px: PHONE ---- */
+@media (max-width: 640px) {
+  .app-header { padding: 8px 12px; }
+  .brand-text h1 { font-size: 16px; }
+  .brand-sub { display: none; }
+  .header-plan-pill {
+    padding: 4px 8px;
+    font-size: 11.5px;
+    gap: 4px;
+    max-width: 60vw;
+    overflow: hidden;
+  }
+  .hpp-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .sidebar { padding: 12px; gap: 10px; }
+  .step { padding: 14px; border-radius: 12px; }
+  .step-header { gap: 10px; margin-bottom: 10px; }
+  .step-header h2 { font-size: 14.5px; }
+  .step-num { width: 26px; height: 26px; font-size: 13px; }
+
+  /* Floor plan picker scales for thumb-sized cards. */
+  .fp-search-input { padding: 9px 32px 9px 34px; font-size: 13.5px; }
+  .fp-search-icon { left: 10px; }
+  .fp-filter-pill { padding: 5px 9px; font-size: 12px; }
+  .fp-filter-count { font-size: 10px; padding: 1px 5px; }
+  .fp-card-thumb { padding: 10px; }
+  .fp-card-body { padding: 10px 12px 12px; }
+  .fp-card-name { font-size: 14px; }
+  .fp-card-meta { font-size: 12px; }
+  .fp-card-tagline { font-size: 12px; }
+  .fp-detail { padding: 14px; }
+  .fp-detail-title { font-size: 18px; }
+  .key-specs-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+
+  /* Map area shorter so the wizard above remains the focus. */
+  .map-wrapper { height: 62vh; min-height: 420px; }
+
+  /* Overlays — further compaction. */
+  .compass { width: 48px; height: 48px; top: 10px; right: 10px; }
+  .map-controls { top: 64px; right: 10px; }
+  .map-controls .mc-btn,
+  .map-controls button { width: 34px; height: 34px; }
+  .legend,
+  .plan-float ~ .legend {
+    top: 10px;
+    left: 10px;
+    right: auto;
+    bottom: auto;
+    padding: 6px 9px;
+    font-size: 11.5px;
+    max-width: 56vw;
+  }
+  .legend h4 { display: none; }
+  .legend-row { font-size: 11px; gap: 6px; line-height: 1.3; }
+
+  /* On phone the lot-info-card and plan-float duplicate information that
+     already lives in the wizard sidebar above. Hide them so the map
+     viewport stays uncluttered and the action controls can breathe. */
+  .lot-info-card { display: none; }
+  .plan-float { display: none; }
+
+  /* Camera action pill bar — keeps its row but smaller. */
+  .cam-actions {
+    top: auto;
+    bottom: 10px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    flex-direction: row;
+    height: auto;
+    width: auto;
+    padding: 3px;
+    gap: 3px;
+    max-width: calc(100vw - 20px);
+  }
+  .cam-actions .cam-btn,
+  .cam-actions button {
+    height: 30px;
+    padding: 0 8px;
+    font-size: 11.5px;
+  }
+  .view-toggle { bottom: 56px; }
+
+  /* Export FAB compacts to icon + short label. */
+  .export-fab {
+    right: 12px;
+    bottom: 12px;
+    padding: 10px 14px;
+    border-radius: 999px;
+  }
+  .export-fab-label { font-size: 13px; }
+  .export-fab-sub { display: none; }
+
+  /* Hero scales further on phone. */
+  .hero-card { padding: 18px; border-radius: 16px; }
+  .hero-eyebrow { font-size: 10.5px; }
+  .hero-title { font-size: 18px; }
+  .hero-sub { font-size: 13px; }
+  .hero-bullet { font-size: 12.5px; }
+}
+
+/* ---- ≤430px: small phone (iPhone SE, etc.) ---- */
+@media (max-width: 430px) {
+  .app-header { padding: 8px 10px; }
+  .brand-mark { width: 32px; height: 32px; }
+  .brand-text h1 { font-size: 15px; }
+  .header-plan-pill .hpp-series { display: none; }
+  .header-plan-pill .hpp-sep { display: none; }
+
+  .sidebar { padding: 10px; }
+  .step { padding: 12px; }
+
+  .map-wrapper { height: 58vh; min-height: 380px; }
+
+  /* Export FAB → icon-only round button on tiny screens. */
+  .export-fab {
+    padding: 0;
+    width: 52px;
+    height: 52px;
+    justify-content: center;
+  }
+  .export-fab-body { display: none; }
+  .export-fab-icon { margin: 0; }
+
+  /* Floor plan picker meta line wraps cleanly. */
+  .fp-search-meta { font-size: 11.5px; }
+  .fp-detail-img-wrap { aspect-ratio: 4 / 3; }
+}
+
+/* ---- Touch-target floor: ensure all interactive elements stay tappable.
+   Applies to anything pointer:fine *cannot* match (touch devices). ---- */
+@media (hover: none) and (pointer: coarse) {
+  button,
+  .fp-filter-pill,
+  .step-nav-dot,
+  .cam-pill {
+    min-height: 36px;
+  }
+}
