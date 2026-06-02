@@ -539,6 +539,15 @@ body {
 
 .dim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
+/* Four-item variant used by SetbackInputs — stays 2-col so inputs pair neatly */
+.dim-grid.four { grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* LotConfirmation confirm / edit row */
+.lc-action { margin-top: 4px; }
+
+/* SetbackInputs container */
+.setback-inputs { display: flex; flex-direction: column; gap: 12px; }
+
 .dim-field {
   display: flex;
   flex-direction: column;
@@ -2152,8 +2161,7 @@ body {
   bottom: 24px;
 }
 
-/* Hide the old north arrow if any leftover */
-.north-arrow { display: none !important; }
+/* NorthArrow component is superseded by Compass — component file kept for reference */
 
 /* Smoother map cursor when over the map */
 .map-container {
