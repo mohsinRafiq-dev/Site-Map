@@ -82,6 +82,15 @@ export const DELIVERY_PLANS = Object.entries(weeklyDeliveryModules)
       a.series.localeCompare(b.series) || a.id.localeCompare(b.id)
   );
 
+if (DELIVERY_PLANS.length === 0) {
+  console.warn(
+    "[FrameUpNow] No delivery plans loaded. " +
+    "Expected PNG files at: Week1 - 41 FloorPlans/<Jurisdiction>/<id>_<W>x<D>.png " +
+    "(relative to the project root, one level above adu-placement/). " +
+    "Only the 3 built-in demo plans will be shown."
+  );
+}
+
 // Unique jurisdictions in delivery order — used by the picker's filter pills.
 export const JURISDICTIONS = Array.from(
   new Set(DELIVERY_PLANS.map((p) => p.series))
