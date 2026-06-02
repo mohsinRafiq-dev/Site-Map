@@ -9,7 +9,6 @@ export default function ExportDialog({
   open,
   onClose,
   onDownload,
-  defaultFilename,
   defaultTitle,
   defaultAddress,
   planName,
@@ -19,7 +18,7 @@ export default function ExportDialog({
     [defaultAddress, planName]
   );
 
-  const [filename, setFilename] = useState(defaultFilename || suggested);
+  const [filename, setFilename] = useState(suggested);
   const [title, setTitle] = useState(defaultTitle || "Site Plan");
   const [quality, setQuality] = useState("high"); // standard | high | print
   const [includeInfoPanel, setIncludeInfoPanel] = useState(true);

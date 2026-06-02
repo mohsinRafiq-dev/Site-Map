@@ -531,7 +531,7 @@ export default function App() {
             n={5}
             title="Set setbacks"
             done={step3Done}
-            active={step3Done}
+            active={false}
             locked={!step3Done}
           >
             <SetbackInputs setbacks={setbacks} onChange={setSetbacks} />
