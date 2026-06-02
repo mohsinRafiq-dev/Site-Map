@@ -678,6 +678,49 @@ const MapView = forwardRef(function MapView(
       map.once("mouseup", onMouseUp);
     });
 
+    // Touch drag — single-finger pan of the lot or footprint on touch devices.
+    // Mapbox wraps native touch events and provides lngLat on the event object,
+    // so the handler mirrors the mouse handler exactly.
+    map.on("touchstart", layerId, (e) => {
+      if (!isInteractive()) return;
+      if (e.originalEvent.touches.length !== 1) return;
+
+      if (kind === "lot") {
+        const onTop = map.queryRenderedFeatures(e.point, { layers: [FP_FILL] });
+        if (onTop.length > 0) return;
+      }
+
+      const feature = getFeature();
+      if (!feature) return;
+
+      e.preventDefault();
+      const center = polygonCenter(feature);
+      dragState = {
+        startLngLat: { lng: e.lngLat.lng, lat: e.lngLat.lat },
+        centerStart: center,
+      };
+
+      function onTouchMove(ev) {
+        if (!dragState) return;
+        if (ev.originalEvent.touches.length !== 1) return;
+        const dLng = ev.lngLat.lng - dragState.startLngLat.lng;
+        const dLat = ev.lngLat.lat - dragState.startLngLat.lat;
+        onDrag([
+          dragState.centerStart[0] + dLng,
+          dragState.centerStart[1] + dLat,
+        ]);
+      }
+      function onTouchEnd() {
+        dragState = null;
+        map.off("touchmove", onTouchMove);
+        map.getCanvas().style.cursor = "";
+      }
+
+      map.on("touchmove", onTouchMove);
+      map.once("touchend", onTouchEnd);
+      map.once("touchcancel", onTouchEnd);
+    });
+
     // Double-click on footprint overlay area = also draggable (image overlay does not block events)
     if (kind === "fp") {
       map.on("mousedown", FP_IMG_LAYER, () => {
