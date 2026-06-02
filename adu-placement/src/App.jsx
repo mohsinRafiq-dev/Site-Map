@@ -19,18 +19,36 @@ import {
   clampFootprintToSetbacks,
   footprintFitMargin,
 } from "./lib/geometry";
+import { getFloorPlanById } from "./lib/floorPlans";
 import "./App.css";
 
 const DEFAULT_LOT = { width: 60, length: 100, rotation: 0, center: null };
 const DEFAULT_SETBACKS = { front: 5, back: 5, left: 5, right: 5 };
+const SESSION_KEY = "frameupnow-session-v1";
+
+function loadSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
 
 export default function App() {
-  const [location, setLocation] = useState(null);
-  const [lot, setLot] = useState(DEFAULT_LOT);
-  const [lotConfirmed, setLotConfirmed] = useState(false);
-  const [floorPlan, setFloorPlan] = useState(null);
-  const [footprint, setFootprint] = useState(null); // {center, rotation}
-  const [setbacks, setSetbacks] = useState(DEFAULT_SETBACKS);
+  // Restore the last session on first mount. The initializer runs synchronously
+  // so all state slots get their saved values before the first render.
+  const [_session] = useState(loadSession);
+
+  const [location, setLocation] = useState(_session?.location ?? null);
+  const [lot, setLot] = useState(_session?.lot ?? DEFAULT_LOT);
+  const [lotConfirmed, setLotConfirmed] = useState(_session?.lotConfirmed ?? false);
+  const [floorPlan, setFloorPlan] = useState(() => {
+    if (!_session?.floorPlanId) return null;
+    return getFloorPlanById(_session.floorPlanId) ?? null;
+  });
+  const [footprint, setFootprint] = useState(_session?.footprint ?? null);
+  const [setbacks, setSetbacks] = useState(_session?.setbacks ?? DEFAULT_SETBACKS);
   const [snapToSetbacks, setSnapToSetbacks] = useState(true);
   const [viewMode, setViewMode] = useState("full"); // "full" | "footprint"
   const [alignBusy, setAlignBusy] = useState(false);
