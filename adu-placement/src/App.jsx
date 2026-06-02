@@ -13,13 +13,17 @@ import ValidationBadge from "./components/ValidationBadge";
 import DownloadButton from "./components/DownloadButton";
 import ExportDialog from "./components/ExportDialog";
 import ConfidenceMeter from "./components/ConfidenceMeter";
+import AuthModal from "./components/AuthModal";
+import SaveProjectButton from "./components/SaveProjectButton";
+import MyProjects from "./components/MyProjects";
 import {
   makeRectangle,
   applySetbacksToRect,
   clampFootprintToSetbacks,
   footprintFitMargin,
 } from "./lib/geometry";
-import { getFloorPlanById } from "./lib/floorPlans";
+import { usePlansCatalog } from "./lib/plansCatalog";
+import { useAuth } from "./lib/auth";
 import "./App.css";
 
 const DEFAULT_LOT = { width: 60, length: 100, rotation: 0, center: null };
@@ -36,6 +40,16 @@ function loadSession() {
 }
 
 export default function App() {
+  // ---- Catalog (Firestore-backed) ----
+  const { plans, loading: plansLoading, getById: getPlanById } = usePlansCatalog();
+
+  // ---- Auth ----
+  const { user } = useAuth();
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [projectsOpen, setProjectsOpen] = useState(false);
+  const [currentProjectId, setCurrentProjectId] = useState(null);
+
+  // ---- Session restore ----
   // Restore the last session on first mount. The initializer runs synchronously
   // so all state slots get their saved values before the first render.
   const [_session] = useState(loadSession);
@@ -43,10 +57,8 @@ export default function App() {
   const [location, setLocation] = useState(_session?.location ?? null);
   const [lot, setLot] = useState(_session?.lot ?? DEFAULT_LOT);
   const [lotConfirmed, setLotConfirmed] = useState(_session?.lotConfirmed ?? false);
-  const [floorPlan, setFloorPlan] = useState(() => {
-    if (!_session?.floorPlanId) return null;
-    return getFloorPlanById(_session.floorPlanId) ?? null;
-  });
+  // floorPlan starts null; restored by effect once catalog is ready
+  const [floorPlan, setFloorPlan] = useState(null);
   const [footprint, setFootprint] = useState(_session?.footprint ?? null);
   const [setbacks, setSetbacks] = useState(_session?.setbacks ?? DEFAULT_SETBACKS);
   const [snapToSetbacks, setSnapToSetbacks] = useState(true);
@@ -94,6 +106,16 @@ export default function App() {
       // localStorage unavailable (private browsing quota, etc.) — silently skip
     }
   }, [location, lot, lotConfirmed, setbacks, floorPlan, footprint]);
+
+  // Restore floor plan from session once the catalog finishes loading.
+  // Builtin plans resolve instantly; Firestore plans resolve on the first
+  // network fetch (~200-500 ms). Either way, a single effect handles it.
+  useEffect(() => {
+    if (plansLoading || floorPlan || !_session?.floorPlanId) return;
+    const found = getPlanById(_session.floorPlanId);
+    if (found) setFloorPlan(found);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plansLoading]);
 
   // When setbacks change AND snap-to-setbacks is on, re-clamp the footprint
   // so it never ends up outside the new buildable area without a drag.
@@ -386,6 +408,20 @@ export default function App() {
     setFootprint({ center: initialCenter, rotation: lot.rotation });
   }
 
+  // Restore all wizard state from a saved Firestore project.
+  function handleLoadProject(project) {
+    if (project.location)    setLocation(project.location);
+    if (project.lot)         setLot(project.lot);
+    if (project.lotConfirmed != null) setLotConfirmed(project.lotConfirmed);
+    if (project.setbacks)    setSetbacks(project.setbacks);
+    if (project.footprint)   setFootprint(project.footprint);
+    if (project.floorPlanId) {
+      const found = getPlanById(project.floorPlanId);
+      if (found) setFloorPlan(found);
+    }
+    setCurrentProjectId(project.id);
+  }
+
   async function handleDownload(options = {}) {
     const ctx = {
       filename: options.filename || "adu-site-plan.png",
@@ -439,6 +475,27 @@ export default function App() {
           )}
           {footprintFeature && setbackFeature && (
             <ValidationBadge isValid={isValid} />
+          )}
+          {user ? (
+            <button
+              type="button"
+              className="header-user-btn"
+              onClick={() => setProjectsOpen(true)}
+              title="My saved projects"
+            >
+              <span className="header-avatar">
+                {(user.displayName ?? user.email ?? "?")[0].toUpperCase()}
+              </span>
+              <span className="header-user-label">Projects</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="header-signin-btn"
+              onClick={() => setAuthModalOpen(true)}
+            >
+              Sign in
+            </button>
           )}
         </div>
       </header>
@@ -554,6 +611,16 @@ export default function App() {
               disabled={!allReady}
               variant="prominent"
               label="Export Site Plan…"
+            />
+            <SaveProjectButton
+              disabled={!allReady}
+              sessionData={{
+                location, lot, lotConfirmed, setbacks,
+                floorPlanId: floorPlan?.id ?? null, footprint,
+              }}
+              currentProjectId={currentProjectId}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+              onSaved={(id) => setCurrentProjectId(id)}
             />
             {allReady && (
               <ul className="export-perks">
@@ -691,6 +758,18 @@ export default function App() {
         defaultAddress={location?.placeName}
         defaultTitle="Site Plan"
         planName={floorPlan?.name}
+      />
+
+      <AuthModal
+        open={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        onSuccess={() => setAuthModalOpen(false)}
+      />
+
+      <MyProjects
+        open={projectsOpen}
+        onClose={() => setProjectsOpen(false)}
+        onLoad={handleLoadProject}
       />
     </div>
   );

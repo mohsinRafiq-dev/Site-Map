@@ -1,34 +1,27 @@
 import { useMemo, useState } from "react";
-import { FLOOR_PLANS } from "../lib/floorPlans";
+import { usePlansCatalog } from "../lib/plansCatalog";
 import FloorPlanSvg from "./FloorPlanSvg";
 
-// Zillow-style floor plan picker with jurisdiction filter:
-//  • Pill bar at the top — "All" plus one pill per jurisdiction with plan count
-//  • Horizontal gallery of cards (filtered by the selected pill)
-//  • Tapping a card selects it and reveals a rich detail panel below
-//    with key specs, large floor plan, description and features.
 const ALL_FILTER = "__all__";
 
 export default function FloorPlanSelector({ value, onChange, disabled }) {
+  const { plans, loading: plansLoading } = usePlansCatalog();
   const [filter, setFilter] = useState(ALL_FILTER);
   const [query, setQuery] = useState("");
 
   // Group plans by series so we can build pills with accurate counts.
   const groups = useMemo(() => {
     const map = new Map();
-    for (const plan of FLOOR_PLANS) {
+    for (const plan of plans) {
       if (!map.has(plan.series)) map.set(plan.series, []);
       map.get(plan.series).push(plan);
     }
-    return Array.from(map.entries()).map(([series, plans]) => ({
-      series,
-      plans,
-    }));
-  }, []);
+    return Array.from(map.entries()).map(([series, ps]) => ({ series, plans: ps }));
+  }, [plans]);
 
   const visiblePlans = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return FLOOR_PLANS.filter((p) => {
+    return plans.filter((p) => {
       if (filter !== ALL_FILTER && p.series !== filter) return false;
       if (!q) return true;
       return (
@@ -38,7 +31,7 @@ export default function FloorPlanSelector({ value, onChange, disabled }) {
         String(p.sqft || "").includes(q)
       );
     });
-  }, [filter, query]);
+  }, [filter, query, plans]);
 
   return (
     <div className="floor-plan-picker">
@@ -61,7 +54,11 @@ export default function FloorPlanSelector({ value, onChange, disabled }) {
         <input
           type="search"
           className="fp-search-input"
-          placeholder={`Search ${FLOOR_PLANS.length.toLocaleString()} plans by name, series, or sq. ft.`}
+          placeholder={
+            plansLoading
+              ? "Loading plans…"
+              : `Search ${plans.length.toLocaleString()} plans by name, series, or sq. ft.`
+          }
           value={query}
           disabled={disabled}
           onChange={(e) => setQuery(e.target.value)}
@@ -85,11 +82,13 @@ export default function FloorPlanSelector({ value, onChange, disabled }) {
           role="tab"
           aria-selected={filter === ALL_FILTER}
           className={`fp-filter-pill ${filter === ALL_FILTER ? "active" : ""}`}
-          disabled={disabled}
+          disabled={disabled || plansLoading}
           onClick={() => setFilter(ALL_FILTER)}
         >
           All
-          <span className="fp-filter-count">{FLOOR_PLANS.length}</span>
+          <span className="fp-filter-count">
+            {plansLoading ? "…" : plans.length}
+          </span>
         </button>
         {groups.map(({ series, plans }) => (
           <button
@@ -114,7 +113,13 @@ export default function FloorPlanSelector({ value, onChange, disabled }) {
         </div>
       )}
 
-      {visiblePlans.length === 0 ? (
+      {plansLoading ? (
+        <div className="fp-loading-grid" aria-busy="true" aria-label="Loading plans">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="fp-card-skeleton" />
+          ))}
+        </div>
+      ) : visiblePlans.length === 0 ? (
         <div className="fp-empty">
           <p className="fp-empty-title">No plans match your search.</p>
           <p className="fp-empty-sub">

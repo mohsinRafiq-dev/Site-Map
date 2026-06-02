@@ -98,7 +98,9 @@ export const JURISDICTIONS = Array.from(
   new Set(DELIVERY_PLANS.map((p) => p.series))
 ).sort((a, b) => a.localeCompare(b));
 
-export const FLOOR_PLANS = [
+// Hand-authored demo plans — always available offline, used as the initial
+// value in usePlansCatalog while the Firestore fetch resolves.
+export const BUILTIN_PLANS = [
   {
     id: "absolute-30x18",
     series: "FUN Collection",
@@ -246,6 +248,10 @@ export const FLOOR_PLANS = [
   ...DELIVERY_PLANS,
 ];
 
+// FLOOR_PLANS kept for backward-compat; prefer usePlansCatalog() for
+// components that need the full Firestore-backed catalog.
+export const FLOOR_PLANS = BUILTIN_PLANS;
+
 export function getFloorPlanById(id) {
-  return FLOOR_PLANS.find((p) => p.id === id) || null;
+  return [...BUILTIN_PLANS, ...DELIVERY_PLANS].find((p) => p.id === id) || null;
 }
