@@ -1132,10 +1132,17 @@ function niceRoundNumber(n) {
     5, 10, 15, 20, 25, 30, 40, 50, 75, 100, 150, 200, 250, 300, 500, 750,
     1000,
   ];
+  // Pick the candidate closest to n that falls within ±60% — avoids the
+  // first-match problem where e.g. n=1000 would match 750 before 1000.
+  let best = null;
+  let bestDiff = Infinity;
   for (const c of candidates) {
-    if (c >= n * 0.6 && c <= n * 1.2) return c;
+    if (c >= n * 0.4 && c <= n * 1.6) {
+      const diff = Math.abs(c - n);
+      if (diff < bestDiff) { bestDiff = diff; best = c; }
+    }
   }
-  // Fallback — round to nearest 10
+  if (best != null) return best;
   return Math.max(5, Math.round(n / 10) * 10);
 }
 
