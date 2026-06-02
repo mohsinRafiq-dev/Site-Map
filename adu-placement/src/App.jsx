@@ -79,6 +79,41 @@ export default function App() {
     return () => document.removeEventListener("fullscreenchange", handleFsChange);
   }, []);
 
+  // Persist session to localStorage whenever relevant state changes.
+  useEffect(() => {
+    try {
+      localStorage.setItem(SESSION_KEY, JSON.stringify({
+        location,
+        lot,
+        lotConfirmed,
+        setbacks,
+        floorPlanId: floorPlan?.id ?? null,
+        footprint,
+      }));
+    } catch {
+      // localStorage unavailable (private browsing quota, etc.) — silently skip
+    }
+  }, [location, lot, lotConfirmed, setbacks, floorPlan, footprint]);
+
+  // When setbacks change AND snap-to-setbacks is on, re-clamp the footprint
+  // so it never ends up outside the new buildable area without a drag.
+  useEffect(() => {
+    if (!snapToSetbacks || !footprint || !floorPlan || !lotConfirmed) return;
+    setFootprint((f) => {
+      if (!f) return f;
+      const { center } = clampFootprintToSetbacks({
+        proposedCenter: f.center,
+        footprintWidth: floorPlan.width,
+        footprintDepth: floorPlan.depth,
+        footprintRotationDeg: f.rotation,
+        lot,
+        setbacks,
+      });
+      return { ...f, center };
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setbacks]);
+
   // Auto-zoom + pulse + drag-hint every time the user clicks a floor plan
   // card. We key off `placementId` (which always increments) instead of
   // `floorPlan.id` so the zoom fires reliably even on a same-plan re-click.
@@ -335,9 +370,20 @@ export default function App() {
   }
 
   function handleResetFootprint() {
-    if (lot.center) {
-      setFootprint({ center: lot.center, rotation: lot.rotation });
+    if (!lot.center) return;
+    let initialCenter = lot.center;
+    if (lotConfirmed && floorPlan) {
+      const { center } = clampFootprintToSetbacks({
+        proposedCenter: lot.center,
+        footprintWidth: floorPlan.width,
+        footprintDepth: floorPlan.depth,
+        footprintRotationDeg: lot.rotation,
+        lot,
+        setbacks,
+      });
+      initialCenter = center;
     }
+    setFootprint({ center: initialCenter, rotation: lot.rotation });
   }
 
   async function handleDownload(options = {}) {
