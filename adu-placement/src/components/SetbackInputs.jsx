@@ -7,7 +7,7 @@ const SIDES = [
 
 export default function SetbackInputs({ setbacks, onChange }) {
   function update(key, raw) {
-    const num = Math.max(0, Math.min(50, Number(raw) || 0));
+    const num = Math.max(0, Math.min(100, Number(raw) || 0));
     onChange({ ...setbacks, [key]: num });
   }
 
@@ -28,7 +28,7 @@ export default function SetbackInputs({ setbacks, onChange }) {
             <input
               type="number"
               min="0"
-              max="50"
+              max="100"
               value={setbacks[s.key]}
               onChange={(e) => update(s.key, e.target.value)}
             />

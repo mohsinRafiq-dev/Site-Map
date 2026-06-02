@@ -41,24 +41,26 @@ function parseDeliveryPath(path) {
 function deliveryEntry(jurisdiction, planId, width, depth, image) {
   const slug = jurisdiction.toLowerCase().replace(/\s+/g, "-");
   const sqft = Math.round(width * depth);
+  // Bed/bath data is not encoded in the filename; show the footprint sqft as
+  // the primary spec so cards remain useful without placeholder dashes.
   return {
     id: `${slug}-${planId}`,
     series: jurisdiction,
     name: `Plan ${planId}`,
-    tagline: `${width}' × ${depth}' — ${jurisdiction}`,
+    tagline: `${width}' × ${depth}' · ${sqft} sq ft · ${jurisdiction}`,
     width,
     depth,
     sqft,
     image,
     keySpecs: {
       livableSqft: sqft,
-      bedrooms: "—",
-      bathrooms: "—",
+      bedrooms: "See plan",
+      bathrooms: "See plan",
       floors: 1,
       garage: 0,
-      studs: "—",
+      studs: "See plan",
     },
-    description: `${jurisdiction} jurisdiction · Plan #${planId}. Footprint ${width} ft (W) × ${depth} ft (D).`,
+    description: `${jurisdiction} jurisdiction · Plan #${planId}. Footprint ${width} ft (W) × ${depth} ft (D) — ${sqft} sq ft gross.`,
     features: [],
     layout: { rooms: [], decks: [], doors: [] },
   };
