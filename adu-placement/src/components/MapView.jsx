@@ -48,6 +48,7 @@ const MapView = forwardRef(function MapView(
     onDragLot,
     onDragFootprint,
     onBearingChange,
+    onReady,
   },
   ref
 ) {
@@ -208,6 +209,8 @@ const MapView = forwardRef(function MapView(
       styleReadyRef.current = true;
       attachDrag(map, "lot");
       attachDrag(map, "fp");
+      // Tell the parent the map is ready so it can frame a restored session.
+      if (typeof onReady === "function") onReady();
     });
 
     return () => {
@@ -466,16 +469,28 @@ const MapView = forwardRef(function MapView(
   }));
 
   // ------- Fly to location + auto-hide marker -------
+  const firstLocationRef = useRef(true);
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !location) return;
 
-    map.flyTo({
-      center: [location.lng, location.lat],
-      zoom: 19,
-      speed: 1.2,
-      essential: true,
-    });
+    // On the very first location value, if a lot is already confirmed or a
+    // footprint exists, this is a RESTORED session — skip the zoom-19 address
+    // fly-in and let App.jsx frame the lot/footprint instead. We still drop
+    // the address marker for reference.
+    const isInitialRestore =
+      firstLocationRef.current &&
+      (lotConfirmedRef.current || !!footprintFeatureRef.current);
+    firstLocationRef.current = false;
+
+    if (!isInitialRestore) {
+      map.flyTo({
+        center: [location.lng, location.lat],
+        zoom: 19,
+        speed: 1.2,
+        essential: true,
+      });
+    }
 
     if (markerRef.current) {
       markerRef.current.remove();

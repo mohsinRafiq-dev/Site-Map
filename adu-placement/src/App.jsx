@@ -30,6 +30,11 @@ const DEFAULT_LOT = { width: 60, length: 100, rotation: 0, center: null };
 const DEFAULT_SETBACKS = { front: 5, back: 5, left: 5, right: 5 };
 const SESSION_KEY = "frameupnow-session-v1";
 
+// Gate for Step auto-scroll. Stays false for a short window after the app
+// mounts so a restored session — whose active step flickers while the plan
+// catalog loads — doesn't yank the sidebar to a different step on load.
+let autoScrollReady = false;
+
 function loadSession() {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
@@ -80,7 +85,11 @@ export default function App() {
   // clicked most recently.
   const [activeCamAction, setActiveCamAction] = useState(null);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
   const mapWrapperRef = useRef(null);
+  // True only for the first render if a previous session was restored.
+  const restoringRef = useRef(!!_session?.location);
+  const didRestoreCameraRef = useRef(false);
 
   // Track fullscreen state (browser may exit on Esc)
   useEffect(() => {
@@ -89,6 +98,14 @@ export default function App() {
     }
     document.addEventListener("fullscreenchange", handleFsChange);
     return () => document.removeEventListener("fullscreenchange", handleFsChange);
+  }, []);
+
+  // Enable Step auto-scroll only after the initial restore settles, so the
+  // sidebar doesn't jump while async state (plan catalog) resolves on load.
+  useEffect(() => {
+    autoScrollReady = false;
+    const t = setTimeout(() => { autoScrollReady = true; }, 1600);
+    return () => clearTimeout(t);
   }, []);
 
   // Persist session to localStorage whenever relevant state changes.
@@ -185,6 +202,34 @@ export default function App() {
   }
 
   const mapRef = useRef(null);
+
+  // One-shot camera restore: when reloading mid-session, frame whatever the
+  // user was last working on (footprint → lot → address) instead of snapping
+  // to the raw address at zoom 19. Waits for the map to be ready AND, if the
+  // session had a saved plan, for that plan to finish loading from Firestore
+  // (so the footprint geometry exists before we frame it).
+  useEffect(() => {
+    if (didRestoreCameraRef.current) return;
+    if (!mapReady || !restoringRef.current) return;
+    // If the saved session referenced a plan, wait for it to load.
+    if (_session?.floorPlanId && !floorPlan) return;
+
+    didRestoreCameraRef.current = true;
+    restoringRef.current = false;
+
+    // Small delay lets the footprint/lot sources sync to the map first.
+    const t = setTimeout(() => {
+      if (footprint && floorPlan) {
+        mapRef.current?.flyToFootprint(70);
+      } else if (lotConfirmed && lot.center) {
+        mapRef.current?.fitToLot(80);
+      } else if (location) {
+        mapRef.current?.flyToLocation(location.lng, location.lat, 19);
+      }
+    }, 350);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapReady, floorPlan, plansLoading]);
 
   // ---- Derived geometry ----
   const lotFeature = useMemo(() => {
@@ -649,6 +694,7 @@ export default function App() {
             onDragLot={handleDragLot}
             onDragFootprint={handleDragFootprint}
             onBearingChange={setMapBearing}
+            onReady={() => setMapReady(true)}
           />
           {!location && <Hero />}
 
@@ -819,7 +865,10 @@ function Step({ n, title, done, active, locked, children }) {
   const ref = useRef(null);
   // When this step becomes active, smooth-scroll it into view within
   // the sidebar. Saves the user a long manual scroll on tall screens.
+  // Suppressed during the initial restore window (autoScrollReady) so a
+  // reloaded session doesn't yank the sidebar as async state settles.
   useEffect(() => {
+    if (!autoScrollReady) return;
     if (active && ref.current) {
       ref.current.scrollIntoView({
         behavior: "smooth",
