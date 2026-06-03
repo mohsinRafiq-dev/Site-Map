@@ -105,6 +105,15 @@ export default function App() {
   const [currentStep, setCurrentStep] = useState(() => stepFromSession(_session));
   const [planModalOpen, setPlanModalOpen] = useState(false);
 
+  // ---- Mobile bottom-sheet (wizard over full-screen map) ----
+  const [sheetOpen, setSheetOpen] = useState(true);
+  // Collapse the sheet automatically on the "Place" step so the map is fully
+  // visible for dragging; expand on steps that need form input.
+  useEffect(() => {
+    if (currentStep === 4) setSheetOpen(false);
+    else setSheetOpen(true);
+  }, [currentStep]);
+
   // ---- Theme (dark = night mode, light = original look) ----
   const [theme, setTheme] = useState(() => {
     try { return localStorage.getItem("frameupnow-theme") || "dark"; }
@@ -621,7 +630,18 @@ export default function App() {
       </header>
 
       <div className="app-body">
-        <aside className="sidebar">
+        <aside className={`sidebar ${sheetOpen ? "sheet-open" : "sheet-collapsed"}`}>
+          <button
+            type="button"
+            className="sheet-handle"
+            onClick={() => setSheetOpen((v) => !v)}
+            aria-label={sheetOpen ? "Collapse panel" : "Expand panel"}
+          >
+            <span className="sheet-grabber" />
+            <span className="sheet-handle-hint">
+              {sheetOpen ? "▾ Tap to see the map" : "▴ Step " + currentStep + " · tap to open"}
+            </span>
+          </button>
           <WizardStepper
             steps={[
               { n: 1, label: "Address", done: step1Done },

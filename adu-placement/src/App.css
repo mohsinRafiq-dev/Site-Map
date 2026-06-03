@@ -4418,10 +4418,17 @@ input:focus {
 }
 
 @media (max-width: 640px) {
-  .plan-modal { height: 100vh; width: 100vw; border-radius: 0; }
+  .plan-modal { height: 100vh; height: 100dvh; width: 100vw; border-radius: 0; }
   .plan-modal-overlay { padding: 0; }
-  .plan-modal-head { flex-wrap: wrap; }
-  .pmh-search { order: 3; width: 100%; flex-basis: 100%; }
+  .plan-modal-head { flex-wrap: wrap; padding: 14px 16px; }
+  .pmh-title h2 { font-size: 18px; }
+  .pmh-search { order: 3; width: 100%; flex-basis: 100%; height: 40px; }
+  .plan-modal-filters { padding: 12px 16px; }
+  .plan-modal-grid-wrap { padding: 14px 16px; }
+  .plan-modal-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .pm-card-thumb { height: 110px; }
+  .pm-card-name { font-size: 13.5px; }
+  .pm-card-body { padding: 9px 10px 11px; }
 }
 
 /* ---- Hero (theme-aware) ---- */
@@ -4631,3 +4638,181 @@ input:focus {
 .key-spec { background: rgba(255,255,255,0.03); border-color: var(--border); }
 .key-spec-value { color: var(--text); }
 .key-spec-icon { background: rgba(52,211,153,0.12); }
+
+/* ================================================================
+   MOBILE BOTTOM-SHEET LAYOUT (authoritative — appended last)
+   Map fills the screen; the wizard becomes a draggable bottom sheet
+   so the user sees the map AND the steps at the same time.
+   ================================================================ */
+.sheet-handle { display: none; }
+
+@media (max-width: 820px) {
+  html, body, #root { height: 100%; overflow: hidden; }
+  .app {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  /* Body is a positioning context; the map fills it edge-to-edge */
+  .app-body {
+    position: relative;
+    display: block;
+    flex: 1;
+    min-height: 0;
+  }
+  .map-wrapper {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    flex: none;
+    border-radius: 0;
+  }
+
+  /* Sidebar → glass bottom sheet floating over the map */
+  .sidebar {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    width: 100%;
+    max-height: 60vh;
+    max-height: 60dvh;
+    border: none;
+    border-top: 1px solid var(--border);
+    border-radius: 22px 22px 0 0;
+    padding: 0 16px 14px;
+    gap: 0;
+    box-shadow: 0 -14px 44px rgba(0,0,0,0.45);
+    background: var(--sidebar-bg);
+    -webkit-backdrop-filter: blur(22px) saturate(140%);
+    backdrop-filter: blur(22px) saturate(140%);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 8;
+    transition: max-height 0.34s cubic-bezier(0.34, 1.1, 0.5, 1);
+  }
+  .sidebar.sheet-collapsed { max-height: 118px; }
+
+  /* Grabber + hint */
+  .sheet-handle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 9px 0 6px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    flex-shrink: 0;
+    font-family: inherit;
+  }
+  .sheet-grabber {
+    width: 42px; height: 4px; border-radius: 999px;
+    background: var(--border-strong);
+    transition: background 0.15s;
+  }
+  .sheet-handle:active .sheet-grabber { background: var(--accent); }
+  .sheet-handle-hint {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
+    color: var(--text-soft);
+  }
+
+  /* Stepper = sheet header (numbers only to save width) */
+  .wstepper {
+    position: static;
+    flex-shrink: 0;
+    padding: 2px 0 10px;
+    margin: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .wstep-label { display: none; }
+  .wstep-num { width: 26px; height: 26px; }
+  .wstep-bar { top: 13px; }
+
+  /* Panel = scrollable body */
+  .wizard-panel {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-top: 14px;
+  }
+  .wpanel-head { margin-bottom: 14px; }
+  .wpanel-title { font-size: 20px; }
+  .wpanel-sub { font-size: 12.5px; }
+
+  /* Nav = sheet footer */
+  .wnav {
+    position: static;
+    flex-shrink: 0;
+    padding: 12px 0 2px;
+    margin-top: 8px;
+    border-top: 1px solid var(--border);
+    background: none;
+  }
+
+  /* Collapsed sheet shows only the grabber + stepper peek */
+  .sidebar.sheet-collapsed .wizard-panel,
+  .sidebar.sheet-collapsed .wnav { display: none; }
+  .sidebar.sheet-collapsed .wstepper { border-bottom: none; padding-bottom: 4px; }
+
+  /* ---- Map overlays repositioned to stay clear of the sheet ---- */
+  .compass { top: 12px; right: 12px; width: 50px; height: 50px; }
+  .compass svg { width: 46px; height: 46px; }
+  .map-controls { top: 72px; right: 12px; gap: 6px; }
+  .map-ctl-btn { width: 36px; height: 36px; }
+
+  .lot-info-card {
+    top: 10px; left: 10px; right: 10px;
+    bottom: auto; transform: none;
+    max-width: none; min-width: 0;
+  }
+  .view-toggle {
+    top: 10px; bottom: auto;
+    left: 50%; right: auto; transform: translateX(-50%);
+  }
+  .lot-info-card ~ .view-toggle { top: 92px; }
+
+  .legend { display: none; }
+  .plan-float { display: none; }
+
+  /* Camera quick-actions float just above the collapsed sheet */
+  .cam-actions {
+    bottom: 130px; top: auto;
+    left: 50%; right: auto; transform: translateX(-50%);
+    flex-direction: row;
+  }
+
+  /* The export FAB is redundant on mobile (export lives in the sheet) */
+  .export-fab { display: none; }
+
+  /* Centered toasts/hints become top banners */
+  .placement-hint, .align-flash {
+    top: 12px; left: 12px; right: 12px;
+    transform: none; max-width: none;
+  }
+
+  /* Header trims down */
+  .app-header { padding: 10px 14px; }
+  .brand-sub { display: none; }
+  .header-user-label { display: none; }
+  .header-user-btn { padding: 5px; }
+}
+
+/* Very small phones */
+@media (max-width: 480px) {
+  .sidebar { max-height: 64vh; max-height: 64dvh; padding: 0 12px 12px; }
+  .wpanel-title { font-size: 18px; }
+  .header-plan-pill { display: none; }
+  .cam-actions { bottom: 128px; padding: 4px; gap: 3px; }
+  .cam-btn { height: 32px; padding: 0 10px; font-size: 11.5px; }
+  .theme-toggle-track { width: 44px; height: 24px; }
+  .theme-toggle-track.dark .theme-toggle-thumb { transform: translateX(20px); }
+}
+
+/* Landscape phones: sheet shorter so map stays usable */
+@media (max-width: 920px) and (orientation: landscape) {
+  .sidebar { max-height: 78vh; }
+  .sidebar.sheet-collapsed { max-height: 104px; }
+}
