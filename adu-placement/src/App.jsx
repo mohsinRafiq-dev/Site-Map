@@ -896,6 +896,10 @@ function ViewToggle({ value, onChange }) {
   );
 }
 
+function fmtSpec(v) {
+  return v === "See plan" || v == null ? "—" : v;
+}
+
 function PlanFloatCard({ plan, valid, margin }) {
   const fitText =
     margin == null
@@ -913,8 +917,8 @@ function PlanFloatCard({ plan, valid, margin }) {
       </div>
       <div className="plan-float-stats">
         <Stat value={plan.keySpecs.livableSqft} label="sq ft" />
-        <Stat value={plan.keySpecs.bedrooms} label="bed" />
-        <Stat value={plan.keySpecs.bathrooms} label="bath" />
+        <Stat value={fmtSpec(plan.keySpecs.bedrooms)} label="bed" />
+        <Stat value={fmtSpec(plan.keySpecs.bathrooms)} label="bath" />
         <Stat value={`${plan.width}'×${plan.depth}'`} label="size" />
       </div>
       {fitText && (

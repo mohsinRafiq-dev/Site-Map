@@ -8,9 +8,12 @@
     "build": "vite build",
     "preview": "vite preview",
     "migrate": "node scripts/migrate-plans.mjs",
-    "clear-plans": "node scripts/clear-plans.mjs"
+    "clear-plans": "node scripts/clear-plans.mjs",
+    "set-cors": "node scripts/set-cors.mjs",
+    "fix-urls": "node scripts/fix-image-urls.mjs"
   },
   "dependencies": {
+    "dotenv": "^17.4.2",
     "firebase": "^12.14.0",
     "mapbox-gl": "^3.7.0",
     "react": "^18.3.1",

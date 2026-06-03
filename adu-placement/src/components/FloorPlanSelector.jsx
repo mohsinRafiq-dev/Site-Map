@@ -171,14 +171,14 @@ export default function FloorPlanSelector({ value, onChange, disabled }) {
                   <span className="fp-card-sqft">{plan.sqft} sf</span>
                 </div>
                 <div className="fp-card-meta">
-                  <span>
-                    <b>{plan.keySpecs.bedrooms}</b> bd
-                  </span>
-                  <span className="fp-dot" />
-                  <span>
-                    <b>{plan.keySpecs.bathrooms}</b> ba
-                  </span>
-                  <span className="fp-dot" />
+                  {plan.keySpecs.bedrooms !== "See plan" && (
+                    <>
+                      <span><b>{plan.keySpecs.bedrooms}</b> bd</span>
+                      <span className="fp-dot" />
+                      <span><b>{plan.keySpecs.bathrooms}</b> ba</span>
+                      <span className="fp-dot" />
+                    </>
+                  )}
                   <span>
                     {plan.width}&apos; × {plan.depth}&apos;
                   </span>
@@ -298,13 +298,14 @@ function SelectedPlanDetail({ plan }) {
 }
 
 function KeySpecs({ specs }) {
+  const fmt = (v) => (v === "See plan" || v === null || v === undefined ? "—" : v);
   const items = [
-    { icon: <IconTape />, value: specs.livableSqft, label: "Livable sq. ft." },
-    { icon: <IconBed />, value: specs.bedrooms, label: "Bedroom(s)" },
-    { icon: <IconBath />, value: specs.bathrooms, label: "Bathroom(s)" },
-    { icon: <IconHouse />, value: specs.floors, label: "Floor(s)" },
-    { icon: <IconGarage />, value: specs.garage, label: "Garage(s)" },
-    { icon: <IconStud />, value: specs.studs, label: "Exterior Studs" },
+    { icon: <IconTape />, value: fmt(specs.livableSqft), label: "Livable sq. ft." },
+    { icon: <IconBed />,  value: fmt(specs.bedrooms),    label: "Bedroom(s)" },
+    { icon: <IconBath />, value: fmt(specs.bathrooms),   label: "Bathroom(s)" },
+    { icon: <IconHouse />,value: fmt(specs.floors),      label: "Floor(s)" },
+    { icon: <IconGarage />,value: fmt(specs.garage),     label: "Garage(s)" },
+    { icon: <IconStud />, value: fmt(specs.studs),       label: "Exterior Studs" },
   ];
   return (
     <div className="key-specs">

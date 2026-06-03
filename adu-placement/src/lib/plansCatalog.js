@@ -10,7 +10,7 @@
 // Firestore is unreachable (network error, missing env vars, etc.).
 
 import { useEffect, useState } from "react";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { db } from "./firebase";
 import { BUILTIN_PLANS } from "./floorPlans";
 
@@ -24,19 +24,31 @@ async function _load() {
 
   _inflight = (async () => {
     try {
-      const q = query(
-        collection(db, "plans"),
-        orderBy("series"),
-        orderBy("sqft")
+      // No orderBy — Firestore composite indexes aren't needed this way.
+      // We sort client-side after loading since we fetch the full catalog anyway.
+      const snap = await getDocs(collection(db, "plans"));
+      const remote = snap.docs.map((d) => {
+        const data = d.data();
+        // Normalise field names: migration script saves "imageUrl",
+        // components read "image" — bridge both here.
+        return {
+          ...data,
+          id:    d.id,
+          image: data.image || data.imageUrl || null,
+          // Show "Plan 1423" instead of bare "1423" for numeric plan IDs.
+          name:  /^\d+$/.test(data.name) ? `Plan ${data.name}` : (data.name || d.id),
+        };
+      });
+      // Sort client-side: by series (jurisdiction) then by sqft ascending
+      remote.sort((a, b) =>
+        (a.series || "").localeCompare(b.series || "") ||
+        (a.sqft || 0) - (b.sqft || 0)
       );
-      const snap = await getDocs(q);
-      const remote = snap.docs.map((d) => ({ ...d.data(), id: d.id }));
-      // Builtin demo plans always sit at the front of the list.
       _cache = [...BUILTIN_PLANS, ...remote];
+      console.log(`[FrameUpNow] Loaded ${remote.length} plans from Firestore.`);
     } catch (err) {
-      console.warn(
-        "[FrameUpNow] Firestore unreachable — showing built-in plans only.",
-        err.message
+      console.error(
+        "[FrameUpNow] Firestore load failed:", err.code, err.message
       );
       _cache = [...BUILTIN_PLANS];
     }

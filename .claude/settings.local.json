@@ -4,7 +4,8 @@
       "Bash(npm install *)",
       "Bash(npx vite *)",
       "Bash(npm run *)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173/)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173/)",
+      "PowerShell(Get-ChildItem \"c:\\\\Users\\\\iamas\\\\OneDrive\\\\Desktop\\\\After Eid\\\\Eid\\\\Dang\\\\Site Map\\\\adu-placement\\\\Floor Plans\\\\Week1 - 42 FloorPlans\" -Recurse -File | Select-Object @{N='Folder';E={$_.Directory.Name}}, Name | Format-Table -AutoSize)"
     ]
   }
 }

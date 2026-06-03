@@ -2,34 +2,22 @@
 /**
  * migrate-plans.mjs
  *
- * Bulk-uploads floor plan PNGs to Firebase Storage and writes Firestore docs.
- * Run this every time the designer delivers a new batch of plans.
+ * Uploads floor plan PNGs to Firebase Storage + writes Firestore docs.
+ * Handles TWO filename formats automatically:
+ *
+ *  Format A (rich — preferred):
+ *    <Jurisdiction>/<City>-<sqft>-<N Bed N Bath | Studio>-<StyleName>.png
+ *    e.g. Canyon Lake/Canyon Lake-1198-3 Bed 2 Bath-Craftsman.png
+ *
+ *  Format B (dimensions — fallback):
+ *    <Jurisdiction>/<id>_<W>x<D>.png
+ *    e.g. General/1055_17x35.png
  *
  * Usage:
  *   npm run migrate
  *
- * The script is fully IDEMPOTENT — plans already in Firestore are skipped,
- * so it is safe to run as many times as you want. Only NEW files get uploaded.
- *
- * Folder structure expected (set PLANS_DIR in .env):
- *
- *   Floor Plans/
- *   ├── Los Angeles/
- *   │   ├── 001_24x30.png
- *   │   ├── 002_28x32.png
- *   ├── San Diego/
- *   │   ├── 001_20x24.png
- *   └── ...
- *
- * When the designer delivers Week 2, Week 3, etc.:
- *   1. Copy/move the new PNGs into the matching Jurisdiction subfolder
- *   2. Run: npm run migrate
- *   3. Done — new plans appear on the site immediately, no rebuild needed.
- *
- * Prerequisites:
- *   • FIREBASE_SERVICE_ACCOUNT_PATH in .env → path to serviceAccountKey.json
- *   • FIREBASE_STORAGE_BUCKET in .env       → e.g. your-project.firebasestorage.app
- *   • PLANS_DIR in .env                     → path to the master Floor Plans folder
+ * Fully IDEMPOTENT — already-uploaded plans are skipped every time.
+ * New plans dropped into any jurisdiction subfolder are picked up on the next run.
  */
 
 import { readFileSync, readdirSync, statSync, existsSync } from "fs";
@@ -38,187 +26,234 @@ import { fileURLToPath } from "url";
 import { config } from "dotenv";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
-// Load .env from the adu-placement folder (one level up from /scripts)
 config({ path: resolve(__dir, "../.env") });
 
-// ── Validate required env vars ───────────────────────────────────────────────
-const SA_PATH   = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
-const BUCKET    = process.env.FIREBASE_STORAGE_BUCKET;
-const PLANS_DIR = process.env.PLANS_DIR
-  ? resolve(__dir, "../..", process.env.PLANS_DIR)   // relative to project root
-  : resolve(__dir, "../../Floor Plans");              // default: "Floor Plans/" next to adu-placement/
+// ── Env validation ────────────────────────────────────────────────────────────
+const SA_PATH = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+const BUCKET  = process.env.FIREBASE_STORAGE_BUCKET;
 
-const missing = [];
-if (!SA_PATH)  missing.push("FIREBASE_SERVICE_ACCOUNT_PATH");
-if (!BUCKET)   missing.push("FIREBASE_STORAGE_BUCKET");
-if (missing.length) {
-  console.error(`\n❌  Missing .env values: ${missing.join(", ")}\n`);
+const APP_ROOT    = resolve(__dir, "..");          // adu-placement/
+const PROJECT_ROOT = resolve(__dir, "../..");       // Site Map/
+
+// PLANS_DIRS: comma-separated paths (relative to adu-placement/).
+// Defaults to scanning adu-placement/Floor Plans/ automatically.
+const PLANS_DIRS_RAW = process.env.PLANS_DIRS || process.env.PLANS_DIR;
+
+const plansDirs = PLANS_DIRS_RAW
+  ? PLANS_DIRS_RAW.split(",").map((p) => resolve(APP_ROOT, p.trim()))
+  : [resolve(APP_ROOT, "Floor Plans")].filter(existsSync);
+
+if (!SA_PATH || !BUCKET) {
+  console.error("\n❌  Missing .env: FIREBASE_SERVICE_ACCOUNT_PATH and FIREBASE_STORAGE_BUCKET are required.\n");
   process.exit(1);
 }
 if (!existsSync(SA_PATH)) {
-  console.error(`\n❌  Service account file not found: ${SA_PATH}\n`);
+  console.error(`\n❌  Service account not found: ${SA_PATH}\n`);
   process.exit(1);
 }
-if (!existsSync(PLANS_DIR)) {
-  console.error(`
-❌  Plans folder not found: ${PLANS_DIR}
-
-Create the folder and add your plan PNGs using this structure:
-  Floor Plans/<Jurisdiction>/<id>_<W>x<D>.png
-
-Then re-run: npm run migrate
-`);
+if (plansDirs.length === 0) {
+  console.error("\n❌  No plan folders found. Check your folder names next to Site Map/.\n");
   process.exit(1);
 }
 
-// ── Firebase Admin ───────────────────────────────────────────────────────────
-const { initializeApp, cert }  = await import("firebase-admin/app");
-const { getFirestore }         = await import("firebase-admin/firestore");
-const { getStorage }           = await import("firebase-admin/storage");
+// ── Firebase Admin ────────────────────────────────────────────────────────────
+const { initializeApp, cert } = await import("firebase-admin/app");
+const { getFirestore }        = await import("firebase-admin/firestore");
+const { getStorage }          = await import("firebase-admin/storage");
 
-const serviceAccount = JSON.parse(readFileSync(SA_PATH, "utf8"));
-initializeApp({ credential: cert(serviceAccount), storageBucket: BUCKET });
-
+initializeApp({ credential: cert(JSON.parse(readFileSync(SA_PATH, "utf8"))), storageBucket: BUCKET });
 const db     = getFirestore();
 const bucket = getStorage().bucket();
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Filename parsers ──────────────────────────────────────────────────────────
 
-// "001_24x30.png" → { planId: "001", width: 24, depth: 30 }
-function parseFilename(filename) {
+/**
+ * Format A: "Canyon Lake-1198-3 Bed 2 Bath-Craftsman.png"
+ *           "Paramount-447-Studio-ADU Studio.png"
+ * Returns { sqft, bedrooms, bathrooms, styleName } or null
+ */
+function parseFormatA(filename) {
+  // Match: <anything>-<sqft>-<Studio | N Bed N Bath>-<styleName>.png
+  const m = filename.match(
+    /^(.+)-(\d+)-(Studio|(\d+) Bed (\d+) Bath)-(.+)\.png$/i
+  );
+  if (!m) return null;
+  const isStudio = m[3].toLowerCase() === "studio";
+  return {
+    sqft:      parseInt(m[2], 10),
+    bedrooms:  isStudio ? 0 : parseInt(m[4], 10),
+    bathrooms: isStudio ? 1 : parseInt(m[5], 10),
+    bedsLabel: isStudio ? "Studio" : m[3],
+    styleName: m[6].trim(),
+  };
+}
+
+/**
+ * Format B: "1055_17x35.png"
+ * Returns { planId, width, depth } or null
+ */
+function parseFormatB(filename) {
   const m = filename.match(/^(\w[\w-]*)_([\d.]+)x([\d.]+)\.png$/i);
   if (!m) return null;
   return { planId: m[1], width: parseFloat(m[2]), depth: parseFloat(m[3]) };
 }
 
+/**
+ * Estimate footprint dimensions from sqft.
+ * Uses a 1:1.3 aspect ratio typical of ADUs.
+ * Width is the shorter side (E-W), depth is the longer (N-S).
+ */
+function estimateDimensions(sqft) {
+  const width = Math.round(Math.sqrt(sqft / 1.3));
+  const depth = Math.round(sqft / width);
+  return { width, depth };
+}
+
+function slug(str) {
+  return str.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+// ── Upload helper ─────────────────────────────────────────────────────────────
 async function uploadAndGetUrl(localPath, storagePath) {
   await bucket.upload(localPath, {
     destination: storagePath,
-    metadata: {
-      contentType: "image/png",
-      cacheControl: "public, max-age=31536000, immutable",
-    },
+    metadata: { contentType: "image/png", cacheControl: "public, max-age=31536000, immutable" },
   });
   await bucket.file(storagePath).makePublic();
-  return `https://storage.googleapis.com/${BUCKET}/${storagePath}`;
+  // Use the Firebase Storage download URL format — it sends CORS headers
+  // automatically, which Mapbox GL JS requires to load images as overlays.
+  const encoded = storagePath.split("/").map(encodeURIComponent).join("%2F");
+  return `https://firebasestorage.googleapis.com/v0/b/${BUCKET}/o/${encoded}?alt=media`;
 }
 
-// ── Discover all jurisdiction folders ────────────────────────────────────────
-const jurisdictions = readdirSync(PLANS_DIR).filter((name) => {
-  const full = join(PLANS_DIR, name);
-  return statSync(full).isDirectory() && !name.startsWith(".");
-});
+// ── Scan all plan folders (any depth) ────────────────────────────────────────
+// Recursively walks the folder tree.
+// Any folder that directly contains PNGs is treated as a jurisdiction folder.
+let allPlans = []; // { jurisdiction, filename, localPath }
 
-if (jurisdictions.length === 0) {
-  console.error(`\n❌  No jurisdiction subfolders found inside:\n    ${PLANS_DIR}\n`);
-  process.exit(1);
+function scanDir(dir) {
+  const entries = readdirSync(dir).filter((n) => !n.startsWith("."));
+  const pngs  = entries.filter((n) => extname(n).toLowerCase() === ".png");
+  const dirs  = entries.filter((n) => statSync(join(dir, n)).isDirectory());
+
+  if (pngs.length > 0) {
+    // This folder contains PNGs — use the folder name as the jurisdiction
+    const jurisdiction = dir.split(/[\\/]/).pop();
+    for (const f of pngs) {
+      allPlans.push({ jurisdiction, filename: f, localPath: join(dir, f) });
+    }
+  }
+
+  // Always recurse into subdirectories to find nested jurisdiction folders
+  for (const d of dirs) {
+    scanDir(join(dir, d));
+  }
 }
 
-// ── Count total PNGs first so we can show a progress bar ─────────────────────
-let totalFiles = 0;
-for (const j of jurisdictions) {
-  const files = readdirSync(join(PLANS_DIR, j)).filter(
-    (f) => extname(f).toLowerCase() === ".png"
-  );
-  totalFiles += files.length;
+for (const plansDir of plansDirs) {
+  if (!existsSync(plansDir)) {
+    console.warn(`⚠  Folder not found, skipping: ${plansDir}`);
+    continue;
+  }
+  console.log(`\n📁  Scanning: ${plansDir}`);
+  scanDir(plansDir);
 }
 
-console.log(`
-╔══════════════════════════════════════════════════╗
-║            FrameUpNow Plan Migration             ║
-╚══════════════════════════════════════════════════╝
-  Plans folder : ${PLANS_DIR}
-  Jurisdictions: ${jurisdictions.length}
-  Total PNGs   : ${totalFiles}
-  Bucket       : ${BUCKET}
-`);
+console.log(`\n╔══════════════════════════════════════════════════╗`);
+console.log(`║            FrameUpNow Plan Migration             ║`);
+console.log(`╚══════════════════════════════════════════════════╝`);
+console.log(`  Total PNGs found : ${allPlans.length}`);
+console.log(`  Bucket           : ${BUCKET}\n`);
 
-// ── Main upload loop ──────────────────────────────────────────────────────────
-let uploaded = 0;
-let skipped  = 0;
-let failed   = 0;
-let processed = 0;
+// ── Upload loop ───────────────────────────────────────────────────────────────
+let uploaded = 0, skipped = 0, failed = 0;
 
-for (const jurisdiction of jurisdictions) {
-  const jDir  = join(PLANS_DIR, jurisdiction);
-  const files = readdirSync(jDir).filter(
-    (f) => extname(f).toLowerCase() === ".png"
-  );
+for (let i = 0; i < allPlans.length; i++) {
+  const { jurisdiction, filename, localPath } = allPlans[i];
+  const progress = `[${i + 1}/${allPlans.length}]`;
+  const jSlug    = slug(jurisdiction);
 
-  if (files.length === 0) continue;
-  console.log(`\n📂  ${jurisdiction} (${files.length} plans)`);
+  // Try Format A first (rich), then Format B (dimensions)
+  const fmtA = parseFormatA(filename);
+  const fmtB = !fmtA ? parseFormatB(filename) : null;
 
-  for (const filename of files) {
-    processed++;
-    const progress = `[${processed}/${totalFiles}]`;
+  if (!fmtA && !fmtB) {
+    console.warn(`  ${progress} ⚠  Unrecognised filename, skipping: ${filename}`);
+    skipped++;
+    continue;
+  }
 
-    const meta = parseFilename(filename);
-    if (!meta) {
-      console.warn(`  ${progress} ⚠  Skipping — filename not in format <id>_<W>x<D>.png: ${filename}`);
-      skipped++;
-      continue;
-    }
+  let docId, width, depth, sqft, bedrooms, bathrooms, bedsLabel, name, tagline;
 
-    const { planId, width, depth } = meta;
-    const slug    = jurisdiction.toLowerCase().replace(/\s+/g, "-");
-    const docId   = `${slug}-${planId}`;
-    const sqft    = Math.round(width * depth);
-    const srcPath = join(jDir, filename);
-    const dstPath = `plans/${slug}/${filename}`;
+  if (fmtA) {
+    // Rich format — extract everything from the filename
+    ({ sqft, bedrooms, bathrooms, bedsLabel, styleName: name } = fmtA);
+    ({ width, depth } = estimateDimensions(sqft));
+    docId   = `${jSlug}-${sqft}-${slug(name)}`;
+    tagline = `${bedsLabel} · ${sqft.toLocaleString()} sq ft · ${jurisdiction}`;
+  } else {
+    // Dimensions format — extract W×D, estimate sqft
+    ({ planId: name, width, depth } = fmtB);
+    sqft      = Math.round(width * depth);
+    bedrooms  = null;
+    bathrooms = null;
+    bedsLabel = "See plan";
+    docId     = `${jSlug}-${name}`;
+    tagline   = `${width}' × ${depth}' · ${sqft.toLocaleString()} sq ft · ${jurisdiction}`;
+  }
 
-    // Idempotency: skip if the Firestore doc already exists
-    const existing = await db.collection("plans").doc(docId).get();
-    if (existing.exists) {
-      process.stdout.write(`  ${progress} ✓  Already uploaded: ${docId}\n`);
-      skipped++;
-      continue;
-    }
+  // Idempotency — skip if doc already exists
+  const existing = await db.collection("plans").doc(docId).get();
+  if (existing.exists) {
+    console.log(`  ${progress} ✓  Already exists: ${docId}`);
+    skipped++;
+    continue;
+  }
 
-    try {
-      process.stdout.write(`  ${progress} ↑  Uploading ${docId} … `);
-      const imageUrl = await uploadAndGetUrl(srcPath, dstPath);
+  try {
+    process.stdout.write(`  ${progress} ↑  ${docId} … `);
+    const storagePath = `plans/${jSlug}/${filename}`;
+    const imageUrl    = await uploadAndGetUrl(localPath, storagePath);
 
-      await db.collection("plans").doc(docId).set({
-        id:       docId,
-        series:   jurisdiction,
-        name:     `Plan ${planId}`,
-        tagline:  `${width}' × ${depth}' · ${sqft.toLocaleString()} sq ft · ${jurisdiction}`,
-        width,
-        depth,
-        sqft,
-        imageUrl,
-        keySpecs: {
-          livableSqft: sqft,
-          bedrooms:    "See plan",
-          bathrooms:   "See plan",
-          floors:      1,
-          garage:      0,
-          studs:       "See plan",
-        },
-        sortOrder: isNaN(parseInt(planId, 10)) ? 9999 : parseInt(planId, 10),
-        features:  [],
-        layout:    { rooms: [], decks: [], doors: [] },
-        createdAt: new Date(),
-      });
+    await db.collection("plans").doc(docId).set({
+      id:       docId,
+      series:   jurisdiction,                     // jurisdiction = category in the UI
+      name,
+      tagline,
+      width,
+      depth,
+      sqft,
+      imageUrl,
+      keySpecs: {
+        livableSqft: sqft,
+        bedrooms:    bedrooms ?? "See plan",
+        bathrooms:   bathrooms ?? "See plan",
+        floors:      1,
+        garage:      0,
+        studs:       "See plan",
+      },
+      sortOrder: sqft,                             // sort by size within each jurisdiction
+      features:  [],
+      layout:    { rooms: [], decks: [], doors: [] },
+      createdAt: new Date(),
+    });
 
-      uploaded++;
-      console.log("✓ done");
-    } catch (err) {
-      failed++;
-      console.error(`✗ FAILED\n      ${err.message}`);
-    }
+    uploaded++;
+    console.log("✓ done");
+  } catch (err) {
+    failed++;
+    console.error(`✗ FAILED — ${err.message}`);
   }
 }
 
 // ── Summary ───────────────────────────────────────────────────────────────────
 console.log(`
 ╔══════════════════════════════════════════════════╗
-║                   Migration Done                 ║
+║                 Migration Done                   ║
 ╚══════════════════════════════════════════════════╝
-  ✅  Uploaded : ${uploaded} new plans
-  ⏭  Skipped  : ${skipped}  (already in Firestore or bad filename)
+  ✅  Uploaded : ${uploaded}
+  ⏭  Skipped  : ${skipped}
   ❌  Failed   : ${failed}
-
-  ${uploaded > 0 ? "New plans are LIVE on the site immediately — no rebuild needed." : "No new plans were added this run."}
+${uploaded > 0 ? "\n  Plans are LIVE on the site — no rebuild needed." : ""}
 `);
 process.exit(failed > 0 ? 1 : 0);
