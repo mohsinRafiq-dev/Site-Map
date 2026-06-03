@@ -106,12 +106,18 @@ export default function App() {
   const [planModalOpen, setPlanModalOpen] = useState(false);
 
   // ---- Mobile bottom-sheet (wizard over full-screen map) ----
-  const [sheetOpen, setSheetOpen] = useState(true);
-  // Collapse the sheet automatically on the "Place" step so the map is fully
-  // visible for dragging; expand on steps that need form input.
+  // Start collapsed on phones so the map is the hero; expanded on desktop.
+  const [sheetOpen, setSheetOpen] = useState(() => {
+    if (typeof window !== "undefined" && window.innerWidth <= 820) return false;
+    return true;
+  });
+  // After the first render, open the sheet on every step change so the user
+  // sees that step's controls — except the "Place" step, where we collapse it
+  // so the map is fully free for dragging the home.
+  const firstStepRunRef = useRef(true);
   useEffect(() => {
-    if (currentStep === 4) setSheetOpen(false);
-    else setSheetOpen(true);
+    if (firstStepRunRef.current) { firstStepRunRef.current = false; return; }
+    setSheetOpen(currentStep !== 4);
   }, [currentStep]);
 
   // ---- Theme (dark = night mode, light = original look) ----
