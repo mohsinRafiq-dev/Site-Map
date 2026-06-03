@@ -1,7 +1,6 @@
 import { useMemo, useRef, useState, useCallback, useEffect } from "react";
 import AddressSearch from "./components/AddressSearch";
 import LotConfirmation from "./components/LotConfirmation";
-import FloorPlanSelector from "./components/FloorPlanSelector";
 import FootprintControls from "./components/FootprintControls";
 import SetbackInputs from "./components/SetbackInputs";
 import MapView from "./components/MapView";
@@ -16,6 +15,7 @@ import ConfidenceMeter from "./components/ConfidenceMeter";
 import AuthModal from "./components/AuthModal";
 import SaveProjectButton from "./components/SaveProjectButton";
 import MyProjects from "./components/MyProjects";
+import FloorPlanModal from "./components/FloorPlanModal";
 import {
   makeRectangle,
   applySetbacksToRect,
@@ -34,6 +34,16 @@ const SESSION_KEY = "frameupnow-session-v1";
 // mounts so a restored session — whose active step flickers while the plan
 // catalog loads — doesn't yank the sidebar to a different step on load.
 let autoScrollReady = false;
+
+// Pick the furthest-along step to resume on after a reload.
+function stepFromSession(s) {
+  if (!s) return 1;
+  if (s.footprint && s.floorPlanId && s.lotConfirmed && s.location) return 6;
+  if (s.floorPlanId) return 4;
+  if (s.lotConfirmed) return 3;
+  if (s.location) return 2;
+  return 1;
+}
 
 function loadSession() {
   try {
@@ -90,6 +100,10 @@ export default function App() {
   // True only for the first render if a previous session was restored.
   const restoringRef = useRef(!!_session?.location);
   const didRestoreCameraRef = useRef(false);
+
+  // ---- One-step-at-a-time wizard ----
+  const [currentStep, setCurrentStep] = useState(() => stepFromSession(_session));
+  const [planModalOpen, setPlanModalOpen] = useState(false);
 
   // Track fullscreen state (browser may exit on Esc)
   useEffect(() => {
@@ -278,11 +292,50 @@ export default function App() {
     return fitMargin >= 0;
   }, [fitMargin]);
 
+  // Three-state fit for the map's neon placement indicator.
+  const fitState = useMemo(() => {
+    if (fitMargin == null) return "great";
+    if (fitMargin < 0) return "bad";
+    if (fitMargin < 1) return "tight";
+    return "great";
+  }, [fitMargin]);
+
   // ---- Step status ----
   const step1Done = !!location;
   const step2Done = !!location && lotConfirmed;
   const step3Done = step2Done && !!floorPlan && !!footprint;
   const allReady = step3Done;
+
+  // Furthest step the user is allowed to jump to (gates on completion).
+  let maxStep = 1;
+  if (step1Done) maxStep = 2;
+  if (step2Done) maxStep = 3;
+  if (floorPlan) maxStep = 4;
+  if (footprint && step3Done) maxStep = 6;
+
+  // Can the Next button advance from the current step?
+  const canProceed =
+    (currentStep === 1 && !!location) ||
+    (currentStep === 2 && lotConfirmed) ||
+    (currentStep === 3 && !!floorPlan) ||
+    (currentStep === 4 && !!footprint) ||
+    (currentStep === 5);
+
+  const goNext = useCallback(
+    () => setCurrentStep((s) => Math.min(6, s + 1)),
+    []
+  );
+  const goBack = useCallback(
+    () => setCurrentStep((s) => Math.max(1, s - 1)),
+    []
+  );
+  const jumpStep = useCallback(
+    (n) => setCurrentStep((s) => (n <= maxStepRef.current ? n : s)),
+    []
+  );
+  // Keep a ref so jumpStep doesn't need maxStep in its dep array.
+  const maxStepRef = useRef(maxStep);
+  maxStepRef.current = maxStep;
 
   // ---- Handlers ----
   function handleSelectLocation(loc) {
@@ -294,6 +347,8 @@ export default function App() {
     setLotConfirmed(false);
     setFloorPlan(null);
     setFootprint(null);
+    setCurrentProjectId(null);
+    setCurrentStep(2); // advance to "position your lot"
   }
 
   function handleChangeLotDims(next) {
@@ -314,6 +369,7 @@ export default function App() {
 
   function handleConfirmLot() {
     setLotConfirmed(true);
+    setCurrentStep(3); // advance to "pick a floor plan"
   }
 
   function handleEditLot() {
@@ -356,6 +412,8 @@ export default function App() {
     // Always increment so the auto-zoom effect re-fires, even when the
     // user clicks the same card twice.
     setPlacementId((p) => p + 1);
+    setPlanModalOpen(false);     // close the gallery
+    setCurrentStep(4);           // advance to "place & rotate"
   }
 
   // Drag the home. If snap-to-setbacks is on, clamp the position so the
@@ -465,6 +523,12 @@ export default function App() {
       if (found) setFloorPlan(found);
     }
     setCurrentProjectId(project.id);
+    setCurrentStep(stepFromSession({
+      location: project.location,
+      lotConfirmed: project.lotConfirmed,
+      floorPlanId: project.floorPlanId,
+      footprint: project.footprint,
+    }));
   }
 
   async function handleDownload(options = {}) {
@@ -547,135 +611,145 @@ export default function App() {
 
       <div className="app-body">
         <aside className="sidebar">
-          <StepNavigator
+          <WizardStepper
             steps={[
-              { n: 1, label: "Address", done: step1Done, active: !step1Done },
-              { n: 2, label: "Lot", done: step2Done, active: step1Done && !step2Done, locked: !step1Done },
-              { n: 3, label: "Plan", done: !!floorPlan, active: step2Done && !floorPlan, locked: !step2Done },
-              { n: 4, label: "Place", done: !!footprint && step3Done, active: !!floorPlan && !footprint, locked: !floorPlan },
-              { n: 5, label: "Setbacks", done: step3Done, active: step3Done, locked: !step3Done },
-              { n: 6, label: "Export", done: false, active: allReady, locked: !allReady },
+              { n: 1, label: "Address", done: step1Done },
+              { n: 2, label: "Lot", done: step2Done },
+              { n: 3, label: "Plan", done: !!floorPlan },
+              { n: 4, label: "Place", done: !!footprint && step3Done },
+              { n: 5, label: "Setbacks", done: step3Done },
+              { n: 6, label: "Export", done: false },
             ]}
-            onJump={(n) => {
-              const el = document.querySelector(`[data-step="${n}"]`);
-              if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-            }}
+            current={currentStep}
+            maxStep={maxStep}
+            onJump={jumpStep}
           />
-          <Step n={1} title="Find your address" done={step1Done} active={!step1Done}>
-            <AddressSearch onSelectLocation={handleSelectLocation} />
-            {location && (
-              <div className="selected-info">
-                <p className="place-name">{location.placeName}</p>
-                <p className="coords">
-                  {location.lat.toFixed(5)}, {location.lng.toFixed(5)}
-                </p>
-              </div>
+
+          <div className="wizard-panel">
+            {currentStep === 1 && (
+              <StepPanel
+                n={1}
+                title="Find your address"
+                subtitle="Search for your property to drop it on the map."
+              >
+                <AddressSearch onSelectLocation={handleSelectLocation} />
+                {location && (
+                  <div className="selected-info">
+                    <p className="place-name">{location.placeName}</p>
+                    <p className="coords">
+                      {location.lat.toFixed(5)}, {location.lng.toFixed(5)}
+                    </p>
+                  </div>
+                )}
+              </StepPanel>
             )}
-          </Step>
 
-          <Step
-            n={2}
-            title="Position & confirm your lot"
-            done={step2Done}
-            active={step1Done && !step2Done}
-            locked={!step1Done}
-          >
-            <LotConfirmation
-              lot={lot}
-              onChangeDims={handleChangeLotDims}
-              onRotate={handleRotateLot}
-              onResetRotation={handleResetLotRotation}
-              confirmed={lotConfirmed}
-              onConfirm={handleConfirmLot}
-              onReset={handleEditLot}
-            />
-          </Step>
-
-          <Step
-            n={3}
-            title="Pick a floor plan"
-            done={!!floorPlan}
-            active={step2Done && !floorPlan}
-            locked={!step2Done}
-          >
-            <FloorPlanSelector
-              value={floorPlan}
-              onChange={handleSelectFloorPlan}
-              disabled={!step2Done}
-            />
-          </Step>
-
-          <Step
-            n={4}
-            title="Place & rotate your home"
-            done={!!footprint && step3Done}
-            active={!!floorPlan}
-            locked={!floorPlan}
-          >
-            {footprint && (
-              <>
-                <FootprintControls
-                  rotation={footprint.rotation}
-                  onRotate={handleRotateFootprint}
-                  onReset={handleResetFootprint}
-                  onSnap90={handleSnap90}
-                  onAlignStreet={handleAlignStreet}
-                  alignBusy={alignBusy}
-                  snapToSetbacks={snapToSetbacks}
-                  onToggleSnap={() => setSnapToSetbacks((v) => !v)}
+            {currentStep === 2 && (
+              <StepPanel
+                n={2}
+                title="Position your lot"
+                subtitle="Drag the blue rectangle on the map, set dimensions, then confirm."
+              >
+                <LotConfirmation
+                  lot={lot}
+                  onChangeDims={handleChangeLotDims}
+                  onRotate={handleRotateLot}
+                  onResetRotation={handleResetLotRotation}
+                  confirmed={lotConfirmed}
+                  onConfirm={handleConfirmLot}
+                  onReset={handleEditLot}
                 />
-                <ConfidenceMeter marginFt={fitMargin} />
-              </>
+              </StepPanel>
             )}
-          </Step>
 
-          <Step
-            n={5}
-            title="Set setbacks"
-            done={step3Done}
-            active={false}
-            locked={!step3Done}
-          >
-            <SetbackInputs setbacks={setbacks} onChange={setSetbacks} />
-          </Step>
-
-          <Step
-            n={6}
-            title="Download site plan"
-            done={false}
-            active={allReady}
-            locked={!allReady}
-          >
-            <p className="hint">
-              {allReady
-                ? "A printable PNG with the satellite map, your floor plan, and a full info panel — lot, setbacks, plan specs, scale bar, and north arrow."
-                : "Complete the previous steps to enable export."}
-            </p>
-            <DownloadButton
-              onDownload={() => setExportDialogOpen(true)}
-              disabled={!allReady}
-              variant="prominent"
-              label="Export Site Plan…"
-            />
-            <SaveProjectButton
-              disabled={!allReady}
-              sessionData={{
-                location, lot, lotConfirmed, setbacks,
-                floorPlanId: floorPlan?.id ?? null, footprint,
-              }}
-              currentProjectId={currentProjectId}
-              onRequestSignIn={() => setAuthModalOpen(true)}
-              onSaved={(id) => setCurrentProjectId(id)}
-            />
-            {allReady && (
-              <ul className="export-perks">
-                <li>📐 True-to-scale satellite + plan overlay</li>
-                <li>📋 Full info panel (lot · setbacks · plan)</li>
-                <li>🧭 North arrow + scale bar</li>
-                <li>🖨️ Print-ready resolution</li>
-              </ul>
+            {currentStep === 3 && (
+              <StepPanel
+                n={3}
+                title="Pick a floor plan"
+                subtitle="Browse the catalog and choose a home to place."
+              >
+                <PlanTrigger
+                  plan={floorPlan}
+                  onOpen={() => setPlanModalOpen(true)}
+                />
+              </StepPanel>
             )}
-          </Step>
+
+            {currentStep === 4 && (
+              <StepPanel
+                n={4}
+                title="Place & rotate"
+                subtitle="Drag the home on the map. Rotate or align it to the street."
+              >
+                {footprint && (
+                  <>
+                    <FootprintControls
+                      rotation={footprint.rotation}
+                      onRotate={handleRotateFootprint}
+                      onReset={handleResetFootprint}
+                      onSnap90={handleSnap90}
+                      onAlignStreet={handleAlignStreet}
+                      alignBusy={alignBusy}
+                      snapToSetbacks={snapToSetbacks}
+                      onToggleSnap={() => setSnapToSetbacks((v) => !v)}
+                    />
+                    <ConfidenceMeter marginFt={fitMargin} />
+                  </>
+                )}
+              </StepPanel>
+            )}
+
+            {currentStep === 5 && (
+              <StepPanel
+                n={5}
+                title="Set setbacks"
+                subtitle="The yellow dashed line is your buildable area."
+              >
+                <SetbackInputs setbacks={setbacks} onChange={setSetbacks} />
+                {footprint && <ConfidenceMeter marginFt={fitMargin} />}
+              </StepPanel>
+            )}
+
+            {currentStep === 6 && (
+              <StepPanel
+                n={6}
+                title="Export your site plan"
+                subtitle="A print-ready PNG with map, plan, info panel, scale bar & north arrow."
+              >
+                <DownloadButton
+                  onDownload={() => setExportDialogOpen(true)}
+                  disabled={!allReady}
+                  variant="prominent"
+                  label="Export Site Plan…"
+                />
+                <SaveProjectButton
+                  disabled={!allReady}
+                  sessionData={{
+                    location, lot, lotConfirmed, setbacks,
+                    floorPlanId: floorPlan?.id ?? null, footprint,
+                  }}
+                  currentProjectId={currentProjectId}
+                  onRequestSignIn={() => setAuthModalOpen(true)}
+                  onSaved={(id) => setCurrentProjectId(id)}
+                />
+                {allReady && (
+                  <ul className="export-perks">
+                    <li>📐 True-to-scale satellite + plan overlay</li>
+                    <li>📋 Full info panel (lot · setbacks · plan)</li>
+                    <li>🧭 North arrow + scale bar</li>
+                    <li>🖨️ Print-ready resolution</li>
+                  </ul>
+                )}
+              </StepPanel>
+            )}
+          </div>
+
+          <WizardNav
+            current={currentStep}
+            canProceed={canProceed}
+            onBack={goBack}
+            onNext={goNext}
+          />
         </aside>
 
         <main className="map-wrapper" ref={mapWrapperRef}>
@@ -688,6 +762,7 @@ export default function App() {
             footprintFeature={footprintFeature}
             floorPlan={floorPlan}
             isValid={isValid}
+            fitState={fitState}
             viewMode={viewMode}
             mapStyle={mapStyle}
             is3D={is3D}
@@ -817,35 +892,44 @@ export default function App() {
         onClose={() => setProjectsOpen(false)}
         onLoad={handleLoadProject}
       />
+
+      <FloorPlanModal
+        open={planModalOpen}
+        value={floorPlan}
+        onClose={() => setPlanModalOpen(false)}
+        onSelect={handleSelectFloorPlan}
+      />
     </div>
   );
 }
 
-function StepNavigator({ steps, onJump }) {
+function WizardStepper({ steps, current, maxStep, onJump }) {
   return (
-    <nav className="step-nav" aria-label="Wizard progress">
+    <nav className="wstepper" aria-label="Wizard progress">
       {steps.map((s, i) => {
+        const reachable = s.n <= maxStep;
+        const isCurrent = s.n === current;
         const cls = [
-          "step-nav-dot",
+          "wstep-dot",
           s.done ? "done" : "",
-          s.active ? "active" : "",
-          s.locked ? "locked" : "",
-        ]
-          .filter(Boolean)
-          .join(" ");
+          isCurrent ? "current" : "",
+          !reachable ? "locked" : "",
+        ].filter(Boolean).join(" ");
         return (
           <button
             key={s.n}
             type="button"
             className={cls}
-            disabled={s.locked}
+            disabled={!reachable}
             onClick={() => onJump(s.n)}
             title={s.label}
-            aria-current={s.active ? "step" : undefined}
+            aria-current={isCurrent ? "step" : undefined}
           >
-            <span className="step-nav-num">{s.done ? "✓" : s.n}</span>
-            <span className="step-nav-label">{s.label}</span>
-            {i < steps.length - 1 && <span className="step-nav-bar" aria-hidden="true" />}
+            <span className="wstep-num">{s.done && !isCurrent ? "✓" : s.n}</span>
+            <span className="wstep-label">{s.label}</span>
+            {i < steps.length - 1 && (
+              <span className={`wstep-bar ${s.done ? "filled" : ""}`} aria-hidden="true" />
+            )}
           </button>
         );
       })}
@@ -853,38 +937,84 @@ function StepNavigator({ steps, onJump }) {
   );
 }
 
-function Step({ n, title, done, active, locked, children }) {
-  const cls = [
-    "step",
-    done ? "step-done" : "",
-    active ? "step-active" : "",
-    locked ? "step-locked" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
-  const ref = useRef(null);
-  // When this step becomes active, smooth-scroll it into view within
-  // the sidebar. Saves the user a long manual scroll on tall screens.
-  // Suppressed during the initial restore window (autoScrollReady) so a
-  // reloaded session doesn't yank the sidebar as async state settles.
-  useEffect(() => {
-    if (!autoScrollReady) return;
-    if (active && ref.current) {
-      ref.current.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-        inline: "nearest",
-      });
-    }
-  }, [active]);
+function StepPanel({ n, title, subtitle, children }) {
   return (
-    <section className={cls} ref={ref} data-step={n}>
-      <header className="step-header">
-        <span className="step-num">{done ? "✓" : n}</span>
-        <h2>{title}</h2>
-      </header>
-      <div className="step-body">{children}</div>
+    <section className="wpanel" data-step={n} key={n}>
+      <div className="wpanel-head">
+        <span className="wpanel-kicker">Step {n} of 6</span>
+        <h2 className="wpanel-title">{title}</h2>
+        {subtitle && <p className="wpanel-sub">{subtitle}</p>}
+      </div>
+      <div className="wpanel-body">{children}</div>
     </section>
+  );
+}
+
+function WizardNav({ current, canProceed, onBack, onNext }) {
+  return (
+    <div className="wnav">
+      <button
+        type="button"
+        className="wnav-back"
+        onClick={onBack}
+        disabled={current === 1}
+      >
+        ‹ Back
+      </button>
+      <div className="wnav-progress" aria-hidden="true">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <span key={i} className={`wnav-pip ${i + 1 <= current ? "on" : ""}`} />
+        ))}
+      </div>
+      {current < 6 ? (
+        <button
+          type="button"
+          className="wnav-next"
+          onClick={onNext}
+          disabled={!canProceed}
+        >
+          Next ›
+        </button>
+      ) : (
+        <span className="wnav-done">Final step</span>
+      )}
+    </div>
+  );
+}
+
+// Step-3 trigger: opens the full-screen plan gallery, shows the chosen plan.
+function PlanTrigger({ plan, onOpen }) {
+  return (
+    <div className="plan-trigger">
+      {plan ? (
+        <button type="button" className="plan-trigger-selected" onClick={onOpen}>
+          <div className="pts-thumb">
+            {plan.image ? (
+              <img src={plan.image} alt={plan.name} />
+            ) : (
+              <span className="pts-thumb-ph">▦</span>
+            )}
+          </div>
+          <div className="pts-info">
+            <span className="pts-series">{plan.series}</span>
+            <span className="pts-name">{plan.name}</span>
+            <span className="pts-meta">
+              {plan.sqft} sf · {plan.width}′×{plan.depth}′
+            </span>
+          </div>
+          <span className="pts-change">Change ›</span>
+        </button>
+      ) : (
+        <button type="button" className="plan-trigger-empty" onClick={onOpen}>
+          <span className="pte-icon">▦</span>
+          <span className="pte-text">
+            <b>Browse floor plans</b>
+            <span>Filter by jurisdiction, size & more</span>
+          </span>
+          <span className="pte-arrow">›</span>
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -950,16 +1080,19 @@ function fmtSpec(v) {
 }
 
 function PlanFloatCard({ plan, valid, margin }) {
-  const fitText =
-    margin == null
-      ? null
-      : margin < 0
-      ? `Outside setback by ${Math.abs(margin).toFixed(1)} ft`
-      : margin < 1
-      ? `Tight fit · ${margin.toFixed(1)} ft clearance`
-      : `Great placement · ${margin.toFixed(1)} ft clearance`;
+  const state =
+    margin == null ? "great" : margin < 0 ? "bad" : margin < 1 ? "tight" : "great";
+  const meta = {
+    great: { icon: "✓", cls: "great", head: "Great placement",
+             sub: margin == null ? "Looks good" : `${margin.toFixed(1)} ft of clearance` },
+    tight: { icon: "!", cls: "tight", head: "Tight fit",
+             sub: `${(margin ?? 0).toFixed(1)} ft to the setback line` },
+    bad:   { icon: "✕", cls: "bad", head: "Outside buildable area",
+             sub: `Over by ${Math.abs(margin ?? 0).toFixed(1)} ft — drag it inside` },
+  }[state];
+
   return (
-    <div className={`plan-float ${valid ? "" : "invalid"}`}>
+    <div className={`plan-float fit-${state}`}>
       <div className="plan-float-head">
         <span className="plan-float-series">{plan.series}</span>
         <h4>{plan.name}</h4>
@@ -970,16 +1103,13 @@ function PlanFloatCard({ plan, valid, margin }) {
         <Stat value={fmtSpec(plan.keySpecs.bathrooms)} label="bath" />
         <Stat value={`${plan.width}'×${plan.depth}'`} label="size" />
       </div>
-      {fitText && (
-        <div className={`plan-float-fit ${valid ? "ok" : "bad"}`}>
-          {fitText}
-        </div>
-      )}
-      {!valid && (
-        <div className="plan-float-warn">
-          ⚠ Outside buildable area — drag inside the dashed yellow setback line.
-        </div>
-      )}
+      <div className={`fit-badge fit-badge-${meta.cls}`}>
+        <span className="fit-badge-icon">{meta.icon}</span>
+        <span className="fit-badge-text">
+          <b>{meta.head}</b>
+          <span>{meta.sub}</span>
+        </span>
+      </div>
     </div>
   );
 }

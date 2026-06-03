@@ -19,6 +19,7 @@ const SB_SRC = "sb-src";
 const SB_LINE = "sb-line";
 const FP_SRC = "fp-src";
 const FP_FILL = "fp-fill";
+const FP_GLOW = "fp-glow";
 const FP_LINE = "fp-line";
 const FP_IMG_SRC = "fp-img-src";
 const FP_IMG_LAYER = "fp-img-layer";
@@ -42,6 +43,7 @@ const MapView = forwardRef(function MapView(
     footprintFeature,
     floorPlan,
     isValid,
+    fitState = "great",
     viewMode = "full",
     mapStyle = "satellite",
     is3D = false,
@@ -150,24 +152,45 @@ const MapView = forwardRef(function MapView(
           "line-dasharray": [2, 2],
         },
       });
-      // FP_FILL is mostly a click target + invalid-state warning tint.
-      // The visual representation comes from the FP_IMG_LAYER (SVG floor plan).
+      // FP_FILL tints the footprint by fit state (great / tight / bad).
       map.addLayer({
         id: FP_FILL,
         type: "fill",
         source: FP_SRC,
         paint: {
           "fill-color": [
-            "case",
-            ["==", ["get", "valid"], true],
-            "#10b981",
-            "#ef4444",
+            "match", ["get", "fitState"],
+            "bad", "#ef4444",
+            "tight", "#f59e0b",
+            /* great */ "#22c55e",
           ],
           "fill-opacity": [
-            "case",
-            ["==", ["get", "valid"], true],
-            0.0,
-            0.35,
+            "match", ["get", "fitState"],
+            "bad", 0.34,
+            "tight", 0.20,
+            /* great */ 0.12,
+          ],
+        },
+      });
+      // Blurred wide "glow" line under the crisp outline — neon effect.
+      map.addLayer({
+        id: FP_GLOW,
+        type: "line",
+        source: FP_SRC,
+        paint: {
+          "line-color": [
+            "match", ["get", "fitState"],
+            "bad", "#ef4444",
+            "tight", "#fbbf24",
+            /* great */ "#34d399",
+          ],
+          "line-width": 11,
+          "line-blur": 9,
+          "line-opacity": [
+            "match", ["get", "fitState"],
+            "bad", 0.7,
+            "tight", 0.6,
+            /* great */ 0.55,
           ],
         },
       });
@@ -177,10 +200,10 @@ const MapView = forwardRef(function MapView(
         source: FP_SRC,
         paint: {
           "line-color": [
-            "case",
-            ["==", ["get", "valid"], true],
-            "#3f7a3a",
-            "#b91c1c",
+            "match", ["get", "fitState"],
+            "bad", "#fca5a5",
+            "tight", "#fcd34d",
+            /* great */ "#6ee7b7",
           ],
           "line-width": 2.5,
         },
@@ -535,11 +558,15 @@ const MapView = forwardRef(function MapView(
     const tagged = footprintFeature
       ? {
           ...footprintFeature,
-          properties: { ...footprintFeature.properties, valid: !!isValid },
+          properties: {
+            ...footprintFeature.properties,
+            valid: !!isValid,
+            fitState,
+          },
         }
       : null;
     syncWhenReady(FP_SRC, tagged);
-  }, [footprintFeature, isValid]);
+  }, [footprintFeature, isValid, fitState]);
 
   // ------- Floor plan image overlay (the actual rendered floor plan as SVG → PNG) -------
   useEffect(() => {
