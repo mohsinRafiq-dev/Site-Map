@@ -4585,6 +4585,21 @@ input:focus {
 .hpp-sqft, .hpp-name { color: var(--header-text); }
 .validation-badge { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); color: var(--header-text); }
 .validation-badge.valid { background: rgba(52,211,153,0.22); border-color: rgba(52,211,153,0.5); }
+/* ---- Header reset / start-over icon button ---- */
+.header-icon-btn {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.12);
+  color: var(--header-text);
+  display: grid; place-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, transform 0.3s;
+}
+.header-icon-btn:hover { background: rgba(255,255,255,0.22); }
+.header-icon-btn:active { transform: rotate(-180deg); }
+
 /* ---- Theme toggle (header) ---- */
 .theme-toggle {
   border: none;
@@ -4693,7 +4708,7 @@ input:focus {
     z-index: 8;
     transition: max-height 0.34s cubic-bezier(0.34, 1.1, 0.5, 1);
   }
-  .sidebar.sheet-collapsed { max-height: 118px; }
+  .sidebar.sheet-collapsed { max-height: 178px; }
 
   /* Grabber + hint */
   .sheet-handle {
@@ -4742,20 +4757,35 @@ input:focus {
   .wpanel-title { font-size: 20px; }
   .wpanel-sub { font-size: 12.5px; }
 
-  /* Nav = sheet footer */
+  /* Nav = sheet footer — ALWAYS visible so Back/Next is reachable,
+     including when the sheet is collapsed on the Place step. */
   .wnav {
     position: static;
     flex-shrink: 0;
     padding: 12px 0 2px;
+    padding-bottom: calc(2px + env(safe-area-inset-bottom));
     margin-top: 8px;
     border-top: 1px solid var(--border);
     background: none;
   }
 
-  /* Collapsed sheet shows only the grabber + stepper peek */
-  .sidebar.sheet-collapsed .wizard-panel,
-  .sidebar.sheet-collapsed .wnav { display: none; }
-  .sidebar.sheet-collapsed .wstepper { border-bottom: none; padding-bottom: 4px; }
+  /* Collapsed sheet: hide only the scrolling panel body. The stepper and
+     the Back/Next bar stay visible so the user can always navigate. */
+  .sidebar.sheet-collapsed .wizard-panel { display: none; }
+  .sidebar.sheet-collapsed .wstepper { border-bottom: none; padding-bottom: 8px; }
+  .sidebar.sheet-collapsed .wnav { margin-top: 0; }
+
+  /* ---- Header: keep brand left, controls hard-right (no wrap) ---- */
+  .app-header { flex-wrap: nowrap; gap: 8px; }
+  .brand { min-width: 0; flex: 1 1 auto; }
+  .brand-text { min-width: 0; }
+  .brand-text h1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .header-meta {
+    margin-left: auto;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
 
   /* ---- Map overlays repositioned to stay clear of the sheet ---- */
   .compass { top: 12px; right: 12px; width: 50px; height: 50px; }
@@ -4779,7 +4809,7 @@ input:focus {
 
   /* Camera quick-actions float just above the collapsed sheet */
   .cam-actions {
-    bottom: 130px; top: auto;
+    bottom: 192px; top: auto;
     left: 50%; right: auto; transform: translateX(-50%);
     flex-direction: row;
   }
@@ -4803,9 +4833,13 @@ input:focus {
 /* Very small phones */
 @media (max-width: 480px) {
   .sidebar { max-height: 64vh; max-height: 64dvh; padding: 0 12px 12px; }
+  .sidebar.sheet-collapsed { max-height: 172px; }
   .wpanel-title { font-size: 18px; }
   .header-plan-pill { display: none; }
-  .cam-actions { bottom: 128px; padding: 4px; gap: 3px; }
+  .validation-badge { display: none; }
+  .header-signin-btn { padding: 7px 12px; font-size: 12.5px; }
+  .header-icon-btn { width: 32px; height: 32px; }
+  .cam-actions { bottom: 188px; padding: 4px; gap: 3px; }
   .cam-btn { height: 32px; padding: 0 10px; font-size: 11.5px; }
   .theme-toggle-track { width: 44px; height: 24px; }
   .theme-toggle-track.dark .theme-toggle-thumb { transform: translateX(20px); }

@@ -234,9 +234,32 @@ const MapView = forwardRef(function MapView(
       attachDrag(map, "fp");
       // Tell the parent the map is ready so it can frame a restored session.
       if (typeof onReady === "function") onReady();
+      // Mapbox can paint black if the container's final size wasn't ready at
+      // init (common on reload / mobile bottom-sheet layout). Force a few
+      // resizes once the layout settles so the canvas matches the container.
+      map.resize();
+      requestAnimationFrame(() => map.resize());
+      setTimeout(() => map.resize(), 250);
+      setTimeout(() => map.resize(), 800);
     });
 
+    // Keep the canvas in sync with any container size change (orientation
+    // flip, sheet open/close, devtools, etc.) — prevents the black-map bug.
+    let ro;
+    if (typeof ResizeObserver !== "undefined" && containerRef.current) {
+      ro = new ResizeObserver(() => {
+        if (mapRef.current) mapRef.current.resize();
+      });
+      ro.observe(containerRef.current);
+    }
+    const onWinResize = () => map.resize();
+    window.addEventListener("resize", onWinResize);
+    window.addEventListener("orientationchange", onWinResize);
+
     return () => {
+      if (ro) ro.disconnect();
+      window.removeEventListener("resize", onWinResize);
+      window.removeEventListener("orientationchange", onWinResize);
       map.remove();
       mapRef.current = null;
       styleReadyRef.current = false;

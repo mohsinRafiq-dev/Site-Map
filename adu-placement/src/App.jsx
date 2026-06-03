@@ -530,6 +530,27 @@ export default function App() {
     setFootprint({ center: initialCenter, rotation: lot.rotation });
   }
 
+  // Wipe the current session and start a brand-new plan from step 1.
+  function handleStartFresh() {
+    const ok = window.confirm(
+      "Start a fresh plan? This clears your current address, lot, floor plan and placement."
+    );
+    if (!ok) return;
+    try { localStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
+    setLocation(null);
+    setLot(DEFAULT_LOT);
+    setLotConfirmed(false);
+    setFloorPlan(null);
+    setFootprint(null);
+    setSetbacks(DEFAULT_SETBACKS);
+    setSnapToSetbacks(false);
+    setCurrentProjectId(null);
+    setPlanModalOpen(false);
+    setExportDialogOpen(false);
+    setProjectsOpen(false);
+    setCurrentStep(1);
+  }
+
   // Restore all wizard state from a saved Firestore project.
   function handleLoadProject(project) {
     if (project.location)    setLocation(project.location);
@@ -603,6 +624,20 @@ export default function App() {
           )}
           {footprintFeature && setbackFeature && (
             <ValidationBadge isValid={isValid} />
+          )}
+          {(location || floorPlan) && (
+            <button
+              type="button"
+              className="header-icon-btn"
+              onClick={handleStartFresh}
+              title="Start a fresh plan"
+              aria-label="Start over"
+            >
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                <path d="M3 3v5h5" />
+              </svg>
+            </button>
           )}
           <ThemeToggle theme={theme} onToggle={() => setTheme((t) => (t === "dark" ? "light" : "dark"))} />
           {user ? (
