@@ -619,18 +619,23 @@ export default function App() {
             </span>
           </div>
         </div>
-        <div className="header-meta">
-          {floorPlan && (
-            <div className="header-plan-pill">
-              <span className="hpp-series">{floorPlan.series}</span>
-              <span className="hpp-name">{floorPlan.name}</span>
-              <span className="hpp-sep">·</span>
-              <span className="hpp-sqft">{floorPlan.sqft} sf</span>
-            </div>
-          )}
-          {footprintFeature && setbackFeature && (
-            <ValidationBadge isValid={isValid} />
-          )}
+        {(floorPlan || (footprintFeature && setbackFeature)) && (
+          <div className="header-context">
+            {floorPlan && (
+              <div className="header-plan-pill">
+                <span className="hpp-series">{floorPlan.series}</span>
+                <span className="hpp-name">{floorPlan.name}</span>
+                <span className="hpp-sep">·</span>
+                <span className="hpp-sqft">{floorPlan.sqft} sf</span>
+              </div>
+            )}
+            {footprintFeature && setbackFeature && (
+              <ValidationBadge isValid={isValid} />
+            )}
+          </div>
+        )}
+
+        <div className="header-controls">
           {(location || floorPlan) && (
             <button
               type="button"
@@ -670,7 +675,7 @@ export default function App() {
         </div>
       </header>
 
-      <div className="app-body">
+      <div className="app-body" data-sheet={sheetOpen ? "open" : "collapsed"}>
         <aside className={`sidebar ${sheetOpen ? "sheet-open" : "sheet-collapsed"}`}>
           <button
             type="button"

@@ -188,7 +188,7 @@ body {
 .app-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 12px;
   padding: 12px 24px;
   background: var(--header-bg);
   -webkit-backdrop-filter: blur(18px) saturate(140%);
@@ -207,7 +207,21 @@ body {
   background: var(--header-line);
 }
 
-.brand { display: flex; align-items: center; gap: 13px; }
+.brand { display: flex; align-items: center; gap: 13px; margin-right: auto; }
+
+/* Header is now: brand | context (plan + validity) | controls (reset/theme/account) */
+.header-context {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
 
 .brand-mark {
   width: 40px;
@@ -4779,17 +4793,23 @@ input:focus {
   .sidebar.sheet-collapsed .wstepper { border-bottom: none; padding-bottom: 8px; }
   .sidebar.sheet-collapsed .wnav { margin-top: 0; }
 
-  /* ---- Header: keep brand left, controls hard-right (no wrap) ---- */
-  .app-header { flex-wrap: nowrap; gap: 8px; }
-  .brand { min-width: 0; flex: 1 1 auto; }
+  /* ---- Header: row 1 = brand + account controls, row 2 = plan + validity ---- */
+  .app-header { flex-wrap: wrap; row-gap: 8px; column-gap: 8px; padding: 10px 14px; }
+  .brand { min-width: 0; flex: 1 1 auto; margin-right: 0; }
   .brand-text { min-width: 0; }
   .brand-text h1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .header-meta {
-    margin-left: auto;
-    flex: 0 0 auto;
-    flex-wrap: nowrap;
+  .header-controls { order: 2; margin-left: auto; flex: 0 0 auto; gap: 8px; }
+  .header-context {
+    order: 3;
+    flex-basis: 100%;
+    width: 100%;
+    justify-content: flex-start;
     gap: 8px;
   }
+  /* Plan + validity stay visible on mobile (second row) */
+  .header-plan-pill { display: inline-flex; max-width: 70%; }
+  .hpp-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .validation-badge { display: inline-flex; }
 
   /* ---- Map overlays repositioned to stay clear of the sheet ---- */
   .compass { top: 12px; right: 12px; width: 50px; height: 50px; }
@@ -4811,9 +4831,11 @@ input:focus {
   .legend { display: none; }
   .plan-float { display: none; }
 
-  /* Camera quick-actions float just above the collapsed sheet */
-  .cam-actions {
-    bottom: calc(188px + env(safe-area-inset-bottom)); top: auto;
+  /* Camera quick-actions: hidden while the sheet is expanded (it covers the
+     bottom), shown just above the collapsed peek (e.g. on the Place step). */
+  [data-sheet="open"] .cam-actions { display: none; }
+  [data-sheet="collapsed"] .cam-actions {
+    bottom: calc(184px + env(safe-area-inset-bottom)); top: auto;
     left: 50%; right: auto; transform: translateX(-50%);
     flex-direction: row;
   }
@@ -4856,11 +4878,9 @@ input:focus {
   .sidebar { max-height: 64vh; max-height: 64dvh; padding: 0 12px 12px; }
   .sidebar.sheet-collapsed { max-height: 172px; }
   .wpanel-title { font-size: 18px; }
-  .header-plan-pill { display: none; }
-  .validation-badge { display: none; }
   .header-signin-btn { padding: 7px 12px; font-size: 12.5px; }
   .header-icon-btn { width: 32px; height: 32px; }
-  .cam-actions { bottom: calc(184px + env(safe-area-inset-bottom)); padding: 4px; gap: 3px; }
+  [data-sheet="collapsed"] .cam-actions { padding: 4px; gap: 3px; }
   .cam-btn { height: 32px; padding: 0 10px; font-size: 11.5px; }
   .theme-toggle-track { width: 44px; height: 24px; }
   .theme-toggle-track.dark .theme-toggle-thumb { transform: translateX(20px); }
