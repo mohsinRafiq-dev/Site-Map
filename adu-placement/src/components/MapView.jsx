@@ -28,10 +28,13 @@ const MARKER_HIDE_MS = 7000;
 const PIXELS_PER_FOOT = 24; // raster resolution for the SVG → PNG conversion
 
 const MAP_STYLES = {
-  satellite: "mapbox://styles/mapbox/satellite-streets-v12",
-  streets: "mapbox://styles/mapbox/streets-v12",
-  outdoors: "mapbox://styles/mapbox/outdoors-v12",
-  light: "mapbox://styles/mapbox/light-v11",
+  satellite: "mapbox://styles/mapbox/satellite-streets-v12", // Real (satellite + labels)
+  satelliteClean: "mapbox://styles/mapbox/satellite-v9",     // Real (no labels)
+  streets: "mapbox://styles/mapbox/streets-v12",             // Default road map
+  outdoors: "mapbox://styles/mapbox/outdoors-v12",           // Terrain / topo
+  light: "mapbox://styles/mapbox/light-v11",                 // Light
+  dark: "mapbox://styles/mapbox/dark-v11",                   // Dark
+  navDay: "mapbox://styles/mapbox/navigation-day-v1",        // Navigation
 };
 
 const MapView = forwardRef(function MapView(
@@ -96,8 +99,9 @@ const MapView = forwardRef(function MapView(
     const map = new mapboxgl.Map({
       container: containerRef.current,
       style: initialStyleUrl,
-      center: [-98.5795, 39.8283],
-      zoom: 3,
+      // Open on a whole-world view behind the landing hero.
+      center: [10, 25],
+      zoom: 1.4,
       pitch: is3D ? 55 : 0,
       preserveDrawingBuffer: true,
     });
@@ -298,6 +302,9 @@ const MapView = forwardRef(function MapView(
     zoomOut: () => mapRef.current?.zoomOut({ duration: 250 }),
     flyToLocation: (lng, lat, zoom = 19) =>
       mapRef.current?.flyTo({ center: [lng, lat], zoom, speed: 1.4, essential: true }),
+    // Zoom back out to the whole-world landing view (used by "Start fresh").
+    flyToWorld: () =>
+      mapRef.current?.flyTo({ center: [10, 25], zoom: 1.4, pitch: 0, bearing: 0, speed: 1.6, essential: true }),
     // Frame the footprint as tightly as possible — fitBounds with small padding
     // so the home fills the visible area, capped at max zoom 22.
     flyToFootprint: (padding = 50) => {

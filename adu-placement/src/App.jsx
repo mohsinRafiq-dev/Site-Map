@@ -106,10 +106,12 @@ export default function App() {
   const [planModalOpen, setPlanModalOpen] = useState(false);
 
   // ---- Mobile bottom-sheet (wizard over full-screen map) ----
-  // Start collapsed on phones so the map is the hero; expanded on desktop.
+  // Desktop: always open. Phones: collapsed on a fresh landing (so the world
+  // map + hero are the focus), but open when resuming a saved session.
   const [sheetOpen, setSheetOpen] = useState(() => {
-    if (typeof window !== "undefined" && window.innerWidth <= 820) return false;
-    return true;
+    const mobile = typeof window !== "undefined" && window.innerWidth <= 820;
+    if (!mobile) return true;
+    return stepFromSession(_session) > 1; // open only if resuming past step 1
   });
   // After the first render, open the sheet on every step change so the user
   // sees that step's controls — except the "Place" step, where we collapse it
@@ -555,6 +557,8 @@ export default function App() {
     setExportDialogOpen(false);
     setProjectsOpen(false);
     setCurrentStep(1);
+    // Zoom the map back out to the whole-world landing view.
+    mapRef.current?.flyToWorld();
   }
 
   // Restore all wizard state from a saved Firestore project.

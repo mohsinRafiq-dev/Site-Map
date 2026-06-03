@@ -1951,6 +1951,9 @@ body {
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
+/* The style-switcher group must NOT clip its dropdown menu, and must sit
+   above the zoom/3D groups below it so the menu isn't covered. */
+.map-ctl-group--menu { overflow: visible; z-index: 20; }
 
 .map-ctl-stack {
   display: flex;
@@ -2003,7 +2006,9 @@ body {
   box-shadow:
     0 10px 28px rgba(31, 58, 28, 0.22),
     inset 0 0 0 1px rgba(31, 58, 28, 0.08);
-  min-width: 156px;
+  min-width: 168px;
+  max-height: min(60vh, 340px);
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -2032,15 +2037,23 @@ body {
 }
 .map-style-menu li.active {
   background: var(--green-700);
-  color: #fff;
+  color: var(--on-accent);
 }
-.map-style-menu li.active .map-style-emoji {
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+.map-style-ico {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  background: rgba(52, 211, 153, 0.12);
+  color: var(--accent);
 }
-.map-style-emoji {
-  font-size: 15px;
-  line-height: 1;
+.map-style-menu li.active .map-style-ico {
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--on-accent);
 }
+.map-style-name { flex: 1; }
 .map-style-check {
   margin-left: auto;
   font-size: 12px;
@@ -4724,10 +4737,15 @@ input:focus {
     z-index: 30;
     transition: max-height 0.34s cubic-bezier(0.34, 1.1, 0.5, 1);
   }
-  .sidebar.sheet-collapsed { max-height: calc(170px + env(safe-area-inset-bottom)); }
+  .sidebar.sheet-collapsed { max-height: calc(158px + env(safe-area-inset-bottom)); }
 
-  /* Hero welcome card is redundant on mobile (step 1 panel says the same) */
-  .hero { display: none; }
+  /* Landing hero: centered in the map area above the collapsed sheet */
+  .hero { padding: 16px; align-items: center; padding-bottom: 180px; }
+  .hero-card { padding: 22px 20px; border-radius: 18px; max-width: calc(100vw - 32px); }
+  .hero-eyebrow { font-size: 10px; margin-bottom: 10px; }
+  .hero-title { font-size: 19px; line-height: 1.25; }
+  .hero-sub { font-size: 13px; margin: 10px 0 14px; }
+  .hero-row { gap: 8px 12px; font-size: 12px; }
 
   /* Grabber + hint */
   .sheet-handle {
@@ -4835,7 +4853,7 @@ input:focus {
      bottom), shown just above the collapsed peek (e.g. on the Place step). */
   [data-sheet="open"] .cam-actions { display: none; }
   [data-sheet="collapsed"] .cam-actions {
-    bottom: calc(184px + env(safe-area-inset-bottom)); top: auto;
+    bottom: calc(174px + env(safe-area-inset-bottom)); top: auto;
     left: 50%; right: auto; transform: translateX(-50%);
     flex-direction: row;
   }
@@ -4875,8 +4893,8 @@ input:focus {
 
 /* Very small phones */
 @media (max-width: 480px) {
-  .sidebar { max-height: 64vh; max-height: 64dvh; padding: 0 12px 12px; }
-  .sidebar.sheet-collapsed { max-height: 172px; }
+  .sidebar { max-height: 64dvh; }
+  .sidebar.sheet-collapsed { max-height: calc(158px + env(safe-area-inset-bottom)); }
   .wpanel-title { font-size: 18px; }
   .header-signin-btn { padding: 7px 12px; font-size: 12.5px; }
   .header-icon-btn { width: 32px; height: 32px; }
