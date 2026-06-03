@@ -76,7 +76,7 @@ export default function App() {
   const [floorPlan, setFloorPlan] = useState(null);
   const [footprint, setFootprint] = useState(_session?.footprint ?? null);
   const [setbacks, setSetbacks] = useState(_session?.setbacks ?? DEFAULT_SETBACKS);
-  const [snapToSetbacks, setSnapToSetbacks] = useState(true);
+  const [snapToSetbacks, setSnapToSetbacks] = useState(false);
   const [viewMode, setViewMode] = useState("full"); // "full" | "footprint"
   const [alignBusy, setAlignBusy] = useState(false);
   const [alignFlash, setAlignFlash] = useState(null); // { kind: "ok" | "warn", text }
@@ -104,6 +104,16 @@ export default function App() {
   // ---- One-step-at-a-time wizard ----
   const [currentStep, setCurrentStep] = useState(() => stepFromSession(_session));
   const [planModalOpen, setPlanModalOpen] = useState(false);
+
+  // ---- Theme (dark = night mode, light = original look) ----
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem("frameupnow-theme") || "dark"; }
+    catch { return "dark"; }
+  });
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    try { localStorage.setItem("frameupnow-theme", theme); } catch { /* ignore */ }
+  }, [theme]);
 
   // Track fullscreen state (browser may exit on Esc)
   useEffect(() => {
@@ -585,6 +595,7 @@ export default function App() {
           {footprintFeature && setbackFeature && (
             <ValidationBadge isValid={isValid} />
           )}
+          <ThemeToggle theme={theme} onToggle={() => setTheme((t) => (t === "dark" ? "light" : "dark"))} />
           {user ? (
             <button
               type="button"
@@ -1015,6 +1026,34 @@ function PlanTrigger({ plan, onOpen }) {
         </button>
       )}
     </div>
+  );
+}
+
+function ThemeToggle({ theme, onToggle }) {
+  const isDark = theme === "dark";
+  return (
+    <button
+      type="button"
+      className="theme-toggle"
+      onClick={onToggle}
+      aria-label={isDark ? "Switch to light mode" : "Switch to night mode"}
+      title={isDark ? "Light mode" : "Night mode"}
+    >
+      <span className={`theme-toggle-track ${isDark ? "dark" : "light"}`}>
+        <span className="theme-toggle-thumb">
+          {isDark ? (
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+            </svg>
+          )}
+        </span>
+      </span>
+    </button>
   );
 }
 
