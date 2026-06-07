@@ -4353,7 +4353,28 @@ input:focus {
   border-color: transparent; color: var(--on-accent);
 }
 .pmf-pill.active span { background: rgba(0,0,0,0.2); color: var(--on-accent); }
+.pmf-row2 { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .pmf-size { display: flex; gap: 6px; flex-wrap: wrap; }
+.pmf-sort {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 11.5px; font-weight: 700; color: var(--text-soft);
+  text-transform: uppercase; letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+.pmf-sort select {
+  font-family: inherit;
+  font-size: 12.5px; font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+  cursor: pointer;
+  text-transform: none; letter-spacing: 0;
+}
+.pmf-sort select:focus { outline: none; border-color: rgba(52,211,153,0.5); }
+.pme-title { font-size: 16px; font-weight: 700; color: var(--text); margin: 0; }
+.pme-sub { font-size: 13px; color: var(--text-muted); margin: 0; }
 .pmf-size-btn {
   padding: 5px 12px;
   border-radius: 999px;
@@ -4596,6 +4617,8 @@ input:focus {
 .auth-field input { background: rgba(255,255,255,0.04); border-color: var(--border); color: var(--text); }
 .auth-divider { color: var(--text-soft); }
 .auth-reset-sent { background: rgba(52,211,153,0.08); border-color: rgba(52,211,153,0.3); color: var(--green-400); }
+.auth-legal { margin: 4px 0 0; text-align: center; font-size: 11px; color: var(--text-soft); line-height: 1.4; }
+.auth-legal a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
 
 /* Projects drawer (dark) */
 .projects-drawer { background: var(--surface-solid); }
@@ -4684,6 +4707,22 @@ input:focus {
 .key-spec { background: rgba(255,255,255,0.03); border-color: var(--border); }
 .key-spec-value { color: var(--text); }
 .key-spec-icon { background: rgba(52,211,153,0.12); }
+
+/* Disclaimer note (setbacks / legal) */
+.disclaimer {
+  margin: 4px 0 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  background: rgba(224, 160, 27, 0.1);
+  border: 1px solid rgba(224, 160, 27, 0.3);
+  border-radius: 10px;
+  padding: 9px 11px;
+}
+:root[data-theme="dark"] .disclaimer {
+  background: rgba(251, 191, 36, 0.08);
+  border-color: rgba(251, 191, 36, 0.25);
+}
 
 /* ================================================================
    MOBILE BOTTOM-SHEET LAYOUT (authoritative — appended last)

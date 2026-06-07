@@ -29,4 +29,19 @@ export default defineConfig({
 
   // Allow Vite to serve PNG/JPG from anywhere inside the project.
   assetsInclude: ["**/*.png", "**/*.jpg", "**/*.jpeg"],
+
+  build: {
+    // Split heavy vendors into separate chunks so the browser caches them
+    // independently and the main app bundle stays smaller.
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          mapbox: ["mapbox-gl"],
+          firebase: ["firebase/app", "firebase/firestore", "firebase/storage", "firebase/auth"],
+          react: ["react", "react-dom"],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1200,
+  },
 });

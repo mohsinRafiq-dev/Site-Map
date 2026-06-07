@@ -6,10 +6,11 @@ const ALL = "__all__";
 // Full-screen plan gallery. Opens on demand from Step 3 so the wizard
 // sidebar stays short. Filters by jurisdiction + size + free-text search.
 export default function FloorPlanModal({ open, value, onClose, onSelect }) {
-  const { plans, loading } = usePlansCatalog();
+  const { plans, loading, error, reload } = usePlansCatalog();
   const [filter, setFilter] = useState(ALL);
   const [query, setQuery] = useState("");
   const [size, setSize] = useState("all"); // all | s | m | l
+  const [sort, setSort] = useState("default"); // default | sqftAsc | sqftDesc | beds
 
   // Close on Escape
   useEffect(() => {
@@ -27,7 +28,7 @@ export default function FloorPlanModal({ open, value, onClose, onSelect }) {
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return plans.filter((p) => {
+    const filtered = plans.filter((p) => {
       if (filter !== ALL && p.series !== filter) return false;
       if (size === "s" && p.sqft >= 600) return false;
       if (size === "m" && (p.sqft < 600 || p.sqft > 1000)) return false;
@@ -40,7 +41,13 @@ export default function FloorPlanModal({ open, value, onClose, onSelect }) {
         String(p.sqft || "").includes(q)
       );
     });
-  }, [plans, filter, query, size]);
+    const beds = (p) => (typeof p.keySpecs?.bedrooms === "number" ? p.keySpecs.bedrooms : -1);
+    const sorted = [...filtered];
+    if (sort === "sqftAsc") sorted.sort((a, b) => (a.sqft || 0) - (b.sqft || 0));
+    else if (sort === "sqftDesc") sorted.sort((a, b) => (b.sqft || 0) - (a.sqft || 0));
+    else if (sort === "beds") sorted.sort((a, b) => beds(b) - beds(a) || (a.sqft || 0) - (b.sqft || 0));
+    return sorted;
+  }, [plans, filter, query, size, sort]);
 
   if (!open) return null;
 
@@ -94,27 +101,44 @@ export default function FloorPlanModal({ open, value, onClose, onSelect }) {
               </button>
             ))}
           </div>
-          <div className="pmf-size">
-            {[
-              { id: "all", label: "Any size" },
-              { id: "s", label: "< 600 sf" },
-              { id: "m", label: "600–1000" },
-              { id: "l", label: "> 1000 sf" },
-            ].map((s) => (
-              <button
-                key={s.id}
-                className={`pmf-size-btn ${size === s.id ? "active" : ""}`}
-                onClick={() => setSize(s.id)}
-              >
-                {s.label}
-              </button>
-            ))}
+          <div className="pmf-row2">
+            <div className="pmf-size">
+              {[
+                { id: "all", label: "Any size" },
+                { id: "s", label: "< 600 sf" },
+                { id: "m", label: "600–1000" },
+                { id: "l", label: "> 1000 sf" },
+              ].map((s) => (
+                <button
+                  key={s.id}
+                  className={`pmf-size-btn ${size === s.id ? "active" : ""}`}
+                  onClick={() => setSize(s.id)}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+            <label className="pmf-sort">
+              <span>Sort</span>
+              <select value={sort} onChange={(e) => setSort(e.target.value)}>
+                <option value="default">Jurisdiction</option>
+                <option value="sqftAsc">Size: small → large</option>
+                <option value="sqftDesc">Size: large → small</option>
+                <option value="beds">Most bedrooms</option>
+              </select>
+            </label>
           </div>
         </div>
 
         {/* Grid */}
         <div className="plan-modal-grid-wrap">
-          {loading ? (
+          {error && !loading ? (
+            <div className="plan-modal-empty">
+              <p className="pme-title">Couldn't load floor plans</p>
+              <p className="pme-sub">Check your connection and try again.</p>
+              <button className="btn btn-accent sm" onClick={reload}>↻ Try again</button>
+            </div>
+          ) : loading ? (
             <div className="plan-modal-grid">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="pm-card-skeleton" />

@@ -48,6 +48,11 @@ export default function SetbackInputs({ setbacks, onChange }) {
           15 ft
         </button>
       </div>
+
+      <p className="disclaimer">
+        ⚠ Setback guidance is approximate and for visualization only. Always
+        verify required setbacks with your local planning department before building.
+      </p>
     </div>
   );
 }

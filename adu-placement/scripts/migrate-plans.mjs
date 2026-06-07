@@ -247,6 +247,10 @@ for (let i = 0; i < allPlans.length; i++) {
   }
 }
 
+// ── Rebuild catalog.json (single cheap file the app loads instead of
+//    querying all plan docs — saves ~N Firestore reads per visitor) ──────────
+await rebuildCatalog(db, bucket, BUCKET);
+
 // ── Summary ───────────────────────────────────────────────────────────────────
 console.log(`
 ╔══════════════════════════════════════════════════╗
@@ -258,3 +262,25 @@ console.log(`
 ${uploaded > 0 ? "\n  Plans are LIVE on the site — no rebuild needed." : ""}
 `);
 process.exit(failed > 0 ? 1 : 0);
+
+// ── Catalog builder ───────────────────────────────────────────────────────────
+async function rebuildCatalog(db, bucket, bucketName) {
+  process.stdout.write("\n📦  Rebuilding catalog.json … ");
+  const snap = await db.collection("plans").get();
+  const plans = snap.docs.map((d) => ({ ...d.data(), id: d.id }));
+  plans.sort((a, b) =>
+    (a.series || "").localeCompare(b.series || "") || (a.sqft || 0) - (b.sqft || 0)
+  );
+  const json = JSON.stringify({ version: Date.now(), count: plans.length, plans });
+  const file = bucket.file("plans/catalog.json");
+  await file.save(json, {
+    contentType: "application/json",
+    metadata: {
+      // Short cache so weekly updates propagate within a few minutes,
+      // while still being CDN-served (one cheap request per visitor).
+      cacheControl: "public, max-age=300",
+    },
+  });
+  await file.makePublic();
+  console.log(`done (${plans.length} plans).`);
+}

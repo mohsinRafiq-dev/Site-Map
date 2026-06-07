@@ -10,7 +10,8 @@
     "migrate": "node scripts/migrate-plans.mjs",
     "clear-plans": "node scripts/clear-plans.mjs",
     "set-cors": "node scripts/set-cors.mjs",
-    "fix-urls": "node scripts/fix-image-urls.mjs"
+    "fix-urls": "node scripts/fix-image-urls.mjs",
+    "build-catalog": "node scripts/build-catalog.mjs"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
