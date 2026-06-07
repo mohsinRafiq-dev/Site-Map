@@ -1942,6 +1942,7 @@ body {
 
 .map-ctl-group {
   position: relative;
+  z-index: 1;
   background: rgba(255, 255, 255, 0.97);
   border-radius: 10px;
   box-shadow:
@@ -1952,8 +1953,10 @@ body {
   backdrop-filter: blur(8px);
 }
 /* The style-switcher group must NOT clip its dropdown menu, and must sit
-   above the zoom/3D groups below it so the menu isn't covered. */
-.map-ctl-group--menu { overflow: visible; z-index: 20; }
+   above the zoom/3D groups below it so the menu is never covered. The
+   sibling groups establish backdrop-filter stacking contexts, so an explicit
+   high z-index here is required to guarantee the dropdown paints on top. */
+.map-ctl-group--menu { overflow: visible; z-index: 100; }
 
 .map-ctl-stack {
   display: flex;
@@ -2012,6 +2015,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  z-index: 101;
   animation: menuPop 0.15s cubic-bezier(0.34, 1.3, 0.64, 1);
 }
 
