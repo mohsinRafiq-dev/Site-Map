@@ -89,11 +89,12 @@ function parseFormatA(filename) {
 }
 
 /**
- * Format B: "1055_17x35.png"
+ * Format B: "1055_17x35.png" or "1643_31.2×24.png"
+ * Accepts the separator as x / X / × (Unicode multiplication sign U+00D7).
  * Returns { planId, width, depth } or null
  */
 function parseFormatB(filename) {
-  const m = filename.match(/^(\w[\w-]*)_([\d.]+)x([\d.]+)\.png$/i);
+  const m = filename.match(/^(\w[\w-]*)_([\d.]+)[x×X]([\d.]+)\.png$/i);
   if (!m) return null;
   return { planId: m[1], width: parseFloat(m[2]), depth: parseFloat(m[3]) };
 }
