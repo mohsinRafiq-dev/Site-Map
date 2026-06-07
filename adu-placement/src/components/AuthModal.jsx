@@ -183,8 +183,8 @@ export default function AuthModal({ open, onClose, onSuccess }) {
         {mode !== "reset" && (
           <p className="auth-legal">
             By continuing you agree to our{" "}
-            <a href="/terms" target="_blank" rel="noreferrer">Terms</a> and{" "}
-            <a href="/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.
+            <a href="/terms.html" target="_blank" rel="noreferrer">Terms</a> and{" "}
+            <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>.
           </p>
         )}
       </div>
