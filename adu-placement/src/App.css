@@ -1949,13 +1949,13 @@ body {
     0 6px 18px rgba(31, 58, 28, 0.18),
     inset 0 0 0 1px rgba(31, 58, 28, 0.08);
   overflow: hidden;
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  /* NOTE: deliberately NO backdrop-filter here. backdrop-filter creates a
+     stacking context that, in Chrome/Safari, paints these buttons ABOVE the
+     style dropdown regardless of z-index — which hid the menu. The background
+     is nearly opaque so the blur was barely visible anyway. */
 }
-/* The style-switcher group must NOT clip its dropdown menu, and must sit
-   above the zoom/3D groups below it so the menu is never covered. The
-   sibling groups establish backdrop-filter stacking contexts, so an explicit
-   high z-index here is required to guarantee the dropdown paints on top. */
+/* The style-switcher group must NOT clip its dropdown menu, and sits above
+   the zoom/3D groups below it so the menu is never covered. */
 .map-ctl-group--menu { overflow: visible; z-index: 100; }
 
 .map-ctl-stack {
