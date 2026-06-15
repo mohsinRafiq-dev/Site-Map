@@ -90,7 +90,8 @@ export default function AddressSearch({ onSelectLocation }) {
 
   function handlePick(feature) {
     const [lng, lat] = feature.center;
-    onSelectLocation({ lng, lat, placeName: feature.place_name });
+    const { state, county } = extractRegion(feature);
+    onSelectLocation({ lng, lat, placeName: feature.place_name, state, county });
     skipNextSearchRef.current = true;
     setQuery(feature.place_name);
     setResults([]);
@@ -137,10 +138,12 @@ export default function AddressSearch({ onSelectLocation }) {
             `&types=address,place&limit=1`;
           const res = await fetch(url);
           const data = await res.json();
+          const feature = data?.features?.[0];
           const placeName =
-            data?.features?.[0]?.place_name ||
+            feature?.place_name ||
             `Lat ${lat.toFixed(5)}, Lng ${lng.toFixed(5)}`;
-          onSelectLocation({ lng, lat, placeName });
+          const { state, county } = feature ? extractRegion(feature) : {};
+          onSelectLocation({ lng, lat, placeName, state, county });
           skipNextSearchRef.current = true;
           setQuery(placeName);
           setResults([]);
@@ -267,6 +270,20 @@ export default function AddressSearch({ onSelectLocation }) {
       )}
     </div>
   );
+}
+
+// Pull the US state (region) and county (district) out of a Mapbox feature's
+// context, so we can pre-fill the request form. Falls back gracefully.
+function extractRegion(feature) {
+  const ctx = feature?.context || [];
+  // The feature itself may BE a region/district when types are broad.
+  const all = [...ctx, feature].filter(Boolean);
+  const find = (prefix) => all.find((c) => typeof c?.id === "string" && c.id.startsWith(prefix));
+  const region = find("region");
+  const district = find("district");
+  let county = district?.text || "";
+  // Mapbox usually names counties "Los Angeles County" — keep as-is.
+  return { state: region?.text || "", county };
 }
 
 function SearchIcon() {

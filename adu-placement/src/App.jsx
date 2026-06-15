@@ -16,6 +16,8 @@ import AuthModal from "./components/AuthModal";
 import SaveProjectButton from "./components/SaveProjectButton";
 import MyProjects from "./components/MyProjects";
 import FloorPlanModal from "./components/FloorPlanModal";
+import BuildReadyForm from "./components/BuildReadyForm";
+import AdminPanel from "./components/AdminPanel";
 import {
   makeRectangle,
   applySetbacksToRect,
@@ -73,7 +75,9 @@ export default function App() {
   const [lot, setLot] = useState(_session?.lot ?? DEFAULT_LOT);
   const [lotConfirmed, setLotConfirmed] = useState(_session?.lotConfirmed ?? false);
   // floorPlan starts null; restored by effect once catalog is ready
-  const [floorPlan, setFloorPlan] = useState(null);
+  // Restore the full plan object straight from the session snapshot so the
+  // placed home survives a reload even before the catalog finishes loading.
+  const [floorPlan, setFloorPlan] = useState(_session?.floorPlanSnapshot ?? null);
   const [footprint, setFootprint] = useState(_session?.footprint ?? null);
   const [setbacks, setSetbacks] = useState(_session?.setbacks ?? DEFAULT_SETBACKS);
   const [snapToSetbacks, setSnapToSetbacks] = useState(false);
@@ -95,6 +99,9 @@ export default function App() {
   // clicked most recently.
   const [activeCamAction, setActiveCamAction] = useState(null);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  // Build-Ready ADU Placement Request — required before export is unlocked.
+  const [buildFormOpen, setBuildFormOpen] = useState(false);
+  const [leadSubmitted, setLeadSubmitted] = useState(_session?.leadSubmitted ?? false);
   const [mapReady, setMapReady] = useState(false);
   const mapWrapperRef = useRef(null);
   // True only for the first render if a previous session was restored.
@@ -121,6 +128,16 @@ export default function App() {
     if (firstStepRunRef.current) { firstStepRunRef.current = false; return; }
     setSheetOpen(currentStep !== 4);
   }, [currentStep]);
+
+  // ---- Admin panel (opened via #admin) ----
+  const [adminMode, setAdminMode] = useState(
+    () => typeof window !== "undefined" && window.location.hash === "#admin"
+  );
+  useEffect(() => {
+    const onHash = () => setAdminMode(window.location.hash === "#admin");
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
 
   // ---- Theme (dark = night mode, light = original look) ----
   const [theme, setTheme] = useState(() => {
@@ -158,12 +175,14 @@ export default function App() {
         lotConfirmed,
         setbacks,
         floorPlanId: floorPlan?.id ?? null,
+        floorPlanSnapshot: floorPlan, // full plan so reload restores instantly
         footprint,
+        leadSubmitted,
       }));
     } catch {
       // localStorage unavailable (private browsing quota, etc.) — silently skip
     }
-  }, [location, lot, lotConfirmed, setbacks, floorPlan, footprint]);
+  }, [location, lot, lotConfirmed, setbacks, floorPlan, footprint, leadSubmitted]);
 
   // Restore floor plan from session once the catalog finishes loading.
   // Builtin plans resolve instantly; Firestore plans resolve on the first
@@ -555,11 +574,47 @@ export default function App() {
     setCurrentProjectId(null);
     setPlanModalOpen(false);
     setExportDialogOpen(false);
+    setBuildFormOpen(false);
+    setLeadSubmitted(false);
     setProjectsOpen(false);
     setCurrentStep(1);
     // Zoom the map back out to the whole-world landing view.
     mapRef.current?.flyToWorld();
   }
+
+  // Both Export AND Save Project are gated behind the Build-Ready request form
+  // (per Kolleen's spec). The customer may sign in any time, but cannot print,
+  // download, OR save a project until the form is submitted. We remember which
+  // action triggered the form so we can resume it once they submit.
+  const pendingActionRef = useRef(null);
+  function requestExport() {
+    if (leadSubmitted) { setExportDialogOpen(true); return; }
+    pendingActionRef.current = "export";
+    setBuildFormOpen(true);
+  }
+  function requestSaveForm() {
+    pendingActionRef.current = "save";
+    setBuildFormOpen(true);
+  }
+  function handleLeadSubmitted() {
+    setLeadSubmitted(true);
+    setBuildFormOpen(false);
+    if (pendingActionRef.current === "export") setExportDialogOpen(true);
+    // For "save", we simply unlock — the now-active Save button is right there.
+    pendingActionRef.current = null;
+  }
+  const leadContext = {
+    planId: floorPlan?.id ?? null,
+    planName: floorPlan?.name ?? null,
+    planSeries: floorPlan?.series ?? null,
+    planSqft: floorPlan?.sqft ?? null,
+    address: location?.placeName ?? null,
+    coordinates: location ? { lng: location.lng, lat: location.lat } : null,
+    lot: { width: lot.width, length: lot.length, rotation: lot.rotation },
+    setbacks,
+  };
+  // County/State captured from the chosen address — used to pre-fill the form.
+  const leadPrefill = { county: location?.county || "", state: location?.state || "" };
 
   // Restore all wizard state from a saved Firestore project.
   function handleLoadProject(project) {
@@ -599,6 +654,11 @@ export default function App() {
       includeLegend: options.includeLegend ?? true,
     };
     await mapRef.current?.exportAsPng(ctx);
+  }
+
+  // The admin dashboard takes over the whole screen when opened via #admin.
+  if (adminMode) {
+    return <AdminPanel onExit={() => { window.location.hash = ""; setAdminMode(false); }} />;
   }
 
   return (
@@ -797,14 +857,32 @@ export default function App() {
                 title="Export your site plan"
                 subtitle="A print-ready PNG with map, plan, info panel, scale bar & north arrow."
               >
+                {allReady && !leadSubmitted && (
+                  <div className="export-gate">
+                    <div className="export-gate-icon" aria-hidden="true">🔒</div>
+                    <div className="export-gate-body">
+                      <strong>One quick step before your site plan</strong>
+                      <p>Complete the short Build-Ready ADU Placement Request and your site plan unlocks instantly for download &amp; print.</p>
+                    </div>
+                  </div>
+                )}
+
+                {allReady && leadSubmitted && (
+                  <div className="export-unlocked">
+                    ✓ Request submitted — your site plan is unlocked.
+                  </div>
+                )}
+
                 <DownloadButton
-                  onDownload={() => setExportDialogOpen(true)}
+                  onDownload={requestExport}
                   disabled={!allReady}
                   variant="prominent"
-                  label="Export Site Plan…"
+                  label={leadSubmitted ? "Export Site Plan…" : "Continue to request form…"}
                 />
                 <SaveProjectButton
                   disabled={!allReady}
+                  formLocked={!leadSubmitted}
+                  onRequireForm={requestSaveForm}
                   sessionData={{
                     location, lot, lotConfirmed, setbacks,
                     floorPlanId: floorPlan?.id ?? null, footprint,
@@ -901,7 +979,7 @@ export default function App() {
             <button
               type="button"
               className="export-fab"
-              onClick={() => setExportDialogOpen(true)}
+              onClick={requestExport}
               aria-label="Export site plan"
               title="Export your site plan as PNG"
             >
@@ -979,6 +1057,14 @@ export default function App() {
         value={floorPlan}
         onClose={() => setPlanModalOpen(false)}
         onSelect={handleSelectFloorPlan}
+      />
+
+      <BuildReadyForm
+        open={buildFormOpen}
+        onClose={() => setBuildFormOpen(false)}
+        onSubmitted={handleLeadSubmitted}
+        context={leadContext}
+        prefill={leadPrefill}
       />
     </div>
   );

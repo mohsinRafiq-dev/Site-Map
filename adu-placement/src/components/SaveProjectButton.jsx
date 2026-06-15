@@ -11,6 +11,8 @@ export default function SaveProjectButton({
   onRequestSignIn,
   currentProjectId,
   onSaved,
+  formLocked = false,   // true until the Build-Ready request form is submitted
+  onRequireForm,        // open the form when a locked save is attempted
 }) {
   const { user } = useAuth();
   const [busy, setBusy] = useState(false);
@@ -26,6 +28,23 @@ export default function SaveProjectButton({
       >
         <UserIcon />
         Sign in to save project
+      </button>
+    );
+  }
+
+  // Signed in but the form isn't done yet → saving is locked. Clicking opens
+  // the Build-Ready request form (same gate as export).
+  if (formLocked) {
+    return (
+      <button
+        type="button"
+        className="btn btn-ghost w-full save-project-btn"
+        onClick={onRequireForm}
+        disabled={disabled}
+        title="Complete the request form to save your project"
+      >
+        <LockIcon />
+        Complete form to save project
       </button>
     );
   }
@@ -62,6 +81,16 @@ export default function SaveProjectButton({
         <><CloudIcon /> {currentProjectId ? "Save changes" : "Save project"}</>
       )}
     </button>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+         strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="4" y="11" width="16" height="10" rx="2" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </svg>
   );
 }
 
