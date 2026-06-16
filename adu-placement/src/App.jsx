@@ -40,11 +40,11 @@ let autoScrollReady = false;
 // Pick the furthest-along step to resume on after a reload.
 function stepFromSession(s) {
   if (!s) return 1;
-  if (s.footprint && s.floorPlanId && s.lotConfirmed && s.location) return 6;
-  if (s.floorPlanId) return 4;
-  if (s.lotConfirmed) return 3;
-  if (s.location) return 2;
-  return 1;
+  if (s.footprint && s.floorPlanId && s.lotConfirmed && s.location) return 5; // Export
+  if (s.floorPlanId) return 4; // Place
+  if (s.lotConfirmed) return 3; // Plan
+  if (s.location) return 2;     // Lot
+  return 1;                     // Address
 }
 
 function loadSession() {
@@ -361,15 +361,15 @@ export default function App() {
   if (step1Done) maxStep = 2;
   if (step2Done) maxStep = 3;
   if (floorPlan) maxStep = 4;
-  if (footprint && step3Done) maxStep = 6;
+  if (footprint && step3Done) maxStep = 5;
 
   // Can the Next button advance from the current step?
   const canProceed =
     (currentStep === 1 && !!location) ||
     (currentStep === 2 && lotConfirmed) ||
     (currentStep === 3 && !!floorPlan) ||
-    (currentStep === 4 && !!footprint) ||
-    (currentStep === 5);
+    (currentStep === 4 && !!footprint);
+    // Step 5 (Export) is the final step — no "Next".
 
   const goNext = useCallback(
     () => setCurrentStep((s) => Math.min(6, s + 1)),
@@ -764,8 +764,7 @@ export default function App() {
               { n: 2, label: "Lot", done: step2Done },
               { n: 3, label: "Plan", done: !!floorPlan },
               { n: 4, label: "Place", done: !!footprint && step3Done },
-              { n: 5, label: "Setbacks", done: step3Done },
-              { n: 6, label: "Export", done: false },
+              { n: 5, label: "Export", done: false },
             ]}
             current={currentStep}
             maxStep={maxStep}
@@ -825,8 +824,8 @@ export default function App() {
             {currentStep === 4 && (
               <StepPanel
                 n={4}
-                title="Place & rotate"
-                subtitle="Drag the home on the map. Rotate or align it to the street."
+                title="Place your home"
+                subtitle="Drag the home on the map to position it inside the buildable area."
               >
                 {footprint && (
                   <>
@@ -841,6 +840,23 @@ export default function App() {
                       onToggleSnap={() => setSnapToSetbacks((v) => !v)}
                     />
                     <ConfidenceMeter marginFt={fitMargin} />
+
+                    {/* Setbacks are pre-set to 5 ft (covers almost all of the
+                        USA). Only shown if the customer needs to adjust them. */}
+                    <details className="setbacks-settings">
+                      <summary>
+                        <span className="ss-gear" aria-hidden="true">⚙</span>
+                        Adjust setbacks
+                        <span className="ss-optional">optional · default 5 ft</span>
+                      </summary>
+                      <p className="setbacks-note">
+                        Most ADUs can be placed with side and rear setbacks of approximately
+                        4–5 ft, but local zoning requirements vary. We've set a default of
+                        <strong> 5 ft for the rear and either side</strong> — only change this
+                        if your jurisdiction requires it.
+                      </p>
+                      <SetbackInputs setbacks={setbacks} onChange={setSetbacks} />
+                    </details>
                   </>
                 )}
               </StepPanel>
@@ -849,17 +865,6 @@ export default function App() {
             {currentStep === 5 && (
               <StepPanel
                 n={5}
-                title="Set setbacks"
-                subtitle="The yellow dashed line is your buildable area."
-              >
-                <SetbackInputs setbacks={setbacks} onChange={setSetbacks} />
-                {footprint && <ConfidenceMeter marginFt={fitMargin} />}
-              </StepPanel>
-            )}
-
-            {currentStep === 6 && (
-              <StepPanel
-                n={6}
                 title="Export your site plan"
                 subtitle="A print-ready PNG with map, plan, info panel, scale bar & north arrow."
               >
@@ -1114,7 +1119,7 @@ function StepPanel({ n, title, subtitle, children }) {
   return (
     <section className="wpanel" data-step={n} key={n}>
       <div className="wpanel-head">
-        <span className="wpanel-kicker">Step {n} of 6</span>
+        <span className="wpanel-kicker">Step {n} of 5</span>
         <h2 className="wpanel-title">{title}</h2>
         {subtitle && <p className="wpanel-sub">{subtitle}</p>}
       </div>
@@ -1135,11 +1140,11 @@ function WizardNav({ current, canProceed, onBack, onNext }) {
         ‹ Back
       </button>
       <div className="wnav-progress" aria-hidden="true">
-        {Array.from({ length: 6 }).map((_, i) => (
+        {Array.from({ length: 5 }).map((_, i) => (
           <span key={i} className={`wnav-pip ${i + 1 <= current ? "on" : ""}`} />
         ))}
       </div>
-      {current < 6 ? (
+      {current < 5 ? (
         <button
           type="button"
           className="wnav-next"

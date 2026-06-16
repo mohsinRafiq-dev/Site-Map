@@ -298,7 +298,9 @@ body {
   backdrop-filter: blur(16px);
   border-right: 1px solid var(--border);
   padding: 20px;
-  overflow-y: auto;
+  /* The sidebar itself does NOT scroll — the wizard panel inside does, so the
+     stepper (header) and Back/Next (footer) stay fixed. */
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -4024,8 +4026,7 @@ input:focus {
 
 /* ---- Wizard stepper (top of sidebar) ---- */
 .wstepper {
-  position: sticky;
-  top: 0;
+  flex-shrink: 0;  /* fixed header above the scrolling panel */
   z-index: 5;
   display: flex;
   align-items: flex-start;
@@ -4095,7 +4096,12 @@ input:focus {
 .wstep-bar.filled { background: linear-gradient(90deg, var(--green-600), var(--green-500)); }
 
 /* ---- Wizard panel (current step body) ---- */
-.wizard-panel { flex: 1; min-height: 0; }
+/* The panel is the ONLY scroller (header = stepper, footer = nav stay fixed).
+   min-height:0 lets it shrink below content height so overflow actually works. */
+.wizard-panel { flex: 1; min-height: 0; overflow-y: auto; padding-bottom: 10px; }
+.wizard-panel::-webkit-scrollbar { width: 8px; }
+.wizard-panel::-webkit-scrollbar-thumb { background: rgba(52,211,153,0.25); border-radius: 4px; }
+.wizard-panel::-webkit-scrollbar-thumb:hover { background: rgba(52,211,153,0.4); }
 .wpanel {
   animation: wpanelIn 0.32s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
@@ -4128,16 +4134,21 @@ input:focus {
 
 /* ---- Wizard nav (Back / Next) ---- */
 .wnav {
-  position: sticky;
-  bottom: 0;
-  display: flex;
+  /* A real flex footer (not sticky) — always sits below the scrolling panel,
+     so it can never pin in the middle of tall content. 3-column grid keeps the
+     progress pips dead-centered regardless of the Back / Final-step widths. */
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
-  padding: 14px 2px 4px;
-  margin-top: auto;
-  background: linear-gradient(transparent, var(--sidebar-bg) 45%);
+  padding: 12px 2px 2px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-solid);
 }
+.wnav-back { justify-self: start; }
+.wnav-progress { justify-self: center; }
+.wnav-next, .wnav-done { justify-self: end; }
 .wnav-back, .wnav-next {
   padding: 11px 20px;
   border-radius: 999px;
@@ -5056,6 +5067,53 @@ input:focus {
   .admin-user { display: none; }
 }
 
+/* ================================================================
+   SETBACKS SETTINGS — collapsed, optional, inside the Place step
+   ================================================================ */
+.setbacks-settings {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.setbacks-settings > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 14px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
+  user-select: none;
+}
+.setbacks-settings > summary::-webkit-details-marker { display: none; }
+.setbacks-settings > summary:hover { background: rgba(52,211,153,0.06); }
+.ss-gear { font-size: 15px; line-height: 1; }
+.ss-optional {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-soft);
+  letter-spacing: 0.01em;
+}
+.setbacks-settings[open] > summary {
+  border-bottom: 1px solid var(--border);
+  color: var(--accent);
+}
+.setbacks-settings[open] > summary .ss-gear { animation: ssSpin 0.5s ease; }
+@keyframes ssSpin { from { transform: rotate(0); } to { transform: rotate(120deg); } }
+.setbacks-settings .setback-inputs { padding: 12px 14px; }
+.setbacks-note {
+  margin: 0;
+  padding: 12px 14px 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+.setbacks-note strong { color: var(--text); }
+
 /* Disclaimer note (setbacks / legal) */
 .disclaimer {
   margin: 4px 0 0;
@@ -5191,10 +5249,13 @@ input:focus {
     position: static;
     flex-shrink: 0;
     padding: 12px 0 4px;
-    margin-top: 8px;
+    margin-top: 0;
     border-top: 1px solid var(--border);
-    background: none;
+    background: var(--sidebar-bg);
   }
+  /* On mobile the panel scrolls internally, so it doesn't need the desktop
+     bottom padding that clears the sticky bar. */
+  .wizard-panel { padding-bottom: 8px; }
 
   /* Collapsed sheet: hide only the scrolling panel body. The stepper and
      the Back/Next bar stay visible so the user can always navigate. */
