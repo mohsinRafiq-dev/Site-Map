@@ -184,11 +184,15 @@ export default function App() {
     }
   }, [location, lot, lotConfirmed, setbacks, floorPlan, footprint, leadSubmitted]);
 
-  // Restore floor plan from session once the catalog finishes loading.
-  // Builtin plans resolve instantly; Firestore plans resolve on the first
-  // network fetch (~200-500 ms). Either way, a single effect handles it.
+  // Restore floor plan from session once the catalog finishes loading (fallback
+  // for old sessions without a snapshot). `allowRestoreRef` cancels this if the
+  // user starts fresh / changes address BEFORE the catalog finished loading —
+  // otherwise the late-arriving catalog would resurrect the cleared plan.
+  const allowRestoreRef = useRef(!!_session?.floorPlanId);
   useEffect(() => {
-    if (plansLoading || floorPlan || !_session?.floorPlanId) return;
+    if (!allowRestoreRef.current || plansLoading) return;
+    allowRestoreRef.current = false; // attempt at most once, after catalog is ready
+    if (floorPlan || !_session?.floorPlanId) return;
     const found = getPlanById(_session.floorPlanId);
     if (found) setFloorPlan(found);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -385,6 +389,7 @@ export default function App() {
 
   // ---- Handlers ----
   function handleSelectLocation(loc) {
+    allowRestoreRef.current = false; // user picked a new address — don't restore old plan
     setLocation(loc);
     setLot({
       ...DEFAULT_LOT,
@@ -563,6 +568,7 @@ export default function App() {
       "Start a fresh plan? This clears your current address, lot, floor plan and placement."
     );
     if (!ok) return;
+    allowRestoreRef.current = false; // cancel any pending session restore
     try { localStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
     setLocation(null);
     setLot(DEFAULT_LOT);
