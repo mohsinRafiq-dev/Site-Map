@@ -1219,7 +1219,7 @@ function Hero() {
       <div className="hero-card">
         <span className="hero-eyebrow">DESIGN. PLACE. BUILD.</span>
         <h2 className="hero-title">
-          See your future ADU on your land — <em>before</em> the first board is cut.
+          See your future ADU on your land — <em>before</em> the frame is erected.
         </h2>
         <p className="hero-sub">
           Drop in your address, drag the floor plan, and watch the rooms, decks
