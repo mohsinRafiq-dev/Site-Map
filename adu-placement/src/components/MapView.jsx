@@ -380,27 +380,48 @@ const MapView = forwardRef(function MapView(
       const mapW = sourceCanvas.width;
       const mapH = sourceCanvas.height;
 
-      // Render at requested upscale factor for crisper print output.
-      const r = Math.max(1, Math.min(3, scale));
-      const PANEL_W = includeInfoPanel ? Math.round(320 * r) : 0;
-      const HEADER_H = Math.round(72 * r);
-      const FOOTER_H = Math.round(36 * r);
-      const outW = mapW + PANEL_W;
-      const outH = HEADER_H + mapH + FOOTER_H;
+      // Render onto a FIXED US-Letter landscape page (11" × 8.5") so the
+      // exported PNG always prints to fit a standard sheet — the previous
+      // output matched the map's arbitrary aspect ratio and ran off the page.
+      const r = Math.max(1, Math.min(3, scale)); // 1=100ppi · 2=200ppi · 3=300ppi
+      const PAGE_W = Math.round(1100 * r);
+      const PAGE_H = Math.round(850 * r);
+      const HEADER_H = Math.round(62 * r);
+      const FOOTER_H = Math.round(28 * r);
+      const PANEL_W = includeInfoPanel ? Math.round(300 * r) : 0;
+
+      // The map fills the area to the left of the info panel.
+      const mapRegionX = 0;
+      const mapRegionY = HEADER_H;
+      const mapRegionW = PAGE_W - PANEL_W;
+      const mapRegionH = PAGE_H - HEADER_H - FOOTER_H;
 
       const out = document.createElement("canvas");
-      out.width = outW;
-      out.height = outH;
+      out.width = PAGE_W;
+      out.height = PAGE_H;
       const ctx = out.getContext("2d");
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
 
-      // Page background — soft warm white so the map sits nicely
+      // Page background
       ctx.fillStyle = "#f6f6f3";
-      ctx.fillRect(0, 0, outW, outH);
+      ctx.fillRect(0, 0, PAGE_W, PAGE_H);
 
-      // Map area
-      ctx.drawImage(sourceCanvas, 0, HEADER_H, mapW, mapH);
+      // Draw the live map "cover"-style into the map region (fills it, centered;
+      // the footprint is already framed centered, so any edge crop is harmless).
+      const coverScale = Math.max(mapRegionW / mapW, mapRegionH / mapH);
+      const drawW = mapW * coverScale;
+      const drawH = mapH * coverScale;
+      const drawX = mapRegionX + (mapRegionW - drawW) / 2;
+      const drawY = mapRegionY + (mapRegionH - drawH) / 2;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(mapRegionX, mapRegionY, mapRegionW, mapRegionH);
+      ctx.clip();
+      ctx.fillStyle = "#0d1410";
+      ctx.fillRect(mapRegionX, mapRegionY, mapRegionW, mapRegionH);
+      ctx.drawImage(sourceCanvas, drawX, drawY, drawW, drawH);
+      ctx.restore();
 
       // Compute meters-per-pixel at the map's current center (for the scale bar)
       const center = map.getCenter();
@@ -409,9 +430,9 @@ const MapView = forwardRef(function MapView(
         Math.pow(2, map.getZoom() + 8);
 
       // Draw all the chrome
-      drawHeader(ctx, outW, HEADER_H, { title, address, r });
+      drawHeader(ctx, PAGE_W, HEADER_H, { title, address, r });
       if (includeInfoPanel) {
-        drawInfoPanel(ctx, mapW, HEADER_H, PANEL_W, mapH, {
+        drawInfoPanel(ctx, mapRegionW, HEADER_H, PANEL_W, mapRegionH, {
           lot,
           setbacks,
           floorPlan,
@@ -425,19 +446,12 @@ const MapView = forwardRef(function MapView(
         });
       }
       if (includeNorthArrow) {
-        drawNorthArrow2(
-          ctx,
-          HEADER_H,
-          mapW,
-          mapH,
-          map.getBearing(),
-          r
-        );
+        drawNorthArrow2(ctx, HEADER_H, mapRegionW, mapRegionH, map.getBearing(), r);
       }
       if (includeScaleBar) {
-        drawScaleBar(ctx, HEADER_H, mapH, mPerPx, r);
+        drawScaleBar(ctx, HEADER_H, mapRegionH, mPerPx, r, coverScale);
       }
-      drawFooter(ctx, outW, outH, FOOTER_H, { mapCenter: center, r });
+      drawFooter(ctx, PAGE_W, PAGE_H, FOOTER_H, { mapCenter: center, r });
 
       const dataUrl = out.toDataURL("image/png");
       const a = document.createElement("a");
@@ -1183,17 +1197,17 @@ function drawNorthArrow2(ctx, headerH, mapW, mapH, bearingDeg, r) {
   ctx.restore();
 }
 
-function drawScaleBar(ctx, headerH, mapH, mPerPx, r) {
-  // Target a ~140 px wide bar at the export scale, rounded to a nice
-  // feet number (10, 20, 25, 50, 100, etc.)
-  const targetPx = 140 * r;
-  const ftPerPx = mPerPx / 0.3048;
-  const targetFt = targetPx * ftPerPx;
+function drawScaleBar(ctx, headerH, mapH, mPerPx, r, mapScale = 1) {
+  // The map was drawn scaled by `mapScale`, so 1 source pixel = mapScale page
+  // pixels. Convert real-world feet to PAGE pixels accordingly.
+  const ftPerPagePx = (mPerPx / 0.3048) / mapScale;
+  const targetPx = 130 * r;
+  const targetFt = targetPx * ftPerPagePx;
   const niceFt = niceRoundNumber(targetFt);
-  const barPx = niceFt / ftPerPx;
+  const barPx = niceFt / ftPerPagePx;
 
   const x = 20 * r;
-  const y = headerH + mapH - 36 * r;
+  const y = headerH + mapH - 34 * r;
 
   ctx.save();
   // White backing pill so it's readable on any map color
