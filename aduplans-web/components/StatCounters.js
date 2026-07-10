@@ -39,7 +39,7 @@ function Stat({ target, label, sub }) {
   return (
     <div
       ref={ref}
-      className="relative flex-1 overflow-hidden rounded-2xl border border-line bg-gradient-to-b from-white to-mist/40 p-6 text-center shadow-[var(--shadow-card)]"
+      className="relative flex-1 overflow-hidden rounded-2xl border border-line bg-gradient-to-b from-paper to-mist/40 p-6 text-center shadow-[var(--shadow-card)]"
     >
       <span className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-forest/5" />
       <div className="flex items-center justify-center gap-2">

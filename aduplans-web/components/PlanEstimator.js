@@ -48,13 +48,20 @@ export default function PlanEstimator({ sqft, state, jurisdiction, floorPlan = "
 
   return (
     <section className="mt-12">
-      <iframe
-        ref={frameRef}
-        src={src}
-        title="ADU Cost & Financing Estimator"
-        scrolling="no"
-        style={{ width: "100%", height, border: 0, display: "block", overflow: "hidden" }}
-      />
+      {/* The estimator keeps its own light theme; wrap it in a clean light card
+          so it looks intentional on the dark theme too. */}
+      <div
+        className="overflow-hidden rounded-3xl border border-line shadow-[var(--shadow-card)]"
+        style={{ background: "#eef1ee" }}
+      >
+        <iframe
+          ref={frameRef}
+          src={src}
+          title="ADU Cost & Financing Estimator"
+          scrolling="no"
+          style={{ width: "100%", height, border: 0, display: "block", overflow: "hidden" }}
+        />
+      </div>
     </section>
   );
 }
