@@ -1,0 +1,224 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────────────────────
+   ADUplans design system — a premium, architectural look.
+   Forest green + warm cream + charcoal ink, with a warm amber accent.
+   ───────────────────────────────────────────────────────────────────────── */
+
+@theme {
+  --color-cream: #f6f4ee;
+  --color-paper: #ffffff;
+  --color-ink: #16241d;
+  --color-ink-soft: #47544d;
+  --color-muted: #6b7770;
+
+  --color-forest: #1f5c42;
+  --color-forest-600: #2c7a57;
+  --color-forest-700: #184b36;
+  --color-mist: #e7efe9;
+
+  --color-amber: #e0a75e;
+  --color-amber-600: #cf9445;
+
+  --color-line: #e4e0d6;
+  --color-line-soft: #eeeae1;
+
+  /* Always-dark surfaces (footer, overlays, badges) — constant in both themes */
+  --color-night: #16241d;
+
+  --font-display: var(--font-display-src), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-sans-src), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-xl: 1.25rem;
+  --shadow-card: 0 1px 2px rgba(22, 36, 29, 0.04), 0 8px 24px -12px rgba(22, 36, 29, 0.18);
+  --shadow-lift: 0 2px 6px rgba(22, 36, 29, 0.06), 0 20px 40px -18px rgba(22, 36, 29, 0.28);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-forest);
+  color: #fff;
+}
+
+/* ── Dark mode — flip the surface/text palette; `night` stays constant ────── */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-cream: #0f1713;      /* page background */
+  --color-paper: #17231d;      /* cards / elevated */
+  --color-ink: #e9efeb;        /* primary text */
+  --color-ink-soft: #adbbb2;
+  --color-muted: #7e8c83;
+  --color-mist: #1c2c24;       /* subtle green tint */
+  --color-forest: #4fa87d;     /* brighter green reads better on dark */
+  --color-forest-600: #62bd91;
+  --color-forest-700: #3f8a66;
+  --color-line: #29392f;
+  --color-line-soft: #202e27;
+}
+
+/* Smooth the switch (not on first paint) */
+:root.theme-ready body,
+:root.theme-ready .bg-paper,
+:root.theme-ready .bg-cream {
+  transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease;
+}
+
+/* Tailwind v4 no longer defaults buttons to a pointer cursor — restore it. */
+button:not(:disabled),
+[role="button"]:not(:disabled),
+summary {
+  cursor: pointer;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.015em;
+}
+
+.container-x {
+  width: 100%;
+  max-width: 80rem;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+@media (min-width: 768px) {
+  .container-x { padding-inline: 2rem; }
+}
+
+.card-hover {
+  transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.35s ease;
+}
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lift);
+}
+
+.hero-surface {
+  background:
+    radial-gradient(120% 120% at 85% -10%, rgba(224, 167, 94, 0.20), transparent 45%),
+    radial-gradient(120% 120% at 0% 0%, rgba(44, 122, 87, 0.18), transparent 42%),
+    linear-gradient(180deg, #1a3527 0%, #16241d 70%);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.rise-in { animation: riseIn 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+
+/* ── Hero animations ─────────────────────────────────────────────────────── */
+
+/* Slow, subtle Ken-Burns drift on the background collage */
+@keyframes kenburns {
+  from { transform: scale(1.06) translate(0, 0); }
+  to   { transform: scale(1.16) translate(-1.5%, -1.5%); }
+}
+.animate-kenburns { animation: kenburns 24s ease-in-out infinite alternate; }
+
+/* Gentle float for decorative glow orbs */
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+}
+.animate-floaty { animation: floaty 6s ease-in-out infinite; }
+.animate-floaty-slow { animation: floaty 9s ease-in-out infinite; }
+
+/* Bouncing scroll-cue arrow */
+@keyframes bounceDown {
+  0%, 100% { transform: translateY(0); opacity: 0.65; }
+  50% { transform: translateY(9px); opacity: 1; }
+}
+.animate-bounce-down { animation: bounceDown 1.7s ease-in-out infinite; }
+
+/* Moving shimmer over the green accent text */
+@keyframes shine { to { background-position: -200% center; } }
+.shimmer-green {
+  background: linear-gradient(100deg, #7fb350 0%, #cdecaa 45%, #7fb350 65%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shine 3.6s linear infinite;
+}
+
+/* Staggered entrance delays */
+.delay-1 { animation-delay: 0.08s; }
+.delay-2 { animation-delay: 0.18s; }
+.delay-3 { animation-delay: 0.30s; }
+.delay-4 { animation-delay: 0.44s; }
+.delay-5 { animation-delay: 0.58s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-kenburns, .animate-floaty, .animate-floaty-slow,
+  .animate-bounce-down, .shimmer-green { animation: none; }
+}
+
+/* ── Scroll reveal (sections & cards rise in as they enter view) ──────────── */
+/* Only hide when JS is ready + motion is allowed, so no-JS stays visible. */
+@media (prefers-reduced-motion: no-preference) {
+  html.js-ready .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.75s cubic-bezier(0.2, 0.7, 0.2, 1),
+      transform 0.75s cubic-bezier(0.2, 0.7, 0.2, 1);
+    will-change: opacity, transform;
+  }
+  html.js-ready .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+  /* Staggered children (e.g. card grids) */
+  html.js-ready .reveal-stagger > * {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s cubic-bezier(0.2, 0.7, 0.2, 1),
+      transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  html.js-ready .reveal-stagger.is-visible > * {
+    opacity: 1;
+    transform: none;
+  }
+  html.js-ready .reveal-stagger.is-visible > *:nth-child(1) { transition-delay: 0.04s; }
+  html.js-ready .reveal-stagger.is-visible > *:nth-child(2) { transition-delay: 0.10s; }
+  html.js-ready .reveal-stagger.is-visible > *:nth-child(3) { transition-delay: 0.16s; }
+  html.js-ready .reveal-stagger.is-visible > *:nth-child(4) { transition-delay: 0.22s; }
+  html.js-ready .reveal-stagger.is-visible > *:nth-child(5) { transition-delay: 0.28s; }
+  html.js-ready .reveal-stagger.is-visible > *:nth-child(6) { transition-delay: 0.34s; }
+  html.js-ready .reveal-stagger.is-visible > *:nth-child(7) { transition-delay: 0.40s; }
+  html.js-ready .reveal-stagger.is-visible > *:nth-child(8) { transition-delay: 0.46s; }
+}
+
+/* Nicer default focus ring for keyboard users */
+:focus-visible {
+  outline: 2px solid var(--color-forest);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line) transparent;
+}

@@ -36,12 +36,43 @@ function leadEmailDevPlugin(env) {
   };
 }
 
+// Dev-only image proxy so cross-origin floor-plan images (Baserow S3, which
+// doesn't send CORS on GET) can be used as Mapbox WebGL textures. Serving them
+// through our own origin makes them same-origin, so no CORS is required.
+function imageProxyDevPlugin() {
+  return {
+    name: "image-proxy-dev",
+    apply: "serve",
+    configureServer(server) {
+      server.middlewares.use("/api/img", async (req, res, next) => {
+        try {
+          const target = new URL(req.url, "http://localhost").searchParams.get("url");
+          if (!target || !/^https?:\/\//.test(target)) return next();
+          const upstream = await fetch(target);
+          if (!upstream.ok) {
+            res.statusCode = upstream.status;
+            return res.end("upstream error");
+          }
+          const buf = Buffer.from(await upstream.arrayBuffer());
+          res.setHeader("Content-Type", upstream.headers.get("content-type") || "image/png");
+          res.setHeader("Access-Control-Allow-Origin", "*");
+          res.setHeader("Cache-Control", "public, max-age=86400");
+          res.end(buf);
+        } catch (e) {
+          res.statusCode = 502;
+          res.end("proxy error");
+        }
+      });
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   // Load ALL env vars (the "" prefix includes non-VITE ones like RESEND_API_KEY).
   const env = loadEnv(mode, process.cwd(), "");
 
   return {
-    plugins: [react(), leadEmailDevPlugin(env)],
+    plugins: [react(), leadEmailDevPlugin(env), imageProxyDevPlugin()],
 
     server: {
       port: 5173,

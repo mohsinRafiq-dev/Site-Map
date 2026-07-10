@@ -25,6 +25,7 @@ import {
   footprintFitMargin,
 } from "./lib/geometry";
 import { usePlansCatalog } from "./lib/plansCatalog";
+import { fetchPlanById } from "./lib/baserow";
 import { useAuth } from "./lib/auth";
 import "./App.css";
 
@@ -71,14 +72,24 @@ export default function App() {
   // so all state slots get their saved values before the first render.
   const [_session] = useState(loadSession);
 
+  // A deep link (?plan=) means the customer is placing a NEW plan. Detect it
+  // synchronously so we DON'T restore the previous session's plan/footprint —
+  // that's what made the old plan flash under the new one. We still keep the
+  // saved address/lot so the new plan can drop straight onto it.
+  const _deepLinkPlanId =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("plan")
+      : null;
+
   const [location, setLocation] = useState(_session?.location ?? null);
   const [lot, setLot] = useState(_session?.lot ?? DEFAULT_LOT);
   const [lotConfirmed, setLotConfirmed] = useState(_session?.lotConfirmed ?? false);
   // floorPlan starts null; restored by effect once catalog is ready
   // Restore the full plan object straight from the session snapshot so the
   // placed home survives a reload even before the catalog finishes loading.
-  const [floorPlan, setFloorPlan] = useState(_session?.floorPlanSnapshot ?? null);
-  const [footprint, setFootprint] = useState(_session?.footprint ?? null);
+  // But on a deep link, start empty so the OLD plan never renders.
+  const [floorPlan, setFloorPlan] = useState(_deepLinkPlanId ? null : (_session?.floorPlanSnapshot ?? null));
+  const [footprint, setFootprint] = useState(_deepLinkPlanId ? null : (_session?.footprint ?? null));
   const [setbacks, setSetbacks] = useState(_session?.setbacks ?? DEFAULT_SETBACKS);
   const [snapToSetbacks, setSnapToSetbacks] = useState(false);
   const [viewMode, setViewMode] = useState("full"); // "full" | "footprint"
@@ -109,7 +120,12 @@ export default function App() {
   const didRestoreCameraRef = useRef(false);
 
   // ---- One-step-at-a-time wizard ----
-  const [currentStep, setCurrentStep] = useState(() => stepFromSession(_session));
+  // On a deep link, don't jump to the old session's furthest step (its plan is
+  // gone). Start at Lot if we have a saved address, else Address; the deep-link
+  // effect advances to Place once the new plan drops.
+  const [currentStep, setCurrentStep] = useState(() =>
+    _deepLinkPlanId ? (_session?.location ? 2 : 1) : stepFromSession(_session)
+  );
   const [planModalOpen, setPlanModalOpen] = useState(false);
 
   // ---- Mobile bottom-sheet (wizard over full-screen map) ----
@@ -197,6 +213,68 @@ export default function App() {
     if (found) setFloorPlan(found);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plansLoading]);
+
+  // ---- Deep link from aduplans.com ("Place on my lot") ----
+  // The website button opens the tool at  ?plan=<PlanID> . We fetch that plan
+  // straight from Baserow and pre-select it so it places to scale once the
+  // customer enters their address. deepLinkPlanRef tells handleSelectLocation
+  // to KEEP this plan (instead of clearing it) when an address is chosen.
+  const deepLinkPlanRef = useRef(false);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const planId = params.get("plan");
+    if (!planId) return;
+    allowRestoreRef.current = false; // a deep link wins over an old session plan
+
+    // Route a cross-origin image (Baserow S3 has no CORS on GET) through our
+    // same-origin proxy so Mapbox can use it as a floor-plan overlay texture.
+    const proxyImg = (u) =>
+      u && /^https?:\/\//.test(u) ? `/api/img?url=${encodeURIComponent(u)}` : u;
+
+    // Apply a plan object and, if a lot is already positioned, drop it on.
+    const applyPlan = (plan) => {
+      if (!plan) return;
+      deepLinkPlanRef.current = true;
+      setFloorPlan({ ...plan, image: proxyImg(plan.image) });
+      if (_session?.lot?.center) {
+        setFootprint({ center: _session.lot.center, rotation: _session.lot.rotation || 0 });
+        setPlacementId((p) => p + 1);
+        setCurrentStep(4); // new plan dropped onto the saved lot → Place step
+      }
+    };
+
+    // Preferred: the website passes the plan's data in the URL — no fetch needed.
+    const w = parseFloat(params.get("w"));
+    const d = parseFloat(params.get("d"));
+    const img = params.get("img");
+    if (w && d && img) {
+      const sqft = parseInt(params.get("sqft"), 10) || Math.round(w * d);
+      applyPlan({
+        id: planId,
+        series: params.get("series") || "ADU Plan",
+        name: params.get("name") || `Plan ${planId}`,
+        tagline: `${sqft.toLocaleString()} sq ft`,
+        width: w,
+        depth: d,
+        sqft,
+        image: img,
+        keySpecs: {
+          livableSqft: sqft, bedrooms: "See plan", bathrooms: "See plan",
+          floors: 1, garage: 0, studs: "See plan",
+        },
+        source: "url",
+      });
+      return;
+    }
+
+    // Fallback: fetch the plan from Baserow by its ID.
+    let cancelled = false;
+    fetchPlanById(planId)
+      .then((plan) => { if (!cancelled) applyPlan(plan); })
+      .catch((e) => console.warn("[FrameUpNow] deep-link plan fetch failed:", e.message));
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // When setbacks change AND snap-to-setbacks is on, re-clamp the footprint
   // so it never ends up outside the new buildable area without a drag.
@@ -390,15 +468,24 @@ export default function App() {
   // ---- Handlers ----
   function handleSelectLocation(loc) {
     allowRestoreRef.current = false; // user picked a new address — don't restore old plan
+    const center = [loc.lng, loc.lat];
     setLocation(loc);
     setLot({
       ...DEFAULT_LOT,
-      center: [loc.lng, loc.lat],
+      center,
     });
     setLotConfirmed(false);
-    setFloorPlan(null);
-    setFootprint(null);
     setCurrentProjectId(null);
+    // A plan deep-linked from aduplans.com (?plan=) is kept and dropped onto the
+    // new lot so the customer immediately sees their chosen home placed. A normal
+    // address change instead clears the plan to start that step fresh.
+    if (deepLinkPlanRef.current && floorPlan) {
+      setFootprint({ center, rotation: 0 });
+      setPlacementId((p) => p + 1);
+    } else {
+      setFloorPlan(null);
+      setFootprint(null);
+    }
     setCurrentStep(2); // advance to "position your lot"
   }
 
@@ -569,6 +656,7 @@ export default function App() {
     );
     if (!ok) return;
     allowRestoreRef.current = false; // cancel any pending session restore
+    deepLinkPlanRef.current = false; // forget the ?plan deep link
     try { localStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
     setLocation(null);
     setLot(DEFAULT_LOT);

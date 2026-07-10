@@ -1,0 +1,114 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import map from "@/lib/usMap.json";
+
+const STATE_NAMES = Object.fromEntries(map.states.map((s) => [s.code, s.name]));
+
+// The real "Select your state" interaction — a clickable US map. States with
+// plans are filled green and navigate to that state's catalog; the rest are
+// muted and non-interactive. A tooltip shows the state name + plan count.
+export default function USAMap({ states }) {
+  const router = useRouter();
+  const counts = Object.fromEntries(states.map((s) => [s.code, s.count]));
+  const [hover, setHover] = useState(null);
+
+  return (
+    <div className="relative">
+      <div className="overflow-hidden rounded-3xl border border-line bg-paper p-3 shadow-[var(--shadow-card)] sm:p-6">
+        <svg
+          viewBox={map.viewBox}
+          className="h-auto w-full"
+          role="img"
+          aria-label="Map of the United States — select your state"
+        >
+          {/* State shapes */}
+          {map.states.map((s) => {
+            const count = counts[s.code] || 0;
+            const has = count > 0;
+            const isHover = hover?.code === s.code;
+            return (
+              <path
+                key={s.code}
+                d={s.d}
+                className={has ? "cursor-pointer transition-colors duration-150" : "transition-colors duration-150"}
+                fill={
+                  !has
+                    ? "var(--color-line-soft)"
+                    : isHover
+                    ? "var(--color-amber)"
+                    : "var(--color-forest)"
+                }
+                stroke="var(--color-paper)"
+                strokeWidth="1.2"
+                onMouseEnter={(e) => has && setHover({ code: s.code, count, x: e.clientX, y: e.clientY })}
+                onMouseMove={(e) => has && setHover({ code: s.code, count, x: e.clientX, y: e.clientY })}
+                onMouseLeave={() => setHover(null)}
+                onClick={() => has && router.push(`/plans?state=${s.code}`)}
+              />
+            );
+          })}
+
+          {/* Leader lines for small crowded NE states */}
+          {map.states.filter((s) => s.leader).map((s) => (
+            <line
+              key={`ldr-${s.code}`}
+              x1={s.cx} y1={s.cy} x2={s.lx} y2={s.ly}
+              stroke="var(--color-muted)" strokeWidth="0.8"
+            />
+          ))}
+
+          {/* State code labels */}
+          {map.states.map((s) => {
+            const has = (counts[s.code] || 0) > 0;
+            const x = s.leader ? s.lx : s.cx;
+            const y = s.leader ? s.ly : s.cy;
+            return (
+              <text
+                key={`lbl-${s.code}`}
+                x={x}
+                y={y}
+                textAnchor="middle"
+                dominantBaseline="central"
+                className="pointer-events-none select-none"
+                style={{
+                  fontSize: s.leader ? 12 : 14,
+                  fontWeight: 700,
+                  fill: has ? "#ffffff" : "var(--color-muted)",
+                  paintOrder: "stroke",
+                }}
+              >
+                {s.code}
+              </text>
+            );
+          })}
+        </svg>
+      </div>
+
+      {/* Legend */}
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-muted">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-3 w-3 rounded-sm" style={{ background: "var(--color-forest)" }} /> Plans available
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-3 w-3 rounded-sm" style={{ background: "var(--color-amber)" }} /> Hovered
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-3 w-3 rounded-sm" style={{ background: "var(--color-line-soft)" }} /> Coming soon
+        </span>
+      </div>
+
+      {/* Tooltip */}
+      {hover && hover.count > 0 && (
+        <div
+          className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full rounded-lg bg-night px-3 py-2 text-center text-white shadow-lg"
+          style={{ left: hover.x, top: hover.y - 12 }}
+        >
+          <div className="font-display text-sm leading-tight">{STATE_NAMES[hover.code]}</div>
+          <div className="text-[11px] text-white/70">{hover.count.toLocaleString()} plans →</div>
+        </div>
+      )}
+    </div>
+  );
+}
