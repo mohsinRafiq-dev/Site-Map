@@ -105,7 +105,9 @@ async function fetchPage(page, size = 200, attempt = 0) {
   const url = `${API}/${TABLE}/?user_field_names=true&size=${size}&page=${page}`;
   const res = await fetch(url, {
     headers: { Authorization: `Token ${TOKEN}` },
-    cache: "no-store", // the in-memory cache below is the caching layer
+    // Vercel's Data Cache persists across serverless invocations (the in-memory
+    // cache below does not survive cold starts), so production stays fast.
+    next: { revalidate: REVALIDATE, tags: ["plans"] },
   });
   // Baserow Cloud fair-use returns 429 when too many requests overlap — back
   // off and retry a few times before giving up.
@@ -174,7 +176,11 @@ async function loadPlans() {
     return await _refreshing;
   } catch (e) {
     if (_memo) return _memo.data;
-    throw e;
+    // Never crash the whole page render on a data hiccup — degrade to an empty
+    // catalog instead. Check the deployment's Runtime Logs for the real cause
+    // (e.g. a missing BASEROW_TOKEN shows as "Baserow HTTP 401").
+    console.error("[aduplans] plan load failed:", e?.message);
+    return [];
   }
 }
 
