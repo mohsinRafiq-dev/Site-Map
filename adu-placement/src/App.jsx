@@ -231,15 +231,33 @@ export default function App() {
     const proxyImg = (u) =>
       u && /^https?:\/\//.test(u) ? `/api/img?url=${encodeURIComponent(u)}` : u;
 
-    // Apply a plan object and, if a lot is already positioned, drop it on.
+    // Apply a plan object and, if a lot is already positioned, drop it on —
+    // STRAIGHT and centered. We reset any leftover rotation from the previous
+    // session so the new plan never lands at a weird angle, and center it inside
+    // the buildable area.
     const applyPlan = (plan) => {
       if (!plan) return;
       deepLinkPlanRef.current = true;
       setFloorPlan({ ...plan, image: proxyImg(plan.image) });
       if (_session?.lot?.center) {
-        setFootprint({ center: _session.lot.center, rotation: _session.lot.rotation || 0 });
+        const lotStraight = { ..._session.lot, rotation: 0 };
+        const sb = _session.setbacks || DEFAULT_SETBACKS;
+        let center = _session.lot.center;
+        if (_session.lotConfirmed && plan.width && plan.depth) {
+          const clamped = clampFootprintToSetbacks({
+            proposedCenter: _session.lot.center,
+            footprintWidth: plan.width,
+            footprintDepth: plan.depth,
+            footprintRotationDeg: 0,
+            lot: lotStraight,
+            setbacks: sb,
+          });
+          center = clamped.center;
+        }
+        setLot((l) => ({ ...l, rotation: 0 })); // un-rotate the lot too
+        setFootprint({ center, rotation: 0 });
         setPlacementId((p) => p + 1);
-        setCurrentStep(4); // new plan dropped onto the saved lot → Place step
+        setCurrentStep(4); // new plan dropped onto the lot → Place step
       }
     };
 
