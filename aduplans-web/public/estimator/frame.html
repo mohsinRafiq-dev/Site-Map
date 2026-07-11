@@ -592,7 +592,7 @@ background-color:none !important;
         display: flex;
         align-items: center;
         gap: 10px;
-        background: white;
+        background: var(--surface);
         border: 1px solid var(--line);
         border-radius: 10px;
         padding: 10px 12px;
@@ -665,7 +665,7 @@ background-color:none !important;
         font-size: 11px;
         font-weight: 600;
         color: var(--ink-soft);
-        background: white;
+        background: var(--surface);
         border: 1px solid var(--line);
         padding: 4px 10px;
         border-radius: 999px;
@@ -681,7 +681,7 @@ background-color:none !important;
 
       .stat-tile {
         position: relative;
-        background: white;
+        background: var(--surface);
         border: 1px solid var(--line);
         border-radius: 12px;
         padding: 12px 14px;
@@ -745,7 +745,7 @@ background-color:none !important;
       }
 
       .stat-tile.accent .stat-tile-icon {
-        background: white;
+        background: var(--surface);
         color: var(--brand);
       }
 
@@ -766,7 +766,7 @@ background-color:none !important;
 
       .od-card {
         position: relative;
-        background: white;
+        background: var(--surface);
         border: 1px solid var(--line);
         border-radius: 14px;
         padding: 16px 18px;
@@ -884,7 +884,7 @@ background-color:none !important;
         box-shadow: 0 20px 40px -12px rgba(15, 40, 25, 0.25), 0 4px 12px -4px rgba(15, 40, 25, 0.1) !important;
         font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
         padding: 6px !important;
-        background: white !important;
+        background: var(--surface) !important;
         overflow: hidden !important;
       }
 
@@ -1144,7 +1144,7 @@ background-color:none !important;
           gap: 0;
           padding: 12px 14px;
           border-radius: 12px;
-          background: white;
+          background: var(--surface);
           border: 1px solid var(--line);
           box-shadow: var(--shadow-soft);
           -webkit-backdrop-filter: none;
@@ -1187,7 +1187,7 @@ background-color:none !important;
 <style>
   html{margin:0;overflow:hidden;background:var(--bg);height:auto !important}
   body{margin:0;padding:0;overflow:hidden;background:var(--bg);font-family:'Roboto',system-ui,sans-serif;height:auto !important}
-  .c-section{min-height:0 !important;height:auto !important;padding:16px !important;display:block !important;background:var(--bg) !important}
+  .c-section{min-height:0 !important;height:auto !important;padding:16px !important;display:flex !important;justify-content:center !important;align-items:flex-start !important;background:var(--bg) !important}
   .ship-map,#shipMap,.map-card{max-height:360px !important}
 
   /* ── Dark mode ── flip the estimator's CSS variables when the parent site is
@@ -1204,7 +1204,72 @@ background-color:none !important;
     --shadow-card:0 40px 80px -30px rgba(0,0,0,0.55), 0 10px 24px -10px rgba(0,0,0,0.4);
     --shadow-soft:0 8px 22px -10px rgba(0,0,0,0.45);
     color-scheme:dark;
+    /* Bootstrap 5.3 theme vars — text outside .c-section (title, intro copy,
+       labels) is coloured by these, so recolour them for dark. */
+    --bs-body-color:#e9efeb; --bs-body-color-rgb:233,239,235;
+    --bs-heading-color:#e9efeb; --bs-emphasis-color:#e9efeb;
+    --bs-secondary-color:rgba(173,187,178,0.85); --bs-tertiary-color:rgba(173,187,178,0.6);
+    --bs-body-bg:#0f1713; --bs-body-bg-rgb:15,23,19;
+    --bs-border-color:#29392f; --bs-secondary-bg:#1c2c24; --bs-tertiary-bg:#17231d;
   }
+  /* Intro block (title + copy) lives outside .c-section, so it inherits body /
+     Bootstrap colours — the vars above recolour it. The green title keeps a
+     bright accent; explicitly-coloured notes/statuses are left untouched. */
+  html[data-theme="dark"] body{ color:var(--ink); }
+  html[data-theme="dark"] .color-primary{ color:var(--brand-bright) !important; }
+  /* Map overlays are semi-transparent white (rgba) — recolour to translucent dark. */
+  html[data-theme="dark"] .map-overlay,
+  html[data-theme="dark"] .route-info{ background:rgba(20,31,25,0.94) !important; border-color:rgba(255,255,255,0.12) !important; }
+
+  /* ── Estimator intro header (redesigned) ─────────────────────────────────── */
+  .est-hero{ max-width:840px; margin:6px auto 26px; text-align:center; }
+  .est-hero-badge{
+    display:inline-flex; align-items:center; gap:7px;
+    font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase;
+    color:var(--brand); background:var(--brand-light);
+    border:1px solid rgba(95,176,78,0.30);
+    padding:6px 14px; border-radius:999px; margin-bottom:16px;
+  }
+  .est-hero-badge svg{ width:14px; height:14px; }
+  .est-hero-title{
+    font-size:clamp(22px,3.4vw,30px); font-weight:800; line-height:1.15;
+    color:var(--ink); margin:0 0 10px; letter-spacing:-0.02em;
+  }
+  .est-hero-title .accent{ color:var(--brand); }
+  .est-hero-sub{
+    font-size:14px; line-height:1.6; color:var(--ink-soft);
+    max-width:640px; margin:0 auto 24px;
+  }
+  .est-choice-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; text-align:left; }
+  @media (max-width:640px){ .est-choice-grid{ grid-template-columns:1fr; } }
+  .est-choice{
+    position:relative; background:var(--surface);
+    border:1px solid var(--line); border-radius:16px;
+    padding:18px 18px 16px; box-shadow:var(--shadow-soft);
+    transition:border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+  }
+  .est-choice:hover{ transform:translateY(-2px); border-color:var(--brand-bright); box-shadow:0 16px 32px -18px var(--brand-glow); }
+  .est-choice.featured{ border-color:rgba(95,176,78,0.45); background:linear-gradient(180deg, var(--brand-light), var(--surface)); }
+  .est-choice-ribbon{
+    position:absolute; top:14px; right:14px;
+    font-size:9px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;
+    color:#fff; background:linear-gradient(135deg, var(--brand-mid), var(--brand));
+    padding:3px 9px; border-radius:999px;
+  }
+  .est-choice-head{ display:flex; align-items:center; gap:12px; margin-bottom:11px; }
+  .est-choice-icon{
+    width:44px; height:44px; border-radius:13px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .est-choice-icon svg{ width:21px; height:21px; }
+  .est-choice-icon.adu{ background:var(--surface-tint); color:var(--ink-soft); border:1px solid var(--line); }
+  .est-choice-icon.pradu{ background:linear-gradient(135deg, var(--brand-mid), var(--brand)); color:#fff; box-shadow:0 8px 16px -8px var(--brand-glow); }
+  .est-choice-tag{ display:block; font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:2px; }
+  .est-choice.featured .est-choice-tag{ color:var(--brand); }
+  .est-choice-title{ font-size:18px; font-weight:800; color:var(--ink); margin:0; line-height:1.1; }
+  .est-choice-title small{ display:block; font-size:11px; font-weight:600; color:var(--muted); letter-spacing:0.01em; text-transform:none; margin-top:3px; }
+  .est-choice-text{ font-size:13px; line-height:1.58; color:var(--ink-soft); margin:0; }
+  .est-choice-text b{ color:var(--ink); font-weight:700; }
   /* A few est.css spots hard-code white/near-white — pull them onto the vars. */
   html[data-theme="dark"] input,
   html[data-theme="dark"] select,
@@ -1235,12 +1300,44 @@ background-color:none !important;
 <body>
 <div class="container py-2"><div class="row justify-content-center">
 <div class="col-12">
-        <!-- Title -->
-        <h3 class="text-center color-primary fw-bold mb-2">Estimate of Cost to Design and Complete an ADU</h3>
-        
-        <p class="text-center ">Select ADU if you intend to build the ADU OUTSIDE of the District in which the plan has been approved. You will benefit by selecting a plan that has undergone the design of a professional. However, if ADU and not PRADU the plan on your site may require approval of your local district.</p>
-       <center>
-        <p classs="text-center">Select PRADU (Permit Ready ADU) if you intend to build the ADU WITHIN the Jurisdiction in which the plan has been approved.</p></center>
+        <!-- Intro header (redesigned) -->
+        <div class="est-hero">
+          <span class="est-hero-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="8" y2="10"/><line x1="12" y1="10" x2="12" y2="10"/><line x1="16" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="12" y1="14" x2="12" y2="14"/><line x1="16" y1="14" x2="16" y2="18"/><line x1="8" y1="18" x2="12" y2="18"/></svg>
+            PRADU Cost Estimator
+          </span>
+          <h2 class="est-hero-title">Estimate the Cost to Design &amp; <span class="accent">Complete Your ADU</span></h2>
+          <p class="est-hero-sub">First, choose the path that matches where you're building. Your selection determines the approval process and design requirements for your project.</p>
+
+          <div class="est-choice-grid">
+            <div class="est-choice">
+              <div class="est-choice-head">
+                <span class="est-choice-icon adu">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-6 9 6v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 21V12h6v9"/></svg>
+                </span>
+                <div>
+                  <span class="est-choice-tag">Build outside the district</span>
+                  <h3 class="est-choice-title">ADU<small>Accessory Dwelling Unit</small></h3>
+                </div>
+              </div>
+              <p class="est-choice-text">Choose this if you're building <b>outside</b> the district where the plan was approved. You still get a professionally designed plan, but your <b>local district may require approval</b>.</p>
+            </div>
+
+            <div class="est-choice featured">
+              <span class="est-choice-ribbon">Fastest path</span>
+              <div class="est-choice-head">
+                <span class="est-choice-icon pradu">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+                </span>
+                <div>
+                  <span class="est-choice-tag">Build within the jurisdiction</span>
+                  <h3 class="est-choice-title">PRADU<small>Permit-Ready ADU</small></h3>
+                </div>
+              </div>
+              <p class="est-choice-text">Choose this if you're building <b>within</b> the jurisdiction where the plan is <b>already approved</b> — the fastest, lowest-friction route to breaking ground.</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Form Content -->
