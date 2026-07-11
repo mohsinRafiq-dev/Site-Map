@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { getAllPlans, buildFacets } from "@/lib/baserow";
 import StateSelector from "@/components/StateSelector";
 import USAMap from "@/components/USAMap";
@@ -8,21 +9,20 @@ import MetalVsWood from "@/components/MetalVsWood";
 import EightSteps from "@/components/EightSteps";
 import PlanCard from "@/components/PlanCard";
 
+// Serve a cached, statically-rendered shell and refresh the catalog snapshot
+// every 5 minutes in the background (ISR) — visitors never wait on Baserow.
+export const revalidate = 300;
+
 // Real content mirrored from aduplans.com
 const VIDEOS = [
   "GncoRZO4rAI", "R0VZMLq_74Q", "Gl8Y2hnVSX0", "8kx_BZTx2hs",
   "MerPhwrbB-c", "zuwfcVv9Rkk", "km4yeQrO7_o", "BuNzQaJor_s",
 ];
 
-export default async function HomePage() {
-  const plans = await getAllPlans();
-  const facets = buildFacets(plans);
-  const placeable = plans.filter((p) => p.placeable);
-  const featured = placeable
-    .filter((p) => p.elevationImage)
-    .filter((_, i) => i % 11 === 0)
-    .slice(0, 8);
-
+// The page shell is SYNCHRONOUS so the hero + static sections paint instantly.
+// The two data-dependent sections are async and stream in behind <Suspense>,
+// so a slow or cold Baserow fetch can never block first paint / the hero.
+export default function HomePage() {
   return (
     <>
       {/* ── Hero (real ADUplans collage background) ──────────────────────── */}
@@ -92,62 +92,15 @@ export default async function HomePage() {
       {/* ── A note to jurisdictions + top-10 designers + City Planner video ─ */}
       <DesignersSection />
 
-      {/* ── Select your state (+ PRADU counters) ─────────────────────────── */}
-      <section id="select-state" className="border-t border-line bg-paper py-16 md:py-20">
-        <div className="container-x">
-        <div className="reveal mx-auto max-w-3xl text-center">
-          <h2 className="font-display text-3xl leading-tight text-ink md:text-4xl">
-            Choose a plan from the largest PRADU database in the world.
-          </h2>
-          <p className="mt-3 text-forest-600">
-            And FrameUpNow will convert it to steel framing for you.
-          </p>
-          <p className="mt-6 text-sm font-semibold uppercase tracking-[0.2em] text-forest-600">
-            Select your state
-          </p>
-        </div>
+      {/* ── Select your state (+ PRADU counters) — streamed ──────────────── */}
+      <Suspense fallback={<SelectStateSkeleton />}>
+        <SelectStateSection />
+      </Suspense>
 
-        {/* PRADU counters */}
-        <div className="mt-8">
-          <StatCounters total={plans.length} lastMonth={122} />
-        </div>
-
-        <div className="mt-12">
-          <p className="mb-5 text-center text-sm text-ink-soft">
-            Click your state on the map to begin — {facets.states.length} states with permit-ready
-            plans and growing.
-          </p>
-          <USAMap states={facets.states} />
-        </div>
-
-        <details className="mx-auto mt-8 max-w-4xl">
-          <summary className="cursor-pointer text-center text-sm font-semibold text-forest hover:text-forest-600">
-            Or choose your state from the list ↓
-          </summary>
-          <div className="mt-6">
-            <StateSelector states={facets.states} />
-          </div>
-        </details>
-        </div>
-      </section>
-
-      {/* ── Featured plans ───────────────────────────────────────────────── */}
-      <section className="container-x py-16">
-        <div className="reveal flex items-end justify-between gap-4">
-          <div>
-            <span className="text-xs font-semibold uppercase tracking-widest text-forest-600">Popular plans</span>
-            <h2 className="mt-1 font-display text-3xl text-ink md:text-4xl">Featured PRADUs</h2>
-          </div>
-          <Link href="/plans" className="hidden shrink-0 text-sm font-semibold text-forest hover:text-forest-600 sm:block">
-            View all {plans.length.toLocaleString()} →
-          </Link>
-        </div>
-        <div className="reveal-stagger mt-8 grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
-          {featured.map((plan, i) => (
-            <PlanCard key={plan.id} plan={plan} priority={i < 4} />
-          ))}
-        </div>
-      </section>
+      {/* ── Featured plans — streamed ────────────────────────────────────── */}
+      <Suspense fallback={<FeaturedSkeleton />}>
+        <FeaturedPlans />
+      </Suspense>
 
       {/* ── 20 reasons: Metal vs Wood ────────────────────────────────────── */}
       <MetalVsWood />
@@ -197,6 +150,111 @@ export default async function HomePage() {
         </div>
       </section>
     </>
+  );
+}
+
+// ── Data-dependent sections (async → streamed behind <Suspense>) ─────────────
+// Both call getAllPlans(); React cache() dedupes it to a single fetch per render.
+
+async function SelectStateSection() {
+  const plans = await getAllPlans();
+  const facets = buildFacets(plans);
+  return (
+    <section id="select-state" className="border-t border-line bg-paper py-16 md:py-20">
+      <div className="container-x">
+        <div className="reveal mx-auto max-w-3xl text-center">
+          <h2 className="font-display text-3xl leading-tight text-ink md:text-4xl">
+            Choose a plan from the largest PRADU database in the world.
+          </h2>
+          <p className="mt-3 text-forest-600">
+            And FrameUpNow will convert it to steel framing for you.
+          </p>
+          <p className="mt-6 text-sm font-semibold uppercase tracking-[0.2em] text-forest-600">
+            Select your state
+          </p>
+        </div>
+
+        {/* PRADU counters */}
+        <div className="mt-8">
+          <StatCounters total={plans.length} lastMonth={122} />
+        </div>
+
+        <div className="mt-12">
+          <p className="mb-5 text-center text-sm text-ink-soft">
+            Click your state on the map to begin — {facets.states.length} states with permit-ready
+            plans and growing.
+          </p>
+          <USAMap states={facets.states} />
+        </div>
+
+        <details className="mx-auto mt-8 max-w-4xl">
+          <summary className="cursor-pointer text-center text-sm font-semibold text-forest hover:text-forest-600">
+            Or choose your state from the list ↓
+          </summary>
+          <div className="mt-6">
+            <StateSelector states={facets.states} />
+          </div>
+        </details>
+      </div>
+    </section>
+  );
+}
+
+async function FeaturedPlans() {
+  const plans = await getAllPlans();
+  const featured = plans
+    .filter((p) => p.placeable && p.elevationImage)
+    .filter((_, i) => i % 11 === 0)
+    .slice(0, 8);
+  return (
+    <section className="container-x py-16">
+      <div className="reveal flex items-end justify-between gap-4">
+        <div>
+          <span className="text-xs font-semibold uppercase tracking-widest text-forest-600">Popular plans</span>
+          <h2 className="mt-1 font-display text-3xl text-ink md:text-4xl">Featured PRADUs</h2>
+        </div>
+        <Link href="/plans" className="hidden shrink-0 text-sm font-semibold text-forest hover:text-forest-600 sm:block">
+          View all {plans.length.toLocaleString()} →
+        </Link>
+      </div>
+      <div className="reveal-stagger mt-8 grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
+        {featured.map((plan, i) => (
+          <PlanCard key={plan.id} plan={plan} priority={i < 4} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// Layout-stable placeholders so streaming causes no content jump (no CLS).
+function SelectStateSkeleton() {
+  return (
+    <section id="select-state" className="border-t border-line bg-paper py-16 md:py-20">
+      <div className="container-x">
+        <div className="mx-auto max-w-3xl text-center">
+          <div className="mx-auto h-9 w-3/4 animate-pulse rounded bg-mist" />
+          <div className="mx-auto mt-4 h-4 w-1/2 animate-pulse rounded bg-mist" />
+        </div>
+        <div className="mx-auto mt-8 flex max-w-xl flex-col gap-4 sm:flex-row">
+          <div className="h-28 flex-1 animate-pulse rounded-2xl bg-mist" />
+          <div className="h-28 flex-1 animate-pulse rounded-2xl bg-mist" />
+        </div>
+        <div className="mx-auto mt-12 aspect-[1.6/1] max-w-4xl animate-pulse rounded-3xl bg-mist" />
+      </div>
+    </section>
+  );
+}
+
+function FeaturedSkeleton() {
+  return (
+    <section className="container-x py-16">
+      <div className="h-9 w-56 animate-pulse rounded bg-mist" />
+      <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-5">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="aspect-[3/4] animate-pulse rounded-xl bg-mist" />
+        ))}
+      </div>
+    </section>
   );
 }
 

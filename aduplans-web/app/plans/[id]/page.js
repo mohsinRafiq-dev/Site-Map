@@ -6,6 +6,15 @@ import PlanEstimator from "@/components/PlanEstimator";
 import PlanGallery from "@/components/PlanGallery";
 import PlanCard from "@/components/PlanCard";
 
+// ISR: don't pre-build every plan at build time (there are 1000+), but cache
+// each plan page after its first visit and refresh every 5 minutes. So only the
+// very first visitor to a given plan pays the render cost — everyone else gets
+// an instant, statically-cached page.
+export const revalidate = 300;
+export function generateStaticParams() {
+  return [];
+}
+
 export async function generateMetadata({ params }) {
   const { id } = await params;
   const plan = await getPlanById(id);
