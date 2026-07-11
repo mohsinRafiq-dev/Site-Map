@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { proxyImg } from "@/lib/img";
 
 // Plan image gallery with a click-to-zoom lightbox (arrow-key + swipe nav).
 export default function PlanGallery({ images, name }) {
@@ -40,7 +41,7 @@ export default function PlanGallery({ images, name }) {
         className="group relative block aspect-[4/3] w-full overflow-hidden rounded-3xl border border-line bg-mist shadow-[var(--shadow-card)]"
       >
         <Image
-          src={images[active].src}
+          src={proxyImg(images[active].src, 1200)}
           alt={name}
           fill
           unoptimized
@@ -66,7 +67,7 @@ export default function PlanGallery({ images, name }) {
               }`}
             >
               <div className="relative aspect-square bg-mist">
-                <Image src={g.src} alt={g.label} fill unoptimized sizes="30vw" className="object-contain p-2" />
+                <Image src={proxyImg(g.src, 300)} alt={g.label} fill unoptimized sizes="30vw" className="object-contain p-2" />
               </div>
               <div className="px-3 py-2 text-center text-xs font-medium uppercase tracking-wider text-muted">
                 {g.label}
@@ -99,7 +100,7 @@ export default function PlanGallery({ images, name }) {
           <figure className="max-h-[86vh] max-w-[92vw]" onClick={(e) => e.stopPropagation()}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={images[box].src}
+              src={proxyImg(images[box].src, 1600)}
               alt={images[box].label}
               className="mx-auto max-h-[80vh] max-w-[92vw] rounded-xl bg-white/5 object-contain"
             />

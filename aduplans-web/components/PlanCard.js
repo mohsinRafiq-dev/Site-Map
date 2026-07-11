@@ -1,8 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
+import { proxyImg } from "@/lib/img";
 
 export default function PlanCard({ plan, priority = false }) {
-  const img = plan.cardImage || plan.elevationImage || plan.floorPlanImage || plan.lotImage;
+  const raw = plan.cardImage || plan.elevationImage || plan.floorPlanImage || plan.lotImage;
+  const img = proxyImg(raw, 640); // cached, resized WebP via our edge proxy
   return (
     <Link
       href={`/plans/${plan.id}`}
