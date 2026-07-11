@@ -103,6 +103,24 @@ summary {
   .container-x { padding-inline: 2rem; }
 }
 
+/* US map state-code labels — enlarge on phones so they stay legible when the
+   whole SVG scales down (the map is ~1028 user-units wide). */
+.us-map-label {
+  font-size: 14px;
+  font-weight: 700;
+}
+.us-map-label.leader {
+  font-size: 12px;
+}
+@media (max-width: 639px) {
+  .us-map-label {
+    font-size: 27px;
+  }
+  .us-map-label.leader {
+    font-size: 22px;
+  }
+}
+
 .card-hover {
   transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.35s ease;
 }

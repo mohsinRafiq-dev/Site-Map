@@ -16,7 +16,7 @@ export default function USAMap({ states }) {
 
   return (
     <div className="relative">
-      <div className="overflow-hidden rounded-3xl border border-line bg-paper p-3 shadow-[var(--shadow-card)] sm:p-6">
+      <div className="-mx-5 overflow-hidden border-y border-line bg-paper p-2 shadow-[var(--shadow-card)] sm:mx-0 sm:rounded-3xl sm:border sm:p-6">
         <svg
           viewBox={map.viewBox}
           className="h-auto w-full"
@@ -71,10 +71,8 @@ export default function USAMap({ states }) {
                 y={y}
                 textAnchor="middle"
                 dominantBaseline="central"
-                className="pointer-events-none select-none"
+                className={`us-map-label pointer-events-none select-none${s.leader ? " leader" : ""}`}
                 style={{
-                  fontSize: s.leader ? 12 : 14,
-                  fontWeight: 700,
                   fill: has ? "#ffffff" : "var(--color-muted)",
                   paintOrder: "stroke",
                 }}
