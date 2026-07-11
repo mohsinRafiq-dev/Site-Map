@@ -1185,10 +1185,52 @@ background-color:none !important;
                     }
                 </style>
 <style>
-  html{margin:0;overflow:hidden;background:#eef1ee}
-  body{margin:0;padding:0;overflow:hidden;background:#eef1ee;font-family:'Roboto',system-ui,sans-serif}
-  .c-section{min-height:0 !important;padding:16px !important;display:block !important;background:#eef1ee !important}
+  html{margin:0;overflow:hidden;background:var(--bg);height:auto !important}
+  body{margin:0;padding:0;overflow:hidden;background:var(--bg);font-family:'Roboto',system-ui,sans-serif;height:auto !important}
+  .c-section{min-height:0 !important;height:auto !important;padding:16px !important;display:block !important;background:var(--bg) !important}
+  .ship-map,#shipMap,.map-card{max-height:360px !important}
+
+  /* ── Dark mode ── flip the estimator's CSS variables when the parent site is
+     in dark mode (theme synced via postMessage from PlanEstimator.js). Because
+     est.css is variable-driven, overriding :root vars re-skins the whole tool. */
+  html[data-theme="dark"]{
+    --brand:#5fb04e; --brand-mid:#4f9a41; --brand-bright:#74c563; --brand-light:#1e3327;
+    --brand-glow:rgba(95,176,78,0.28);
+    --ink:#e9efeb; --ink-soft:#adbbb2; --muted:#7e8c83;
+    --line:#29392f; --line-strong:#3a4d40;
+    --bg:#0f1713; --surface:#17231d; --surface-soft:#1c2c24; --surface-tint:#1a2820;
+    --danger:#e57368; --danger-bg:#3a2320; --success:#5fb04e; --success-bg:#1e3a1a;
+    --readonly-bg:#1c2c24;
+    --shadow-card:0 40px 80px -30px rgba(0,0,0,0.55), 0 10px 24px -10px rgba(0,0,0,0.4);
+    --shadow-soft:0 8px 22px -10px rgba(0,0,0,0.45);
+    color-scheme:dark;
+  }
+  /* A few est.css spots hard-code white/near-white — pull them onto the vars. */
+  html[data-theme="dark"] input,
+  html[data-theme="dark"] select,
+  html[data-theme="dark"] textarea{ background:var(--surface-soft) !important; color:var(--ink) !important; border-color:var(--line-strong) !important; }
+  html[data-theme="dark"] input::placeholder{ color:var(--muted) !important; }
+  html[data-theme="dark"] .card,
+  html[data-theme="dark"] .map-card,
+  html[data-theme="dark"] [style*="background:#fff"],
+  html[data-theme="dark"] [style*="background: #fff"],
+  html[data-theme="dark"] [style*="background:#ffffff"]{ background:var(--surface) !important; }
 </style>
+<script>
+  // Receive the parent site's theme and apply it to this iframe document so the
+  // estimator switches with the site's light/dark toggle.
+  (function(){
+    function applyTheme(t){
+      if(t==='dark'){ document.documentElement.setAttribute('data-theme','dark'); }
+      else { document.documentElement.removeAttribute('data-theme'); }
+    }
+    // Initial theme via URL (?theme=dark) avoids a light flash on first paint.
+    try{ var p=new URLSearchParams(location.search).get('theme'); if(p) applyTheme(p); }catch(e){}
+    window.addEventListener('message', function(e){
+      if(e && e.data && typeof e.data.__setTheme==='string') applyTheme(e.data.__setTheme);
+    });
+  })();
+</script>
 </head>
 <body>
 <div class="container py-2"><div class="row justify-content-center">
@@ -2212,7 +2254,7 @@ background-color:none !important;
 <script>
 (function(){
   var last=0, t=null;
-  function measure(){ return Math.max(document.body?document.body.scrollHeight:0, document.documentElement?document.documentElement.scrollHeight:0); }
+  function measure(){ var c=document.querySelector('.container'); if(c){ return Math.ceil(c.getBoundingClientRect().bottom); } return Math.max(document.body?document.body.scrollHeight:0, document.documentElement?document.documentElement.scrollHeight:0); }
   function post(){ var h=measure(); if(Math.abs(h-last)>3){ last=h; try{ parent.postMessage({__estHeight:h},'*'); }catch(e){} } }
   function schedule(){ clearTimeout(t); t=setTimeout(post,120); }
   window.addEventListener('load', schedule);

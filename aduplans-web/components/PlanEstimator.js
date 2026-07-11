@@ -19,23 +19,52 @@ export default function PlanEstimator({ sqft, state, jurisdiction, floorPlan = "
         setHeight(h + 20);
       }
     };
-    // Same-origin: read the content height directly (most reliable).
+    // Same-origin: measure the estimator's actual content wrapper, not the whole
+    // document. document.scrollHeight can be inflated by a leftover full-viewport
+    // element (the estimator's .c-section is min-height:100vh in its own CSS),
+    // which left a huge empty area below the form. The .container bottom is the
+    // true content height.
     const measure = () => {
       try {
         const d = iframe?.contentDocument;
-        if (d) apply(Math.max(d.body.scrollHeight, d.documentElement.scrollHeight));
+        if (!d) return;
+        const el = d.querySelector(".container");
+        const h = el
+          ? Math.ceil(el.getBoundingClientRect().bottom)
+          : Math.max(d.body.scrollHeight, d.documentElement.scrollHeight);
+        apply(h);
       } catch {
         /* cross-origin fallback handled by postMessage below */
       }
     };
     const onMessage = (e) => apply(e?.data?.__estHeight);
-    const onLoad = () => [100, 500, 1200, 2500, 4500].forEach((t) => setTimeout(measure, t));
+    // Keep the estimator's theme in lock-step with the site's light/dark toggle.
+    const getTheme = () =>
+      document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+    const sendTheme = () => {
+      try {
+        iframe?.contentWindow?.postMessage({ __setTheme: getTheme() }, "*");
+      } catch {
+        /* iframe not ready yet — the load handler re-sends */
+      }
+    };
+    const onLoad = () => {
+      sendTheme();
+      [100, 500, 1200, 2500, 4500].forEach((t) => setTimeout(measure, t));
+    };
 
     window.addEventListener("message", onMessage);
     iframe?.addEventListener("load", onLoad);
+    // Re-push the theme whenever the toggle flips data-theme on <html>.
+    const themeObserver = new MutationObserver(sendTheme);
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
     return () => {
       window.removeEventListener("message", onMessage);
       iframe?.removeEventListener("load", onLoad);
+      themeObserver.disconnect();
     };
   }, []);
 
@@ -48,11 +77,11 @@ export default function PlanEstimator({ sqft, state, jurisdiction, floorPlan = "
 
   return (
     <section className="mt-12">
-      {/* The estimator keeps its own light theme; wrap it in a clean light card
-          so it looks intentional on the dark theme too. */}
+      {/* The estimator now follows the site theme (synced into the iframe). The
+          wrapper background mirrors the estimator's own --bg in both modes. */}
       <div
         className="overflow-hidden rounded-3xl border border-line shadow-[var(--shadow-card)]"
-        style={{ background: "#eef1ee" }}
+        style={{ background: "var(--est-bg)" }}
       >
         <iframe
           ref={frameRef}

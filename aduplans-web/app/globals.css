@@ -51,6 +51,12 @@ body {
   color: #fff;
 }
 
+/* Background behind the embedded PRADU estimator iframe — mirrors the
+   estimator's own --bg so the wrapper card blends in both themes. */
+:root {
+  --est-bg: #eef1ee;
+}
+
 /* ── Dark mode — flip the surface/text palette; `night` stays constant ────── */
 :root[data-theme="dark"] {
   color-scheme: dark;
@@ -65,6 +71,7 @@ body {
   --color-forest-700: #3f8a66;
   --color-line: #29392f;
   --color-line-soft: #202e27;
+  --est-bg: #0f1713;           /* estimator iframe background (dark) */
 }
 
 /* Smooth the switch (not on first paint) */
