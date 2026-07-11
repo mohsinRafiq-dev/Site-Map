@@ -13,6 +13,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { cache } from "react";
+import fs from "node:fs";
+import path from "node:path";
+import zlib from "node:zlib";
 
 const TOKEN = process.env.BASEROW_TOKEN;
 const TABLE = process.env.BASEROW_TABLE_ID || "523542";
@@ -148,6 +151,27 @@ async function fetchAllPlans() {
 let _memo = null; // { at: number, data: Plan[] }
 let _refreshing = null;
 
+// Build-time snapshot (scripts/snapshot.js) of the whole catalog, already
+// normalized and gzipped. We seed the in-memory cache with it at startup so:
+//   • a cold serverless instance serves real data INSTANTLY (no 8s Baserow
+//     wait) while it refreshes live data in the background, and
+//   • if Baserow is unreachable, we keep serving this last-good snapshot
+//     instead of an empty site.
+function loadSnapshot() {
+  try {
+    const file = path.join(process.cwd(), "lib", "plans-snapshot.json.gz");
+    const data = JSON.parse(zlib.gunzipSync(fs.readFileSync(file)).toString("utf8"));
+    return Array.isArray(data) && data.length ? data : null;
+  } catch {
+    return null; // no snapshot yet (e.g. local dev before a build) — fine
+  }
+}
+
+// Seed as STALE (at: 0) so the very first request serves it immediately and
+// still triggers a background refresh to pull the latest live data.
+const _snapshot = loadSnapshot();
+if (_snapshot) _memo = { at: 0, data: _snapshot };
+
 async function refresh() {
   const data = await fetchAllPlans();
   _memo = { at: Date.now(), data };
@@ -176,11 +200,12 @@ async function loadPlans() {
     return await _refreshing;
   } catch (e) {
     if (_memo) return _memo.data;
-    // Never crash the whole page render on a data hiccup — degrade to an empty
-    // catalog instead. Check the deployment's Runtime Logs for the real cause
-    // (e.g. a missing BASEROW_TOKEN shows as "Baserow HTTP 401").
+    // Never crash the whole page render on a data hiccup — fall back to the
+    // build-time snapshot, or an empty catalog as a last resort. Check the
+    // deployment's Runtime Logs for the real cause (e.g. a missing
+    // BASEROW_TOKEN shows as "Baserow HTTP 401").
     console.error("[aduplans] plan load failed:", e?.message);
-    return [];
+    return _snapshot || [];
   }
 }
 

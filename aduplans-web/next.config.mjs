@@ -8,6 +8,13 @@ const nextConfig = {
       { protocol: "https", hostname: "baserow.io" },
     ],
   },
+  // Ensure the build-time catalog snapshot (read via fs in lib/baserow.js) is
+  // bundled into the serverless functions that need it.
+  outputFileTracingIncludes: {
+    "/": ["./lib/plans-snapshot.json.gz"],
+    "/plans": ["./lib/plans-snapshot.json.gz"],
+    "/plans/[id]": ["./lib/plans-snapshot.json.gz"],
+  },
 };
 
 export default nextConfig;

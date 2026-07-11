@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Generated at build time by scripts/snapshot.js (do not commit)
+lib/plans-snapshot.json.gz
+lib/plans-snapshot.json

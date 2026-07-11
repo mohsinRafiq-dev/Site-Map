@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "snapshot": "node scripts/snapshot.js",
+    "build": "node scripts/snapshot.js && next build",
+    "warm": "node scripts/warm-images.js",
     "start": "next start",
     "lint": "eslint"
   },
