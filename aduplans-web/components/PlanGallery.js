@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { proxyImg } from "@/lib/img";
+import { CloseIcon, ImagePlaceholderIcon } from "@/components/icons";
 
 // Plan image gallery with a click-to-zoom lightbox (arrow-key + swipe nav).
 export default function PlanGallery({ images, name }) {
@@ -26,8 +27,8 @@ export default function PlanGallery({ images, name }) {
 
   if (!images.length) {
     return (
-      <div className="grid aspect-[4/3] place-items-center rounded-3xl border border-line bg-mist text-6xl text-forest/20">
-        ▦
+      <div className="grid aspect-[4/3] place-items-center rounded-3xl border border-line bg-mist text-forest/25">
+        <ImagePlaceholderIcon size={72} />
       </div>
     );
   }
@@ -85,8 +86,8 @@ export default function PlanGallery({ images, name }) {
           role="dialog"
           aria-modal="true"
         >
-          <button aria-label="Close" className="absolute right-5 top-5 grid h-11 w-11 place-items-center rounded-full bg-white/10 text-lg text-white hover:bg-white/20">
-            ✕
+          <button aria-label="Close" className="absolute right-5 top-5 grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20">
+            <CloseIcon size={20} />
           </button>
           {images.length > 1 && (
             <button

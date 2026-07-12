@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { SearchIcon, ChevronDownIcon } from "@/components/icons";
 
 export default function PlanFilters({ facets }) {
   const router = useRouter();
@@ -54,7 +55,9 @@ export default function PlanFilters({ facets }) {
             placeholder="Search plan name, city…"
             className="w-full rounded-xl border border-line bg-cream/60 px-4 py-2.5 pr-9 text-sm outline-none transition-colors focus:border-forest focus:bg-white"
           />
-          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted">⌕</span>
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted">
+            <SearchIcon size={15} />
+          </span>
         </div>
       </Field>
 
@@ -141,8 +144,10 @@ export default function PlanFilters({ facets }) {
         onClick={() => setMobileOpen((v) => !v)}
         className="mb-4 flex w-full items-center justify-between rounded-xl border border-line bg-paper px-4 py-3 text-sm font-semibold lg:hidden"
       >
-        Filters {activeCount > 0 && <span className="chip bg-forest text-white">{activeCount}</span>}
-        <span>{mobileOpen ? "▲" : "▼"}</span>
+        <span className="inline-flex items-center gap-2">
+          Filters {activeCount > 0 && <span className="chip bg-forest text-white">{activeCount}</span>}
+        </span>
+        <ChevronDownIcon size={16} className={`transition-transform ${mobileOpen ? "rotate-180" : ""}`} />
       </button>
 
       <aside className={`${mobileOpen ? "block" : "hidden"} lg:block`}>

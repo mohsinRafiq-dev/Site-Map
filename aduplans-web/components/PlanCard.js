@@ -1,10 +1,14 @@
 import Link from "next/link";
 import Image from "next/image";
 import { proxyImg } from "@/lib/img";
+import { ImagePlaceholderIcon } from "@/components/icons";
 
 export default function PlanCard({ plan, priority = false }) {
   const raw = plan.cardImage || plan.elevationImage || plan.floorPlanImage || plan.lotImage;
   const img = proxyImg(raw, 640); // cached, resized WebP via our edge proxy
+  // Elevation renders look best filling the frame; floor-plan / lot drawings get
+  // cropped by `cover`, so show those contained on a tinted panel instead.
+  const isRender = !!plan.elevationImage;
   return (
     <Link
       href={`/plans/${plan.id}`}
@@ -14,15 +18,21 @@ export default function PlanCard({ plan, priority = false }) {
         {img ? (
           <Image
             src={img}
-            alt={plan.name}
+            alt={`${plan.displayName} — ${plan.bedsLabel}${plan.sqft ? `, ${plan.sqft} sq ft` : ""} ADU plan`}
             fill
             unoptimized
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-            className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+            className={
+              isRender
+                ? "object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                : "object-contain p-3 transition-transform duration-500 group-hover:scale-[1.03]"
+            }
             priority={priority}
           />
         ) : (
-          <div className="grid h-full place-items-center text-4xl text-forest/30">▦</div>
+          <div className="grid h-full place-items-center text-forest/25">
+            <ImagePlaceholderIcon size={44} />
+          </div>
         )}
 
         {plan.placeable && (
@@ -61,8 +71,8 @@ export default function PlanCard({ plan, priority = false }) {
 
 function Spec({ children }) {
   return (
-    <span className="inline-flex items-center gap-1">
-      <span className="h-1 w-1 rounded-full bg-amber" />
+    <span className="inline-flex items-center gap-1.5">
+      <span className="h-1 w-1 rounded-full bg-forest/40" />
       {children}
     </span>
   );

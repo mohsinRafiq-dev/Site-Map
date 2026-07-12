@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { DESIGNERS } from "@/lib/designers";
+import { CloseIcon } from "@/components/icons";
 
 // The clickable top-10 list. Each firm opens a popup with its contact card
 // (mirrors aduplans.com: State, City, Architect, Address, Zip, Telephone,
@@ -83,7 +84,7 @@ function DesignerModal({ designer, onClose }) {
         <div className="relative border-b border-line px-6 py-5 text-center">
           <h3 className="font-display text-2xl font-bold text-forest">{designer.firm}</h3>
           <button type="button" onClick={onClose} aria-label="Close" className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-lg text-muted hover:bg-line/50 hover:text-ink">
-            ✕
+            <CloseIcon size={16} />
           </button>
         </div>
 

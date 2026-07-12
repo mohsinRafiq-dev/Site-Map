@@ -51,6 +51,27 @@ body {
   color: #fff;
 }
 
+/* ── Keyboard focus — a single consistent, visible ring on every interactive
+   element (mouse clicks don't trigger :focus-visible, so it stays clean). ──── */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-forest);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+/* SVG map states: a presentation-attribute stroke can't show an offset ring, so
+   highlight the shape itself on keyboard focus (CSS beats the inline stroke). */
+.us-state:focus-visible {
+  outline: none;
+  stroke: var(--color-amber);
+  stroke-width: 2.5px;
+}
+
 /* Background behind the embedded PRADU estimator iframe — mirrors the
    estimator's own --bg so the wrapper card blends in both themes. */
 :root {
@@ -178,16 +199,20 @@ summary {
 }
 .animate-bounce-down { animation: bounceDown 1.7s ease-in-out infinite; }
 
-/* Moving shimmer over the green accent text */
-@keyframes shine { to { background-position: -200% center; } }
+/* Clean static green gradient for the accent line (calmer than a moving shine) */
 .shimmer-green {
-  background: linear-gradient(100deg, #7fb350 0%, #cdecaa 45%, #7fb350 65%);
-  background-size: 200% auto;
+  background: linear-gradient(100deg, #8ec765 0%, #d6f0b6 55%, #8ec765 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: shine 3.6s linear infinite;
 }
+
+/* Gentle one-in nudge for the scroll cue — subtle, not a constant bounce */
+@keyframes nudge {
+  0%, 70%, 100% { transform: translateY(0); }
+  82% { transform: translateY(3px); }
+}
+.animate-nudge { animation: nudge 3.2s ease-in-out infinite; }
 
 /* Staggered entrance delays */
 .delay-1 { animation-delay: 0.08s; }
@@ -198,7 +223,10 @@ summary {
 
 @media (prefers-reduced-motion: reduce) {
   .animate-kenburns, .animate-floaty, .animate-floaty-slow,
-  .animate-bounce-down, .shimmer-green { animation: none; }
+  .animate-bounce-down, .animate-nudge, .rise-in { animation: none; }
+  /* rise-in elements animate opacity/transform from a hidden state — make sure
+     they stay visible when motion is disabled. */
+  .rise-in { opacity: 1; transform: none; }
 }
 
 /* ── Scroll reveal (sections & cards rise in as they enter view) ──────────── */

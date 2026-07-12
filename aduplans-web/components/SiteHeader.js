@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import ThemeToggle from "@/components/ThemeToggle";
+import { MenuIcon, CloseIcon } from "@/components/icons";
 
 const FUN = "https://www.frameupnow.com";
 const SCHEDULE_URL = `${FUN}/schedule-an-appointment`;
@@ -72,10 +73,11 @@ export default function SiteHeader() {
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            aria-label="Menu"
+            aria-label={open ? "Close menu" : "Open menu"}
+            aria-expanded={open}
             className="grid h-10 w-10 place-items-center rounded-lg border border-line text-ink lg:hidden"
           >
-            <span className="text-lg">{open ? "✕" : "☰"}</span>
+            {open ? <CloseIcon size={18} /> : <MenuIcon size={18} />}
           </button>
         </div>
       </div>

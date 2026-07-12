@@ -32,7 +32,10 @@ export default function USAMap({ states }) {
               <path
                 key={s.code}
                 d={s.d}
-                className={has ? "cursor-pointer transition-colors duration-150" : "transition-colors duration-150"}
+                role={has ? "button" : undefined}
+                tabIndex={has ? 0 : undefined}
+                aria-label={has ? `${STATE_NAMES[s.code]} — ${count} plans` : undefined}
+                className={has ? "us-state cursor-pointer transition-colors duration-150" : "transition-colors duration-150"}
                 fill={
                   !has
                     ? "var(--color-line-soft)"
@@ -45,6 +48,18 @@ export default function USAMap({ states }) {
                 onMouseEnter={(e) => has && setHover({ code: s.code, count, x: e.clientX, y: e.clientY })}
                 onMouseMove={(e) => has && setHover({ code: s.code, count, x: e.clientX, y: e.clientY })}
                 onMouseLeave={() => setHover(null)}
+                onFocus={(e) => {
+                  if (!has) return;
+                  const r = e.currentTarget.getBoundingClientRect();
+                  setHover({ code: s.code, count, x: r.left + r.width / 2, y: r.top });
+                }}
+                onBlur={() => setHover(null)}
+                onKeyDown={(e) => {
+                  if (has && (e.key === "Enter" || e.key === " ")) {
+                    e.preventDefault();
+                    router.push(`/plans?state=${s.code}`);
+                  }
+                }}
                 onClick={() => has && router.push(`/plans?state=${s.code}`)}
               />
             );

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { getAllPlans, buildFacets } from "@/lib/baserow";
+import { PlayIcon } from "@/components/icons";
 import StateSelector from "@/components/StateSelector";
 import USAMap from "@/components/USAMap";
 import DesignersSection from "@/components/DesignersSection";
@@ -33,12 +34,9 @@ export default function HomePage() {
           className="animate-kenburns absolute inset-0 bg-cover bg-center will-change-transform"
           style={{ backgroundImage: "url('/hero-section.jpg')" }}
         />
-        {/* Light overlay — image is already dimmed, just aid text contrast */}
-        <div aria-hidden className="absolute inset-0 bg-night/30" />
-
-        {/* Floating glow orbs for depth */}
-        <div aria-hidden className="animate-floaty pointer-events-none absolute -left-16 top-10 h-72 w-72 rounded-full bg-forest/25 blur-3xl" />
-        <div aria-hidden className="animate-floaty-slow pointer-events-none absolute -right-16 bottom-0 h-80 w-80 rounded-full bg-amber/20 blur-3xl" />
+        {/* Overlay — a soft top-down gradient keeps text crisp without hiding the
+            imagery (replaces the busier glow orbs). */}
+        <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-night/45 via-night/25 to-night/45" />
 
         {/* Content */}
         <div
@@ -79,9 +77,9 @@ export default function HomePage() {
               Click your state from the <strong className="text-amber">map</strong> below to begin
             </p>
 
-            {/* cute bouncing scroll cue */}
-            <a href="#select-state" aria-label="Jump to the map" className="rise-in delay-5 mx-auto mt-8 grid h-11 w-11 place-items-center rounded-full border border-white/25 bg-white/10 backdrop-blur-sm transition-colors hover:bg-white/20">
-              <svg className="animate-bounce-down" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            {/* Scroll cue — a quiet gentle nudge rather than a constant bounce. */}
+            <a href="#select-state" aria-label="Jump to the map" className="rise-in delay-5 group mx-auto mt-8 grid h-11 w-11 place-items-center rounded-full border border-white/25 bg-white/10 backdrop-blur-sm transition-colors hover:bg-white/20">
+              <svg className="animate-nudge transition-transform group-hover:translate-y-0.5" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M6 9l6 6 6-6" />
               </svg>
             </a>
@@ -127,7 +125,9 @@ export default function HomePage() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={`https://i.ytimg.com/vi/${id}/hqdefault.jpg`} alt="Video" className="h-full w-full object-cover opacity-90 transition-opacity group-hover:opacity-100" />
                 <span className="absolute inset-0 grid place-items-center">
-                  <span className="grid h-11 w-11 place-items-center rounded-full bg-white/90 text-forest shadow-lg">▶</span>
+                  <span className="grid h-12 w-12 place-items-center rounded-full bg-white/90 pl-0.5 text-forest shadow-lg transition-transform group-hover:scale-105">
+                    <PlayIcon size={18} />
+                  </span>
                 </span>
               </a>
             ))}
