@@ -325,3 +325,34 @@ export function footprintFitMargin({
   if (minMargin < 0 && minMargin > -0.033) minMargin = 0;
   return minMargin;
 }
+
+// Where a newly-dropped home should start. The geocoded address almost always
+// sits on the EXISTING house, so centering the ADU there drops it on the roof.
+// Instead we place it toward the REAR of the buildable area (the backyard side —
+// +y is north / "up", which is how a homeowner reads "backyard" on a north-up
+// map). We propose a point deep past the rear edge and let the setback clamp
+// pin it to the back of the buildable area, correctly accounting for footprint
+// size, rotation and uneven setbacks.
+export function rearBuildableCenter({
+  lot,
+  setbacks,
+  footprintWidth,
+  footprintDepth,
+  footprintRotationDeg = 0,
+}) {
+  if (!lot || !lot.center || !setbacks) return lot?.center ?? null;
+  const rearProposed = lotLocalFeetToWorld(
+    [0, lot.length], // deep toward the rear; clamp pins it to the back setback
+    lot.center,
+    lot.rotation || 0
+  );
+  const { center } = clampFootprintToSetbacks({
+    proposedCenter: rearProposed,
+    footprintWidth,
+    footprintDepth,
+    footprintRotationDeg,
+    lot,
+    setbacks,
+  });
+  return center;
+}

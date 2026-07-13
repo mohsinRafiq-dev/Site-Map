@@ -23,13 +23,17 @@ import {
   applySetbacksToRect,
   clampFootprintToSetbacks,
   footprintFitMargin,
+  rearBuildableCenter,
 } from "./lib/geometry";
 import { usePlansCatalog } from "./lib/plansCatalog";
 import { fetchPlanById } from "./lib/baserow";
 import { useAuth } from "./lib/auth";
 import "./App.css";
 
-const DEFAULT_LOT = { width: 60, length: 100, rotation: 0, center: null };
+// A deeper default lot so the buildable area reaches into the backyard behind
+// the house (the geocoded point sits on the house), reducing "won't fit" when
+// the home is placed to the rear. Users still fine-tune size at the Lot step.
+const DEFAULT_LOT = { width: 60, length: 120, rotation: 0, center: null };
 const DEFAULT_SETBACKS = { front: 5, back: 5, left: 5, right: 5 };
 const SESSION_KEY = "frameupnow-session-v1";
 
@@ -244,15 +248,14 @@ export default function App() {
         const sb = _session.setbacks || DEFAULT_SETBACKS;
         let center = _session.lot.center;
         if (_session.lotConfirmed && plan.width && plan.depth) {
-          const clamped = clampFootprintToSetbacks({
-            proposedCenter: _session.lot.center,
+          // Drop the home into the backyard, not on the existing house.
+          center = rearBuildableCenter({
+            lot: lotStraight,
+            setbacks: sb,
             footprintWidth: plan.width,
             footprintDepth: plan.depth,
             footprintRotationDeg: 0,
-            lot: lotStraight,
-            setbacks: sb,
           });
-          center = clamped.center;
         }
         setLot((l) => ({ ...l, rotation: 0 })); // un-rotate the lot too
         setFootprint({ center, rotation: 0 });
@@ -525,7 +528,23 @@ export default function App() {
 
   function handleConfirmLot() {
     setLotConfirmed(true);
-    setCurrentStep(3); // advance to "pick a floor plan"
+    // If a plan is already chosen (e.g. deep-linked from aduplans.com), drop it
+    // into the backyard of the now-final lot and jump straight to placement —
+    // don't leave it sitting on the existing house.
+    if (floorPlan && floorPlan.width && floorPlan.depth && lot.center) {
+      const center = rearBuildableCenter({
+        lot,
+        setbacks,
+        footprintWidth: floorPlan.width,
+        footprintDepth: floorPlan.depth,
+        footprintRotationDeg: lot.rotation || 0,
+      });
+      setFootprint({ center, rotation: lot.rotation || 0 });
+      setPlacementId((p) => p + 1);
+      setCurrentStep(4); // straight to "place & rotate"
+    } else {
+      setCurrentStep(3); // advance to "pick a floor plan"
+    }
   }
 
   function handleEditLot() {
@@ -543,15 +562,15 @@ export default function App() {
       // are wide or the plan is large).
       let initialCenter = lot.center;
       if (lotConfirmed) {
-        const { center } = clampFootprintToSetbacks({
-          proposedCenter: lot.center,
+        // Start the home in the backyard (rear of the buildable area) rather
+        // than dead-center on the existing house.
+        initialCenter = rearBuildableCenter({
+          lot,
+          setbacks,
           footprintWidth: fp.width,
           footprintDepth: fp.depth,
           footprintRotationDeg: lot.rotation,
-          lot,
-          setbacks,
         });
-        initialCenter = center;
       }
       setFootprint({ center: initialCenter, rotation: lot.rotation });
       // Only warn if the plan literally cannot fit in the buildable area.
