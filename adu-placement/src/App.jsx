@@ -24,8 +24,6 @@ import {
   clampFootprintToSetbacks,
   footprintFitMargin,
   rearBuildableCenter,
-  worldToLotLocalFeet,
-  lotLocalFeetToWorld,
 } from "./lib/geometry";
 import { usePlansCatalog } from "./lib/plansCatalog";
 import { fetchPlanById } from "./lib/baserow";
@@ -37,6 +35,19 @@ import "./App.css";
 // the home is placed to the rear. Users still fine-tune size at the Lot step.
 const DEFAULT_LOT = { width: 60, length: 120, rotation: 0, center: null };
 const DEFAULT_SETBACKS = { front: 5, back: 5, left: 5, right: 5 };
+
+// Rotate a lng/lat point by `deg` (CCW, matching makeRectangle) around a center.
+function rotateAround(p, center, deg) {
+  const rad = (deg * Math.PI) / 180;
+  const cosA = Math.cos(rad);
+  const sinA = Math.sin(rad);
+  const coslat = Math.cos((center[1] * Math.PI) / 180) || 1;
+  const dx = (p[0] - center[0]) * coslat; // east
+  const dy = p[1] - center[1]; // north
+  const rx = dx * cosA - dy * sinA;
+  const ry = dx * sinA + dy * cosA;
+  return [center[0] + rx / coslat, center[1] + ry];
+}
 const SESSION_KEY = "frameupnow-session-v1";
 
 // Gate for Step auto-scroll. Stays false for a short window after the app
@@ -623,21 +634,25 @@ export default function App() {
     );
   }
 
-  // Rotate the LOT and its setback box (so it can be aligned to an angled or
-  // hillside lot). The home rotates WITH the lot and keeps its position relative
-  // to the lot, so the whole placement stays aligned as one unit.
+
+  // Rotate the LOT and its setback box (to align to an angled / hillside lot).
+  // The home rotates WITH the lot around the lot's center, so the whole
+  // placement turns as one unit. Uses per-delta state updaters so rapid drags
+  // accumulate correctly (no stale-closure loss).
   function handleRotateLotAndHome(delta) {
-    const newRot = (lot.rotation + delta) % 360;
-    if (footprint && lot.center) {
-      // Keep the home's position fixed in the lot's own frame while the lot
-      // turns, then turn the home by the same amount to stay parallel.
-      const local = worldToLotLocalFeet(footprint.center, lot.center, lot.rotation);
-      const world = lotLocalFeetToWorld(local, lot.center, newRot);
+    const lotCenter = lot.center;
+    if (lotCenter) {
       setFootprint((f) =>
-        f ? { ...f, center: world, rotation: (f.rotation + delta) % 360 } : f
+        f
+          ? {
+              ...f,
+              center: rotateAround(f.center, lotCenter, delta),
+              rotation: (f.rotation + delta) % 360,
+            }
+          : f
       );
     }
-    setLot((l) => ({ ...l, rotation: newRot }));
+    setLot((l) => ({ ...l, rotation: (l.rotation + delta) % 360 }));
   }
 
   // Snap rotation to nearest 0/90/180/270 (per doc).
@@ -1084,6 +1099,8 @@ export default function App() {
             is3D={is3D}
             onDragLot={handleDragLot}
             onDragFootprint={handleDragFootprint}
+            onRotateFootprintBy={handleRotateFootprint}
+            onRotateLotBy={handleRotateLotAndHome}
             onBearingChange={setMapBearing}
             onReady={() => setMapReady(true)}
           />

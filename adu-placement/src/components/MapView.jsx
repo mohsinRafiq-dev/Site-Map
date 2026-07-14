@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -52,6 +53,8 @@ const MapView = forwardRef(function MapView(
     is3D = false,
     onDragLot,
     onDragFootprint,
+    onRotateFootprintBy,
+    onRotateLotBy,
     onBearingChange,
     onReady,
   },
@@ -60,6 +63,10 @@ const MapView = forwardRef(function MapView(
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
+  const rotateMarkerRef = useRef(null);
+  const onRotateByRef = useRef(onRotateFootprintBy);
+  const rotateLotMarkerRef = useRef(null);
+  const onRotateLotByRef = useRef(onRotateLotBy);
   const styleReadyRef = useRef(false);
   const currentImagePlanIdRef = useRef(null);
   const currentStyleUrlRef = useRef(null);
@@ -90,6 +97,12 @@ const MapView = forwardRef(function MapView(
   useEffect(() => {
     onDragFpRef.current = onDragFootprint;
   }, [onDragFootprint]);
+  useEffect(() => {
+    onRotateByRef.current = onRotateFootprintBy;
+  }, [onRotateFootprintBy]);
+  useEffect(() => {
+    onRotateLotByRef.current = onRotateLotBy;
+  }, [onRotateLotBy]);
 
   // ------- Init map (once) -------
   useEffect(() => {
@@ -685,6 +698,159 @@ const MapView = forwardRef(function MapView(
     }
   }, [floorPlan, footprintFeature, viewMode, styleEpoch]);
 
+  // Rotate handle: a DOM marker pinned just outside the home's TOP-RIGHT corner.
+  // Positioned from the current footprint and re-glued on every map "render", so
+  // it tracks the home in perfect lockstep (during rotation, pan, zoom) with no
+  // float — it repaints in the same frame the map does.
+  const positionRotateHandle = useCallback(() => {
+    const feat = footprintFeatureRef.current;
+    const marker = rotateMarkerRef.current;
+    if (!feat || !marker) return;
+    marker.setLngLat(topRightHandleGeo(feat, 1.18)); // small home → a touch more
+  }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const show = !!footprintFeature && lotConfirmed && !!floorPlan;
+
+    if (!show) {
+      map.off("render", positionRotateHandle);
+      if (rotateMarkerRef.current) {
+        rotateMarkerRef.current.remove();
+        rotateMarkerRef.current = null;
+      }
+      return;
+    }
+
+    if (!rotateMarkerRef.current) {
+      const el = buildRotateHandleEl();
+      // Rotate by the angular change of the pointer around the home's center.
+      el.addEventListener("pointerdown", (e) => {
+        const feat0 = footprintFeatureRef.current;
+        if (!onRotateByRef.current || !feat0) return;
+        e.preventDefault();
+        e.stopPropagation();
+        map.dragPan.disable();
+        el.classList.add("dragging");
+        const c = polygonCenter(feat0); // center is fixed while rotating
+        const angleAt = (clientX, clientY) => {
+          const rect = map.getCanvas().getBoundingClientRect();
+          const ll = map.unproject([clientX - rect.left, clientY - rect.top]);
+          const dEast = (ll.lng - c[0]) * Math.cos((c[1] * Math.PI) / 180);
+          const dNorth = ll.lat - c[1];
+          return (Math.atan2(-dEast, dNorth) * 180) / Math.PI;
+        };
+        let prev = angleAt(e.clientX, e.clientY);
+        const move = (ev) => {
+          const cur = angleAt(ev.clientX, ev.clientY);
+          const delta = ((cur - prev + 540) % 360) - 180; // shortest signed step
+          if (delta) {
+            prev = cur;
+            onRotateByRef.current(delta);
+          }
+        };
+        const up = () => {
+          window.removeEventListener("pointermove", move);
+          window.removeEventListener("pointerup", up);
+          map.dragPan.enable();
+          el.classList.remove("dragging");
+        };
+        window.addEventListener("pointermove", move);
+        window.addEventListener("pointerup", up);
+      });
+      rotateMarkerRef.current = new mapboxgl.Marker({ element: el, anchor: "center" })
+        .setLngLat(polygonCenter(footprintFeature))
+        .addTo(map);
+      // Re-glue every time the map paints — stays locked to the corner with no lag.
+      map.on("render", positionRotateHandle);
+    }
+
+    positionRotateHandle();
+  }, [footprintFeature, lotConfirmed, floorPlan, positionRotateHandle]);
+
+  // Clean up the rotate handle on unmount.
+  useEffect(() => () => {
+    const map = mapRef.current;
+    if (map) map.off("render", positionRotateHandle);
+    rotateMarkerRef.current?.remove();
+    rotateMarkerRef.current = null;
+  }, [positionRotateHandle]);
+
+  // Rotate handle for the LOT — pinned to the lot's top-right corner. Turns the
+  // whole lot + setback box (and the home with it), so an angled/hillside lot can
+  // be aligned. Same render-synced, no-float approach as the home handle.
+  const positionLotRotateHandle = useCallback(() => {
+    const feat = lotFeatureRef.current;
+    const marker = rotateLotMarkerRef.current;
+    if (!feat || !marker) return;
+    marker.setLngLat(topRightHandleGeo(feat, 1.06)); // large lot → small fraction
+  }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (!lotFeature) {
+      map.off("render", positionLotRotateHandle);
+      if (rotateLotMarkerRef.current) {
+        rotateLotMarkerRef.current.remove();
+        rotateLotMarkerRef.current = null;
+      }
+      return;
+    }
+
+    if (!rotateLotMarkerRef.current) {
+      const el = buildRotateHandleEl("rotate-handle-lot", "Drag to rotate the lot");
+      el.addEventListener("pointerdown", (e) => {
+        const feat0 = lotFeatureRef.current;
+        if (!onRotateLotByRef.current || !feat0) return;
+        e.preventDefault();
+        e.stopPropagation();
+        map.dragPan.disable();
+        el.classList.add("dragging");
+        const c = polygonCenter(feat0); // lot center is fixed while rotating
+        const angleAt = (clientX, clientY) => {
+          const rect = map.getCanvas().getBoundingClientRect();
+          const ll = map.unproject([clientX - rect.left, clientY - rect.top]);
+          const dEast = (ll.lng - c[0]) * Math.cos((c[1] * Math.PI) / 180);
+          const dNorth = ll.lat - c[1];
+          return (Math.atan2(-dEast, dNorth) * 180) / Math.PI;
+        };
+        let prev = angleAt(e.clientX, e.clientY);
+        const move = (ev) => {
+          const cur = angleAt(ev.clientX, ev.clientY);
+          const delta = ((cur - prev + 540) % 360) - 180;
+          if (delta) {
+            prev = cur;
+            onRotateLotByRef.current(delta);
+          }
+        };
+        const up = () => {
+          window.removeEventListener("pointermove", move);
+          window.removeEventListener("pointerup", up);
+          map.dragPan.enable();
+          el.classList.remove("dragging");
+        };
+        window.addEventListener("pointermove", move);
+        window.addEventListener("pointerup", up);
+      });
+      rotateLotMarkerRef.current = new mapboxgl.Marker({ element: el, anchor: "center" })
+        .setLngLat(polygonCenter(lotFeature))
+        .addTo(map);
+      map.on("render", positionLotRotateHandle);
+    }
+
+    positionLotRotateHandle();
+  }, [lotFeature, positionLotRotateHandle]);
+
+  useEffect(() => () => {
+    const map = mapRef.current;
+    if (map) map.off("render", positionLotRotateHandle);
+    rotateLotMarkerRef.current?.remove();
+    rotateLotMarkerRef.current = null;
+  }, [positionLotRotateHandle]);
+
   function syncWhenReady(srcId, feature) {
     const map = mapRef.current;
     if (!map) return;
@@ -821,6 +987,43 @@ const MapView = forwardRef(function MapView(
 export default MapView;
 
 /* ---------- helpers ---------- */
+
+// Geo position for a rotate handle: the shape's VISUAL top-right corner. Take
+// the two topmost (northern-most) corners, then the rightmost (eastern-most) of
+// those two — this finds the top-right corner robustly for ANY aspect ratio or
+// rotation (a plain "north+east" score is biased toward the long dimension and
+// picks the topmost corner on tall lots). Then push a little past it (`k` =
+// fraction beyond, proportional so it hugs any size). Pure geometry.
+function topRightHandleGeo(feat, k) {
+  const ring = feat.geometry.coordinates[0];
+  const c = polygonCenter(feat);
+  const coslat = Math.cos((c[1] * Math.PI) / 180) || 1;
+  const corners = [0, 1, 2, 3].map((i) => ({
+    pt: ring[i],
+    east: (ring[i][0] - c[0]) * coslat,
+    north: ring[i][1] - c[1],
+  }));
+  corners.sort((a, b) => b.north - a.north); // topmost first
+  const [t0, t1] = corners; // the two upper corners
+  const best = t0.east >= t1.east ? t0 : t1; // rightmost of the two
+  return [c[0] + (best.pt[0] - c[0]) * k, c[1] + (best.pt[1] - c[1]) * k];
+}
+
+// The rotate-handle DOM element (styled in App.css as `.rotate-handle`).
+function buildRotateHandleEl(extraClass, label = "Drag to rotate the home") {
+  const el = document.createElement("div");
+  el.className = "rotate-handle" + (extraClass ? " " + extraClass : "");
+  el.setAttribute("role", "button");
+  el.setAttribute("tabindex", "0");
+  el.setAttribute("aria-label", label);
+  el.title = label;
+  el.innerHTML =
+    '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" ' +
+    'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 4v5h-5"/></svg>';
+  return el;
+}
+
 function emptyFC() {
   return {
     type: "geojson",
