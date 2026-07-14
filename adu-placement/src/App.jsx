@@ -24,6 +24,8 @@ import {
   clampFootprintToSetbacks,
   footprintFitMargin,
   rearBuildableCenter,
+  worldToLotLocalFeet,
+  lotLocalFeetToWorld,
 } from "./lib/geometry";
 import { usePlansCatalog } from "./lib/plansCatalog";
 import { fetchPlanById } from "./lib/baserow";
@@ -621,6 +623,23 @@ export default function App() {
     );
   }
 
+  // Rotate the LOT and its setback box (so it can be aligned to an angled or
+  // hillside lot). The home rotates WITH the lot and keeps its position relative
+  // to the lot, so the whole placement stays aligned as one unit.
+  function handleRotateLotAndHome(delta) {
+    const newRot = (lot.rotation + delta) % 360;
+    if (footprint && lot.center) {
+      // Keep the home's position fixed in the lot's own frame while the lot
+      // turns, then turn the home by the same amount to stay parallel.
+      const local = worldToLotLocalFeet(footprint.center, lot.center, lot.rotation);
+      const world = lotLocalFeetToWorld(local, lot.center, newRot);
+      setFootprint((f) =>
+        f ? { ...f, center: world, rotation: (f.rotation + delta) % 360 } : f
+      );
+    }
+    setLot((l) => ({ ...l, rotation: newRot }));
+  }
+
   // Snap rotation to nearest 0/90/180/270 (per doc).
   function handleSnap90() {
     setFootprint((f) => {
@@ -963,6 +982,8 @@ export default function App() {
                       alignBusy={alignBusy}
                       snapToSetbacks={snapToSetbacks}
                       onToggleSnap={() => setSnapToSetbacks((v) => !v)}
+                      lotRotation={lot.rotation}
+                      onRotateLot={handleRotateLotAndHome}
                     />
                     <ConfidenceMeter marginFt={fitMargin} />
 

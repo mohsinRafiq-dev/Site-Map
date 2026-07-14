@@ -7,9 +7,12 @@ export default function FootprintControls({
   alignBusy,
   snapToSetbacks,
   onToggleSnap,
+  lotRotation = 0,
+  onRotateLot,
 }) {
   const norm = ((rotation % 360) + 360) % 360;
   const atSnap = [0, 90, 180, 270].some((a) => Math.abs(((norm - a + 360) % 360)) < 0.5);
+  const lotNorm = ((lotRotation % 360) + 360) % 360;
 
   return (
     <div className="footprint-controls">
@@ -50,6 +53,43 @@ export default function FootprintControls({
         <button type="button" className="btn btn-ghost sm" onClick={() => onRotate(1)}>+1°</button>
         <button type="button" className="btn btn-ghost sm" onClick={() => onRotate(90)}>+90°</button>
       </div>
+
+      {onRotateLot && (
+        <>
+          <p className="hint" style={{ marginTop: 14 }}>
+            Angled or hillside lot? Rotate the whole lot &amp; setback box to match
+            your property — the home turns with it.
+          </p>
+          <div className="rotate-row">
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => onRotateLot(-15)}
+              aria-label="Rotate lot -15°"
+            >
+              ↺ Lot -15°
+            </button>
+            <div className="rotate-display">
+              <span className="rotate-label">Lot / setback</span>
+              <span className="rotate-value">{Math.round(lotNorm)}°</span>
+            </div>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => onRotateLot(15)}
+              aria-label="Rotate lot +15°"
+            >
+              ↻ Lot +15°
+            </button>
+          </div>
+          <div className="rotate-row sub">
+            <button type="button" className="btn btn-ghost sm" onClick={() => onRotateLot(-5)}>-5°</button>
+            <button type="button" className="btn btn-ghost sm" onClick={() => onRotateLot(-1)}>-1°</button>
+            <button type="button" className="btn btn-ghost sm" onClick={() => onRotateLot(1)}>+1°</button>
+            <button type="button" className="btn btn-ghost sm" onClick={() => onRotateLot(5)}>+5°</button>
+          </div>
+        </>
+      )}
 
       <div className="fc-snap-row">
         <button type="button" className="btn" onClick={onSnap90}>

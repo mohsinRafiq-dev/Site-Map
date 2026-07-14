@@ -34,7 +34,7 @@ export default function USAMap({ states }) {
                 d={s.d}
                 role={has ? "button" : undefined}
                 tabIndex={has ? 0 : undefined}
-                aria-label={has ? `${STATE_NAMES[s.code]} — ${count} plans` : undefined}
+                aria-label={has ? `${STATE_NAMES[s.code]} — ${count} ${count === 1 ? "plan" : "plans"}` : undefined}
                 className={has ? "us-state cursor-pointer transition-colors duration-150" : "transition-colors duration-150"}
                 fill={
                   !has
@@ -119,7 +119,7 @@ export default function USAMap({ states }) {
           style={{ left: hover.x, top: hover.y - 12 }}
         >
           <div className="font-display text-sm leading-tight">{STATE_NAMES[hover.code]}</div>
-          <div className="text-[11px] text-white/70">{hover.count.toLocaleString()} plans →</div>
+          <div className="text-[11px] text-white/70">{hover.count.toLocaleString()} {hover.count === 1 ? "plan" : "plans"} →</div>
         </div>
       )}
     </div>
