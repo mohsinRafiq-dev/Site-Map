@@ -89,6 +89,11 @@ export default function USAMap({ states }) {
                 className={`us-map-label pointer-events-none select-none${s.leader ? " leader" : ""}`}
                 style={{
                   fill: has ? "#ffffff" : "var(--color-muted)",
+                  // A dark halo keeps white labels readable even when the state's
+                  // label centroid falls on the light ocean background (e.g. the
+                  // FL peninsula, the scattered HI islands).
+                  stroke: has ? "rgba(16,40,26,0.6)" : "transparent",
+                  strokeWidth: has ? 3 : 0,
                   paintOrder: "stroke",
                 }}
               >
