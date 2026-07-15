@@ -842,9 +842,9 @@ export default function App() {
             </svg>
           </div>
           <div className="brand-text">
-            <h1>FrameUpNow</h1>
+            <h1>FrameUpNow ADU Plan Fit Visualizer</h1>
             <span className="brand-sub">
-              Place your ADU. See it on your land. Make it real.
+              Place your ADU plan on your lot. See it to scale. Make it real.
             </span>
           </div>
         </div>

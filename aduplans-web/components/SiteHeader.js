@@ -8,6 +8,9 @@ import { MenuIcon, CloseIcon } from "@/components/icons";
 
 const FUN = "https://www.frameupnow.com";
 const SCHEDULE_URL = `${FUN}/schedule-an-appointment`;
+// The FrameUpNow ADU Plan Fit Visualizer (placement tool). The top-of-site
+// entry is the unbranded "Plan Fit Visualizer" label per the naming convention.
+const TOOL_URL = process.env.NEXT_PUBLIC_TOOL_URL || "http://localhost:5173";
 
 // Exact aduplans.com nav: Builders · DIY (dropdown) · NapkinCAD · About Us · FAQs · Blog · Contact Us
 const NAV = [
@@ -51,6 +54,13 @@ export default function SiteHeader() {
 
         {/* Desktop nav */}
         <nav className="hidden items-center gap-0.5 lg:flex">
+          <a
+            href={TOOL_URL}
+            {...EXT}
+            className="mr-1 inline-flex items-center gap-1.5 rounded-full border border-forest/30 bg-mist/60 px-3.5 py-2 text-sm font-semibold text-forest-700 transition-colors hover:bg-mist hover:text-forest"
+          >
+            <PlanFitIcon /> Plan Fit Visualizer
+          </a>
           {NAV.map((item) =>
             item.children ? (
               <Dropdown key={item.label} item={item} />
@@ -86,6 +96,14 @@ export default function SiteHeader() {
       {open && (
         <div className="border-t border-line bg-cream lg:hidden">
           <nav className="container-x flex flex-col py-3">
+            <a
+              href={TOOL_URL}
+              {...EXT}
+              onClick={() => setOpen(false)}
+              className="mb-1 inline-flex items-center gap-2 rounded-xl border border-forest/30 bg-mist/60 px-3 py-2.5 text-sm font-semibold text-forest-700"
+            >
+              <PlanFitIcon /> Plan Fit Visualizer
+            </a>
             {NAV.map((item) => (
               <MobileItem key={item.label} item={item} onNavigate={() => setOpen(false)} />
             ))}
@@ -106,6 +124,16 @@ const linkCls =
 
 // Every header link is outbound (FrameUpNow / scheduling) → open in a new tab.
 const EXT = { target: "_blank", rel: "noopener noreferrer" };
+
+// A little "plan on a lot" glyph for the Plan Fit Visualizer link.
+function PlanFitIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="3" width="18" height="18" rx="2" strokeDasharray="3 3" />
+      <rect x="8" y="8" width="8" height="8" rx="1" />
+    </svg>
+  );
+}
 
 function Chevron({ className = "" }) {
   return (
