@@ -38,10 +38,15 @@ export default function SiteFooter() {
       <div className="container-x relative grid gap-12 py-16 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.1fr]">
         {/* Brand */}
         <div className="lg:pr-8">
-          <Link href="/" className="inline-flex items-center gap-2.5">
-            <Image src="/adu-logo.png" alt="ADUplans" width={44} height={44} className="h-11 w-11 object-contain" />
-            <span className="font-display text-xl font-semibold text-white">
-              aduplans<span className="text-forest-600">.com</span>
+          <Link href="/" className="inline-flex items-center gap-2">
+            <Image src="/adu-logo.png" alt="aduplans.com" width={40} height={40} className="h-10 w-10 object-contain" />
+            <span className="flex flex-col items-end leading-none">
+              <span className="font-sans text-[1.35rem] font-bold leading-none tracking-tight text-white">
+                aduplans<span className="text-forest-600">.com</span>
+              </span>
+              <span className="mt-1 text-right text-[11px] font-normal leading-none text-white/55">
+                Powered by <span className="font-semibold text-white/80">FrameUpNow</span>
+              </span>
             </span>
           </Link>
           <p className="mt-5 max-w-sm text-sm leading-relaxed text-white/55">

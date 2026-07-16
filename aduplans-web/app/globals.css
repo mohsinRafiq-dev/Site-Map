@@ -12,10 +12,11 @@
   --color-ink-soft: #47544d;
   --color-muted: #6b7770;
 
-  --color-forest: #1f5c42;
-  --color-forest-600: #2c7a57;
-  --color-forest-700: #184b36;
-  --color-mist: #e7efe9;
+  /* FrameUpNow brand green (#5a8738) — the single brand color, used everywhere. */
+  --color-forest: #5a8738;
+  --color-forest-600: #4c7328; /* darker shade — accent text + button hover */
+  --color-forest-700: #3b5a1f; /* darkest — strong accents / headings */
+  --color-mist: #eaf0e0;        /* light tint of the brand green */
 
   --color-amber: #e0a75e;
   --color-amber-600: #cf9445;
@@ -86,10 +87,10 @@ summary:focus-visible,
   --color-ink: #e9efeb;        /* primary text */
   --color-ink-soft: #adbbb2;
   --color-muted: #7e8c83;
-  --color-mist: #1c2c24;       /* subtle green tint */
-  --color-forest: #4fa87d;     /* brighter green reads better on dark */
-  --color-forest-600: #62bd91;
-  --color-forest-700: #3f8a66;
+  --color-mist: #232c1a;       /* subtle brand-green tint */
+  --color-forest: #86b552;     /* lightened brand green — reads better on dark */
+  --color-forest-600: #9dca6a; /* lighter accent for dark backgrounds */
+  --color-forest-700: #6c9a3b;
   --color-line: #29392f;
   --color-line-soft: #202e27;
   --est-bg: #0f1713;           /* estimator iframe background (dark) */
@@ -157,6 +158,35 @@ summary {
     linear-gradient(180deg, #1a3527 0%, #16241d 70%);
 }
 
+/* ── Interior-page hero — a soft, branded, light backdrop (About, Why Steel,
+   How It Works, Contact). Radial brand-green + amber washes over cream. ────── */
+.page-hero {
+  position: relative;
+  background:
+    radial-gradient(55% 75% at 88% -15%, rgba(90, 135, 56, 0.13), transparent 60%),
+    radial-gradient(45% 65% at 2% 0%, rgba(224, 167, 94, 0.10), transparent 55%),
+    var(--color-cream);
+}
+
+/* Faint dotted grid used to add texture behind heroes and feature bands. */
+.dot-grid {
+  background-image: radial-gradient(rgba(22, 36, 29, 0.06) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+:root[data-theme="dark"] .dot-grid {
+  background-image: radial-gradient(rgba(233, 239, 235, 0.055) 1px, transparent 1px);
+}
+
+/* Vertical gradient hairline that threads stacked step cards into a timeline. */
+.timeline-line {
+  background: linear-gradient(to bottom, var(--color-forest) 0%, var(--color-forest) 70%, transparent 100%);
+}
+
+/* Thin brand-gradient rule / top accent on feature cards. */
+.accent-bar {
+  background: linear-gradient(90deg, var(--color-forest), var(--color-amber));
+}
+
 .chip {
   display: inline-flex;
   align-items: center;
@@ -201,7 +231,7 @@ summary {
 
 /* Clean static green gradient for the accent line (calmer than a moving shine) */
 .shimmer-green {
-  background: linear-gradient(100deg, #8ec765 0%, #d6f0b6 55%, #8ec765 100%);
+  background: linear-gradient(100deg, #9dca6a 0%, #d3ecb4 55%, #9dca6a 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;

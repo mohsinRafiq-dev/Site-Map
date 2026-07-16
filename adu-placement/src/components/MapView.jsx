@@ -706,7 +706,7 @@ const MapView = forwardRef(function MapView(
     const feat = footprintFeatureRef.current;
     const marker = rotateMarkerRef.current;
     if (!feat || !marker) return;
-    marker.setLngLat(topRightHandleGeo(feat, 1.18)); // small home → a touch more
+    marker.setLngLat(topRightHandleGeo(feat, 3)); // ~3 ft past the corner — hugs it
   }, []);
 
   useEffect(() => {
@@ -784,7 +784,7 @@ const MapView = forwardRef(function MapView(
     const feat = lotFeatureRef.current;
     const marker = rotateLotMarkerRef.current;
     if (!feat || !marker) return;
-    marker.setLngLat(topRightHandleGeo(feat, 1.06)); // large lot → small fraction
+    marker.setLngLat(topRightHandleGeo(feat, 5)); // ~5 ft past the lot corner
   }, []);
 
   useEffect(() => {
@@ -992,9 +992,11 @@ export default MapView;
 // the two topmost (northern-most) corners, then the rightmost (eastern-most) of
 // those two — this finds the top-right corner robustly for ANY aspect ratio or
 // rotation (a plain "north+east" score is biased toward the long dimension and
-// picks the topmost corner on tall lots). Then push a little past it (`k` =
-// fraction beyond, proportional so it hugs any size). Pure geometry.
-function topRightHandleGeo(feat, k) {
+// picks the topmost corner on tall lots). Then nudge it just `offsetFeet` past
+// the corner — a FIXED distance in feet, so the handle hugs the corner tightly
+// regardless of home/lot size (a proportional offset drifts far on big shapes).
+const FEET_PER_DEG = 111320 / 0.3048;
+function topRightHandleGeo(feat, offsetFeet) {
   const ring = feat.geometry.coordinates[0];
   const c = polygonCenter(feat);
   const coslat = Math.cos((c[1] * Math.PI) / 180) || 1;
@@ -1006,6 +1008,8 @@ function topRightHandleGeo(feat, k) {
   corners.sort((a, b) => b.north - a.north); // topmost first
   const [t0, t1] = corners; // the two upper corners
   const best = t0.east >= t1.east ? t0 : t1; // rightmost of the two
+  const distFt = Math.hypot(best.east, best.north) * FEET_PER_DEG;
+  const k = distFt > 0 ? (distFt + offsetFeet) / distFt : 1;
   return [c[0] + (best.pt[0] - c[0]) * k, c[1] + (best.pt[1] - c[1]) * k];
 }
 
