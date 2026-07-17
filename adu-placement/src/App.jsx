@@ -24,6 +24,7 @@ import {
   clampFootprintToSetbacks,
   footprintFitMargin,
   rearBuildableCenter,
+  feetToLngLat,
 } from "./lib/geometry";
 import { usePlansCatalog } from "./lib/plansCatalog";
 import { fetchPlanById } from "./lib/baserow";
@@ -529,6 +530,31 @@ export default function App() {
 
   const handleDragLot = useCallback((newCenter) => {
     setLot((l) => ({ ...l, center: newCenter }));
+  }, []);
+
+  // Resize the lot by dragging an edge. `dim` is "width" or "length", `deltaFt`
+  // is the whole-foot change (outward = grow), and `normal` is the outward unit
+  // direction (east, north) of the dragged edge. The OPPOSITE edge stays anchored
+  // by shifting the lot center half the change along the normal.
+  const handleResizeLot = useCallback(({ dim, deltaFt, normal }) => {
+    setLot((l) => {
+      if (!l.center) return l;
+      const MIN = 15; // ft — keep the lot usable
+      const MAX = 1500;
+      const cur = dim === "width" ? l.width : l.length;
+      const next = Math.max(MIN, Math.min(MAX, Math.round(cur + deltaFt)));
+      const used = next - cur;
+      if (!used) return l;
+      const [dLng, dLat] = feetToLngLat(
+        (normal[0] * used) / 2,
+        (normal[1] * used) / 2,
+        l.center[1]
+      );
+      const center = [l.center[0] + dLng, l.center[1] + dLat];
+      return dim === "width"
+        ? { ...l, width: next, center }
+        : { ...l, length: next, center };
+    });
   }, []);
 
   function handleRotateLot(delta) {
@@ -1098,6 +1124,7 @@ export default function App() {
             mapStyle={mapStyle}
             is3D={is3D}
             onDragLot={handleDragLot}
+            onResizeLot={handleResizeLot}
             onDragFootprint={handleDragFootprint}
             onRotateFootprintBy={handleRotateFootprint}
             onRotateLotBy={handleRotateLotAndHome}

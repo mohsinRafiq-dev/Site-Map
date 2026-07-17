@@ -1,20 +1,24 @@
-import { Inter, Fraunces } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import ScrollReveal from "@/components/ScrollReveal";
 
+// Body/UI: Inter — crisp and highly legible at every weight.
+// Headings: Plus Jakarta Sans — modern and warm, full weight range so bold and
+// extrabold render sharp (no synthesized "faux bold" blur).
 const inter = Inter({
   variable: "--font-sans-src",
   subsets: ["latin"],
   display: "swap",
 });
 
-const fraunces = Fraunces({
+const jakarta = Plus_Jakarta_Sans({
   variable: "--font-display-src",
   subsets: ["latin"],
+  weight: ["500", "600", "700", "800"],
+  style: ["normal", "italic"],
   display: "swap",
-  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata = {
@@ -30,7 +34,7 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${fraunces.variable} h-full`}
+      className={`${inter.variable} ${jakarta.variable} h-full`}
       suppressHydrationWarning
     >
       <head>

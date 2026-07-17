@@ -1,21 +1,37 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
-// Light / dark theme toggle. The initial theme is set by an inline no-flash
-// script in the root layout; this just flips it and persists the choice.
+// The current theme is external state (a `data-theme` attribute on <html> set by
+// the no-flash script in the root layout). Read it via useSyncExternalStore so
+// there's no setState-in-effect and no hydration mismatch.
+function subscribe(callback) {
+  const obs = new MutationObserver(callback);
+  obs.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-theme"],
+  });
+  return () => obs.disconnect();
+}
+function getSnapshot() {
+  return document.documentElement.getAttribute("data-theme") || "light";
+}
+function getServerSnapshot() {
+  return "light";
+}
+
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState("light");
+  const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const isDark = theme === "dark";
 
+  // Enable the color transition only after first paint (avoids a flash).
   useEffect(() => {
-    setTheme(document.documentElement.getAttribute("data-theme") || "light");
-    // Enable the color transition only after first paint (avoids a flash).
     requestAnimationFrame(() => document.documentElement.classList.add("theme-ready"));
   }, []);
 
   const toggle = () => {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
+    const next = isDark ? "light" : "dark";
+    // Setting the attribute triggers the MutationObserver → store re-render.
     document.documentElement.setAttribute("data-theme", next);
     try {
       localStorage.setItem("aduplans-theme", next);
@@ -24,7 +40,6 @@ export default function ThemeToggle() {
     }
   };
 
-  const isDark = theme === "dark";
   return (
     <button
       type="button"

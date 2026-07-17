@@ -5363,51 +5363,68 @@ input:focus {
 }
 
 /* ── Rotate handle (pinned to the home's top-right corner; drag to rotate) ──── */
-.rotate-handle {
-  position: relative;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+/* ---- Map handles: transparent knobs (icon only, no background) ----------- */
+.rotate-handle,
+.resize-handle,
+.move-handle {
   display: grid;
   place-items: center;
-  color: #fff;
-  background: radial-gradient(circle at 34% 28%, var(--green-500), var(--green-700));
-  border: 2px solid rgba(255, 255, 255, 0.92);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.42), inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+  background: transparent;
+  border: none;
+  box-shadow: none;
   cursor: grab;
   touch-action: none;
   -webkit-user-select: none;
   user-select: none;
-  transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
+  transition: transform 0.1s ease;
 }
-.rotate-handle:hover {
-  transform: scale(1.1);
-  background: radial-gradient(circle at 34% 28%, var(--green-400), var(--green-600));
+/* White icon with a tight dark edge — crisp and legible on any satellite,
+   no blur. */
+.rotate-handle svg,
+.resize-handle svg,
+.move-handle svg {
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.95))
+    drop-shadow(0 1px 1px rgba(0, 0, 0, 0.75));
 }
-.rotate-handle:active,
-.rotate-handle.dragging {
+.rotate-handle:hover,
+.resize-handle:hover,
+.move-handle:hover { transform: scale(1.2); }
+.rotate-handle:active, .rotate-handle.dragging,
+.resize-handle:active, .resize-handle.dragging,
+.move-handle:active, .move-handle.dragging {
   cursor: grabbing;
-  transform: scale(1.15);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), 0 0 0 4px rgba(107, 176, 100, 0.4);
+  transform: scale(1.28);
 }
-.rotate-handle svg {
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
-}
-.rotate-handle:focus-visible {
-  outline: 3px solid rgba(107, 176, 100, 0.85);
+.rotate-handle:focus-visible,
+.resize-handle:focus-visible,
+.move-handle:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.9);
   outline-offset: 2px;
+  border-radius: 6px;
 }
-/* Lot rotate handle — blue, to match the blue lot boundary */
-.rotate-handle-lot {
-  background: radial-gradient(circle at 34% 28%, #5b9bf6, #2563c9);
-}
-.rotate-handle-lot:hover {
-  background: radial-gradient(circle at 34% 28%, #74adf8, #2f6fd6);
-}
-.rotate-handle-lot:active,
-.rotate-handle-lot.dragging {
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), 0 0 0 4px rgba(59, 130, 246, 0.42);
-}
-.rotate-handle-lot:focus-visible {
-  outline-color: rgba(59, 130, 246, 0.85);
+
+/* Sizes (hit area) + icon colors — green = home controls, blue = lot controls */
+.rotate-handle { width: 26px; height: 26px; color: #34d27b; }
+.rotate-handle-lot { color: #4ea1ff; }
+.resize-handle { width: 24px; height: 24px; color: #4ea1ff; }
+.resize-handle.resize-w { cursor: ew-resize; }
+.resize-handle.resize-l { cursor: ns-resize; }
+.move-handle { width: 28px; height: 28px; color: #4ea1ff; }
+
+/* Live width / length dimension indicators. */
+.dim-label {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(17, 24, 20, 0.9);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
 }

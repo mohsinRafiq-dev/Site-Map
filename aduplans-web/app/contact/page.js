@@ -1,20 +1,72 @@
+import Image from "next/image";
 import ContactForm from "@/components/ContactForm";
-import PageHero from "@/components/PageHero";
 
 export const metadata = {
   title: "Contact Us",
   description: "Get in touch with the FrameUpNow team about ADU plans, steel framing, and your project.",
 };
 
+// FrameUpNow / ADUplans HQ — Tucson, AZ (same embed used on frameupnow.com).
+const MAP_EMBED =
+  "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d26993.58806682206!2d-110.8471315045875!3d32.2527408226108!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x86d66ed92b76e103%3A0x28d61d3b2d9b99b!2sTucson%2C%20AZ%2085715%2C%20USA!5e0!3m2!1sen!2sph!4v1713483596246!5m2!1sen!2sph";
+
 export default function ContactPage() {
   return (
     <div>
-      <PageHero eyebrow="Contact Us" title="Let’s talk about your ADU">
-        Questions about a plan, steel framing, or getting a quote? Send us a note and a member of the
-        FrameUpNow team will get back to you.
-      </PageHero>
+      {/* ── Split hero — content left (brand green), image right ─────────── */}
+      <section className="border-b border-line">
+        <div className="grid lg:grid-cols-2">
+          {/* Left — brand-green panel */}
+          <div
+            className="relative flex flex-col justify-center px-6 py-14 text-white md:px-12 md:py-20"
+            style={{ background: "linear-gradient(125deg, #5a8738 0%, #3b5a1f 100%)" }}
+          >
+            <div aria-hidden className="dot-grid pointer-events-none absolute inset-0 opacity-[0.1]" />
+            <div className="relative mx-auto w-full max-w-md lg:mr-0">
+              <span className="rise-in inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber" /> Contact Us
+              </span>
+              <h1 className="rise-in delay-1 mt-5 font-display text-4xl leading-[1.08] md:text-5xl">
+                Let’s talk about your ADU
+              </h1>
+              <p className="rise-in delay-2 mt-5 text-lg leading-relaxed text-white/90">
+                Questions about a plan, steel framing, or getting a quote? Send us a note and a member
+                of the FrameUpNow team will get back to you.
+              </p>
+              <div className="rise-in delay-3 mt-7 flex flex-wrap gap-3">
+                <a
+                  href="tel:+18888640184"
+                  className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/25 transition-colors hover:bg-white/25"
+                >
+                  <PhoneIcon /> 888-864-0184
+                </a>
+                <a
+                  href="#contact-form"
+                  className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-forest-700 transition-transform hover:-translate-y-0.5"
+                >
+                  Send a message →
+                </a>
+              </div>
+            </div>
+          </div>
 
-      <div className="container-x py-16 md:py-20">
+          {/* Right — image */}
+          <div className="relative min-h-[260px] bg-night lg:min-h-full">
+            <Image
+              src="/img-adu.jpg"
+              alt="A finished FrameUpNow steel-framed ADU"
+              fill
+              priority
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="object-cover"
+              style={{ objectPosition: "center 62%" }}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* ── Form + contact details ───────────────────────────────────────── */}
+      <div id="contact-form" className="container-x scroll-mt-20 py-16 md:py-20">
         <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[1fr_320px]">
           {/* Form */}
           <div className="reveal relative overflow-hidden rounded-3xl border border-line bg-paper p-6 shadow-[var(--shadow-card)] md:p-8">
@@ -34,15 +86,65 @@ export default function ContactPage() {
               </a>
             </InfoCard>
             <InfoCard title="Visit" icon={<PinIcon />}>
-              Tucson, AZ 85715 USA
+              <a
+                href="https://maps.app.goo.gl/GGQsasiAAS5HKmFK6"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-forest"
+              >
+                Tucson, AZ 85715 USA
+              </a>
             </InfoCard>
             <InfoCard title="Hours" icon={<ClockIcon />}>
-              <div>Mon–Fri: 7:30 AM – 5:30 PM (MST)</div>
-              <div className="text-muted">Sat–Sun: Closed</div>
+              <div>Monday to Friday: 7:30 AM – 5:30 PM (MST)</div>
+              <div className="text-muted">Saturday to Sunday: Closed</div>
             </InfoCard>
+
+            {/* Brand-green quote nudge */}
+            <div className="rounded-2xl bg-forest p-5 text-white shadow-[var(--shadow-card)]">
+              <h3 className="font-display text-lg">Already have a plan?</h3>
+              <p className="mt-1.5 text-sm text-white/85">
+                Send it to FrameUpNow and we’ll get you a steel-frame quote.
+              </p>
+              <a
+                href="https://www.frameupnow.com/contact-us"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 inline-flex rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-forest-700 transition-transform hover:-translate-y-0.5"
+              >
+                Request a Quote →
+              </a>
+            </div>
           </aside>
         </div>
       </div>
+
+      {/* ── Map (Tucson HQ) ──────────────────────────────────────────────── */}
+      <section className="border-t border-line bg-mist/40">
+        <div className="container-x py-16 md:py-20">
+          <div className="reveal mx-auto max-w-2xl text-center">
+            <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-forest-600">
+              <span className="h-px w-6 bg-forest-600" /> Find Us
+            </span>
+            <h2 className="mt-3 font-display text-3xl text-ink md:text-4xl">Visit our team in Tucson</h2>
+            <p className="mt-4 text-ink-soft">
+              ADUplans.com is powered by FrameUpNow, headquartered in Tucson, Arizona.
+            </p>
+          </div>
+
+          <div className="reveal mt-10 overflow-hidden rounded-3xl border-2 border-forest/25 shadow-[var(--shadow-lift)]">
+            <iframe
+              src={MAP_EMBED}
+              title="ADUplans.com / FrameUpNow location — Tucson, AZ 85715"
+              className="block h-[420px] w-full"
+              style={{ border: 0 }}
+              loading="lazy"
+              allowFullScreen
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

@@ -50,7 +50,8 @@ export default function SiteFooter() {
             </span>
           </Link>
           <p className="mt-5 max-w-sm text-sm leading-relaxed text-white/55">
-            FrameUpNow manufactures cold-formed steel (CFS) framing to conform to your engineered plans.
+            Find your perfect plan on aduplans.com. Then have FrameUpNow precision-engineer it in
+            cold-formed steel so that you can build stronger, smarter, and faster.
           </p>
           <div className="mt-6 flex items-center gap-3">
             {SOCIALS.map((s) => (
@@ -84,9 +85,9 @@ export default function SiteFooter() {
             </ContactRow>
             <ContactRow icon="clock">
               <span className="leading-relaxed text-white/60">
-                Mon–Fri: 7AM–6PM (PST)
+                Monday to Friday: 7:30 AM – 5:30 PM (MST)
                 <br />
-                Sat–Sun: Closed
+                Saturday to Sunday: Closed
               </span>
             </ContactRow>
           </ul>

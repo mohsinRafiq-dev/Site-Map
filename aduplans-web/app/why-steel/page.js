@@ -1,5 +1,7 @@
 import Link from "next/link";
 import PageHero from "@/components/PageHero";
+import ShowcaseBand from "@/components/ShowcaseBand";
+import FeatureSplit from "@/components/FeatureSplit";
 
 export const metadata = {
   title: "Why Steel",
@@ -35,10 +37,12 @@ export default function WhySteelPage() {
   return (
     <div>
       <PageHero
+        image="/steel-frame-photo.jpg"
+        imagePosition="center 60%"
         eyebrow="Why Steel"
         title={
           <>
-            Why FrameUpNow is the <span className="text-forest">Smartest Choice</span> in Steel Framing
+            Why FrameUpNow is the <span className="text-amber">Smartest Choice</span> in Steel Framing
           </>
         }
         tagline="Engineered for Strength, Built for Life."
@@ -47,8 +51,11 @@ export default function WhySteelPage() {
         traditional wood framing — from the first panel to decades down the road.
       </PageHero>
 
-      {/* ── Stats band ───────────────────────────────────────────────────── */}
-      <section className="border-b border-line bg-night text-white">
+      {/* ── Stats band (brand green) ─────────────────────────────────────── */}
+      <section
+        className="border-b border-forest-700/40 text-white"
+        style={{ background: "linear-gradient(100deg, #3b5a1f 0%, #5a8738 55%, #3b5a1f 100%)" }}
+      >
         <div className="container-x">
           <dl className="reveal-stagger grid grid-cols-2 divide-x divide-white/10 md:grid-cols-4">
             {STATS.map((s) => (
@@ -60,6 +67,21 @@ export default function WhySteelPage() {
           </dl>
         </div>
       </section>
+
+      {/* ── Built to last (image + content) ──────────────────────────────── */}
+      <FeatureSplit
+        image="/img-adu.jpg"
+        imagePosition="center 62%"
+        eyebrow="Built to last"
+        title="A home engineered for strength and longevity"
+        reverse
+      >
+        <p>
+          Cold-formed steel gives your ADU a structure that resists fire, pests, mold, and rot — and
+          won’t warp, shrink, or twist over time. The home you build today stays sound, safe, and true
+          for generations.
+        </p>
+      </FeatureSplit>
 
       {/* ── Benefits grid ────────────────────────────────────────────────── */}
       <section className="container-x py-16 md:py-20">
@@ -89,6 +111,10 @@ export default function WhySteelPage() {
           </div>
         </div>
       </section>
+
+      <ShowcaseBand image="/img-steel-site.jpg" imagePosition="center 55%">
+        Cold-formed steel: stronger, cleaner, and more predictable — from the first panel on.
+      </ShowcaseBand>
 
       {/* ── CTA ──────────────────────────────────────────────────────────── */}
       <section className="container-x pb-16">

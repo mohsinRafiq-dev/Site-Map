@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 // Count-up animation that fires when the number scrolls into view.
-function useCountUp(target, duration = 1400) {
+function useCountUp(target, duration = 1600) {
   const [val, setVal] = useState(0);
   const ref = useRef(null);
   const started = useRef(false);
@@ -34,7 +34,7 @@ function useCountUp(target, duration = 1400) {
   return [val, ref];
 }
 
-function Stat({ target, label, sub }) {
+function Stat({ target, label }) {
   const [val, ref] = useCountUp(target);
   return (
     <div
@@ -43,16 +43,11 @@ function Stat({ target, label, sub }) {
     >
       <span className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-forest/5" />
       <div className="flex items-center justify-center gap-2">
-        <span className="tabular-nums text-4xl font-extrabold tracking-tight text-forest md:text-5xl">
+        <span className="font-display tabular-nums text-4xl font-extrabold tracking-tight text-forest md:text-5xl">
           {val.toLocaleString()}
         </span>
       </div>
       <div className="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">{label}</div>
-      {sub && (
-        <div className="mt-1 inline-flex items-center gap-1.5 text-xs font-medium text-forest-600">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-forest" /> {sub}
-        </div>
-      )}
     </div>
   );
 }
@@ -60,8 +55,8 @@ function Stat({ target, label, sub }) {
 export default function StatCounters({ total, lastMonth }) {
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-4 sm:flex-row">
-      <Stat target={total} label="Total PRADU Count" />
-      <Stat target={lastMonth} label="PRADUs Added Last Month" sub="Growing weekly" />
+      <Stat target={total} label="Total ADU Plan Count" />
+      <Stat target={lastMonth} label="Total ADU Plans Added Last Month" />
     </div>
   );
 }

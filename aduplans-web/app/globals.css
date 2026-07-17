@@ -27,12 +27,16 @@
   /* Always-dark surfaces (footer, overlays, badges) — constant in both themes */
   --color-night: #16241d;
 
-  --font-display: var(--font-display-src), Georgia, "Times New Roman", serif;
+  /* Plus Jakarta Sans (headings) + Inter (body). */
+  --font-display: var(--font-display-src), "Segoe UI", system-ui, sans-serif;
   --font-sans: var(--font-sans-src), ui-sans-serif, system-ui, sans-serif;
 
   --radius-xl: 1.25rem;
   --shadow-card: 0 1px 2px rgba(22, 36, 29, 0.04), 0 8px 24px -12px rgba(22, 36, 29, 0.18);
   --shadow-lift: 0 2px 6px rgba(22, 36, 29, 0.06), 0 20px 40px -18px rgba(22, 36, 29, 0.28);
+
+  /* Smooth, slightly-eased timing used for card + icon micro-interactions. */
+  --ease-smooth: cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 html {
@@ -117,11 +121,14 @@ summary {
 
 .container-x {
   width: 100%;
-  max-width: 80rem;
+  max-width: 96rem; /* wider layout — less dead space on large screens */
   margin-inline: auto;
   padding-inline: 1.25rem;
 }
 @media (min-width: 768px) {
+  .container-x { padding-inline: 1.75rem; }
+}
+@media (min-width: 1280px) {
   .container-x { padding-inline: 2rem; }
 }
 
@@ -151,11 +158,40 @@ summary {
   box-shadow: var(--shadow-lift);
 }
 
+/* ── Buttery card + icon micro-interactions ──────────────────────────────── */
+/* Smooth lift for interactive cards. */
+.lift {
+  transition: transform 0.4s var(--ease-smooth), box-shadow 0.4s ease, border-color 0.3s ease;
+  will-change: transform;
+}
+.lift:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lift);
+}
+/* Icon inside a `.group` card gently rises + grows on hover. */
+.icon-rise {
+  transition: transform 0.45s var(--ease-smooth);
+  will-change: transform;
+}
+.group:hover .icon-rise {
+  transform: translateY(-4px) scale(1.09);
+}
+/* A soft, slow bob for hero/section accent icons. */
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+.animate-bob { animation: bob 4s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lift, .icon-rise { transition: none; }
+  .group:hover .icon-rise { transform: none; }
+  .animate-bob { animation: none; }
+}
+
+/* Brand-green CTA band surface — solid brand color, used on every page's CTA. */
 .hero-surface {
-  background:
-    radial-gradient(120% 120% at 85% -10%, rgba(224, 167, 94, 0.20), transparent 45%),
-    radial-gradient(120% 120% at 0% 0%, rgba(44, 122, 87, 0.18), transparent 42%),
-    linear-gradient(180deg, #1a3527 0%, #16241d 70%);
+  background: #5a8738;
 }
 
 /* ── Interior-page hero — a soft, branded, light backdrop (About, Why Steel,
@@ -175,6 +211,17 @@ summary {
 }
 :root[data-theme="dark"] .dot-grid {
   background-image: radial-gradient(rgba(233, 239, 235, 0.055) 1px, transparent 1px);
+}
+
+/* The aduplans.com wordmark is a fixed-color (charcoal) PNG whose pin has a
+   transparent house knockout — so inverting it looks like a negative. Instead,
+   in dark mode sit it on a soft light plate: the real brand colors (green pin +
+   ".com") stay intact and the charcoal wordmark reads cleanly. */
+:root[data-theme="dark"] .site-logo-plate {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 5px 12px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
 /* Vertical gradient hairline that threads stacked step cards into a timeline. */

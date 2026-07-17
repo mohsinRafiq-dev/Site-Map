@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import map from "@/lib/usMap.json";
 
 const STATE_NAMES = Object.fromEntries(map.states.map((s) => [s.code, s.name]));
@@ -9,14 +10,22 @@ const STATE_NAMES = Object.fromEntries(map.states.map((s) => [s.code, s.name]));
 // The real "Select your state" interaction — a clickable US map. States with
 // plans are filled green and navigate to that state's catalog; the rest are
 // muted and non-interactive. A tooltip shows the state name + plan count.
-export default function USAMap({ states }) {
+// `bare` drops USAMap's own card chrome (border/padding/shadow) — used when the
+// map already sits inside a framed card, so there's a single border, not two.
+export default function USAMap({ states, bare = false }) {
   const router = useRouter();
   const counts = Object.fromEntries(states.map((s) => [s.code, s.count]));
   const [hover, setHover] = useState(null);
 
   return (
     <div className="relative">
-      <div className="-mx-5 overflow-hidden border-y border-line bg-paper p-2 shadow-[var(--shadow-card)] sm:mx-0 sm:rounded-3xl sm:border sm:p-6">
+      <div
+        className={
+          bare
+            ? ""
+            : "-mx-5 overflow-hidden border-y border-line bg-paper p-2 shadow-[var(--shadow-card)] sm:mx-0 sm:rounded-3xl sm:border sm:p-6"
+        }
+      >
         <svg
           viewBox={map.viewBox}
           className="h-auto w-full"
@@ -117,16 +126,21 @@ export default function USAMap({ states }) {
         </span>
       </div>
 
-      {/* Tooltip */}
-      {hover && hover.count > 0 && (
-        <div
-          className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full rounded-lg bg-night px-3 py-2 text-center text-white shadow-lg"
-          style={{ left: hover.x, top: hover.y - 12 }}
-        >
-          <div className="font-display text-sm leading-tight">{STATE_NAMES[hover.code]}</div>
-          <div className="text-[11px] text-white/70">{hover.count.toLocaleString()} {hover.count === 1 ? "plan" : "plans"} →</div>
-        </div>
-      )}
+      {/* Tooltip — portaled to body so ancestor transforms can't offset it.
+          `hover` starts null, so nothing renders during SSR/hydration. */}
+      {hover && hover.count > 0 && typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className="pointer-events-none fixed z-[100] -translate-x-1/2 -translate-y-full rounded-lg bg-night px-3 py-2 text-center text-white shadow-lg"
+            style={{ left: hover.x, top: hover.y - 12 }}
+          >
+            <div className="font-display text-sm leading-tight">{STATE_NAMES[hover.code]}</div>
+            <div className="text-[11px] text-white/70">
+              {hover.count.toLocaleString()} {hover.count === 1 ? "plan" : "plans"} →
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

@@ -1,5 +1,7 @@
 import Link from "next/link";
 import PageHero from "@/components/PageHero";
+import ShowcaseBand from "@/components/ShowcaseBand";
+import FeatureSplit from "@/components/FeatureSplit";
 
 export const metadata = {
   title: "How It Works | Find, Plan and Build Your ADU",
@@ -126,12 +128,30 @@ function StepCta({ cta }) {
 export default function HowItWorksPage() {
   return (
     <div>
-      <PageHero eyebrow="How It Works" title="Find Your Plan. Plan Your Build. Build Better in Steel.">
+      <PageHero
+        image="/img-steel-site.jpg"
+        imagePosition="center 55%"
+        eyebrow="How It Works"
+        title="Find Your Plan. Plan Your Build. Build Better in Steel."
+      >
         ADUplans.com helps you move from searching for the right ADU plan to preparing for
         construction — all in one place. Choose from thousands of ADU floor plans, use our free tools
         to see how yours fits and what it costs, then let FrameUpNow convert it into a
         precision-engineered cold-formed steel framing system.
       </PageHero>
+
+      {/* ── Start here (image + content) ─────────────────────────────────── */}
+      <FeatureSplit
+        image="/img-blueprints.jpg"
+        eyebrow="Start here"
+        title="Permit-ready plans, engineered to build"
+      >
+        <p>
+          Every plan on ADUplans.com is designed to move from selection to permitting to construction.
+          Choose a local Permit-Ready design or any plan in the library, then use our free tools to see
+          how it fits and what it will cost — before you commit.
+        </p>
+      </FeatureSplit>
 
       {/* ── Steps timeline ───────────────────────────────────────────────── */}
       <section className="container-x py-16 md:py-20">
@@ -194,6 +214,10 @@ export default function HowItWorksPage() {
           </div>
         </div>
       </section>
+
+      <ShowcaseBand image="/img-adu.jpg" imagePosition="center 62%">
+        From a plan you love to a precision-engineered, steel-framed ADU — ready to build.
+      </ShowcaseBand>
 
       {/* ── Financing callout ────────────────────────────────────────────── */}
       <section className="relative overflow-hidden border-y border-line bg-cream/60 py-14">

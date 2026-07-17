@@ -1,5 +1,7 @@
 import Link from "next/link";
 import PageHero from "@/components/PageHero";
+import ShowcaseBand from "@/components/ShowcaseBand";
+import FeatureSplit from "@/components/FeatureSplit";
 
 export const metadata = {
   title: "About Us",
@@ -60,7 +62,12 @@ const DIFFERENTIATORS = [
 export default function AboutPage() {
   return (
     <div>
-      <PageHero eyebrow="About ADUplans.com" title="Making ADUs Easier to Find, Understand, and Build">
+      <PageHero
+        image="/img-adu.jpg"
+        imagePosition="center 62%"
+        eyebrow="About ADUplans.com"
+        title="Making ADUs Easier to Find, Understand, and Build"
+      >
         ADUplans.com was created by FrameUpNow to help address one of the most significant challenges
         facing families and communities today: the need for more practical, attainable housing options.
       </PageHero>
@@ -132,40 +139,44 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ── Who we are / What we do ──────────────────────────────────────── */}
-      <section className="container-x py-16 md:py-20">
-        <div className="mx-auto max-w-3xl">
-          <div className="reveal">
-            <span className="text-xs font-semibold uppercase tracking-widest text-forest-600">Who We Are</span>
-            <h2 className="mt-2 font-display text-3xl text-ink md:text-4xl">
-              An engineered structural system — not just plans
-            </h2>
-            <p className="mt-5 text-lg leading-relaxed text-ink-soft">
-              FrameUpNow is a residential construction company that designs and manufactures engineered
-              cold-formed steel framing kits for homes, ADUs, and small residential structures. We don’t
-              just sell plans — we deliver a complete, engineered structural system designed to meet the
-              International Building Code (IBC) and paired with a BIM-derived Material Shopping List. This
-              ensures that before construction begins, you already understand your structure, material
-              quantities, and real-world costs.
-            </p>
-          </div>
+      {/* ── Who we are (image + content) ─────────────────────────────────── */}
+      <FeatureSplit
+        image="/img-steel-frame.jpg"
+        eyebrow="Who We Are"
+        title="An engineered structural system — not just plans"
+      >
+        <p>
+          FrameUpNow is a residential construction company that designs and manufactures engineered
+          cold-formed steel framing kits for homes, ADUs, and small residential structures. We don’t
+          just sell plans — we deliver a complete, engineered structural system designed to meet the
+          International Building Code (IBC) and paired with a BIM-derived Material Shopping List, so
+          before construction begins you already understand your structure, material quantities, and
+          real-world costs.
+        </p>
+      </FeatureSplit>
 
-          <div className="reveal mt-8 rounded-3xl border border-line bg-paper p-7 shadow-[var(--shadow-card)] md:p-8">
-            <h3 className="font-display text-xl text-ink">What We Do</h3>
-            <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-              {WHAT_WE_DO.map((w) => (
-                <li key={w} className="flex items-start gap-3 text-ink-soft">
-                  <Check /> {w}
-                </li>
-              ))}
-            </ul>
-            <p className="mt-5 leading-relaxed text-ink-soft">
-              We manufacture the structural skeleton of your home, giving you a faster, more predictable
-              path to building.
-            </p>
-          </div>
+      {/* ── What we do ───────────────────────────────────────────────────── */}
+      <section className="container-x pb-16 md:pb-20">
+        <div className="reveal mx-auto max-w-3xl rounded-3xl border border-forest/20 bg-mist/50 p-7 shadow-[var(--shadow-card)] md:p-8">
+          <h3 className="font-display text-xl text-ink">What We Do</h3>
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+            {WHAT_WE_DO.map((w) => (
+              <li key={w} className="flex items-start gap-3 text-ink-soft">
+                <Check /> {w}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-5 leading-relaxed text-ink-soft">
+            We manufacture the structural skeleton of your home, giving you a faster, more predictable
+            path to building.
+          </p>
         </div>
       </section>
+
+      <ShowcaseBand image="/img-steel-interior.jpg" imagePosition="center 40%">
+        We don’t just sell plans — we deliver a complete, engineered structural system, built to the
+        International Building Code.
+      </ShowcaseBand>
 
       {/* ── What makes us different ──────────────────────────────────────── */}
       <section className="relative overflow-hidden border-y border-line bg-cream/60 py-16 md:py-20">
@@ -198,28 +209,29 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ── Why FrameUpNow exists + CTA ──────────────────────────────────── */}
+      {/* ── Why FrameUpNow exists + CTA (brand-green band) ───────────────── */}
       <section className="container-x py-16 md:py-20">
-        <div className="reveal mx-auto max-w-3xl text-center">
-          <span className="text-xs font-semibold uppercase tracking-widest text-forest-600">
+        <div className="reveal hero-surface relative overflow-hidden rounded-3xl px-8 py-14 text-center text-white md:px-16">
+          <div aria-hidden className="dot-grid pointer-events-none absolute inset-0 opacity-[0.08]" />
+          <span className="relative text-xs font-semibold uppercase tracking-widest text-amber">
             Why FrameUpNow Exists
           </span>
-          <p className="mt-4 text-lg leading-relaxed text-ink-soft">
+          <p className="relative mx-auto mt-4 max-w-2xl text-lg leading-relaxed text-white/85">
             Traditional homebuilding is filled with uncertainty — changing material costs, unclear
             quantities, and delays caused by incomplete planning. We built FrameUpNow to solve that. Our
             mission is to bring certainty, clarity, and efficiency to residential construction by
             defining the structure and materials before you break ground.
           </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <div className="relative mt-8 flex flex-wrap justify-center gap-3">
             <Link
               href="/plans"
-              className="rounded-full bg-forest px-6 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:bg-forest-600"
+              className="rounded-full bg-amber px-7 py-3.5 text-sm font-semibold text-ink shadow-lg transition-transform hover:-translate-y-0.5"
             >
               Browse ADU plans →
             </Link>
             <Link
               href="/how-it-works"
-              className="rounded-full border border-line px-6 py-3 text-sm font-semibold text-ink transition-colors hover:border-forest/40"
+              className="rounded-full border border-white/30 px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
             >
               See how it works
             </Link>
