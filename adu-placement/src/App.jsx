@@ -24,7 +24,11 @@ import {
   clampFootprintToSetbacks,
   footprintFitMargin,
   rearBuildableCenter,
-  feetToLngLat,
+  rectCorners,
+  polygonFeature,
+  cornersCentroid,
+  offsetLotPolygon,
+  polygonFitMargin,
 } from "./lib/geometry";
 import { usePlansCatalog } from "./lib/plansCatalog";
 import { fetchPlanById } from "./lib/baserow";
@@ -36,6 +40,14 @@ import "./App.css";
 // the home is placed to the rear. Users still fine-tune size at the Lot step.
 const DEFAULT_LOT = { width: 60, length: 120, rotation: 0, center: null };
 const DEFAULT_SETBACKS = { front: 5, back: 5, left: 5, right: 5 };
+
+// The lot's corner polygon — its explicit corners if it has them, otherwise the
+// four corners of its current rectangle (so the first corner edit seeds it).
+function lotCornersOf(l) {
+  return l.corners && l.corners.length >= 3
+    ? l.corners
+    : rectCorners(l.center, l.width, l.length, l.rotation);
+}
 
 // Rotate a lng/lat point by `deg` (CCW, matching makeRectangle) around a center.
 function rotateAround(p, center, deg) {
@@ -409,13 +421,26 @@ export default function App() {
   }, [mapReady, floorPlan, plansLoading]);
 
   // ---- Derived geometry ----
+  // A lot is a rectangle by default; once the user edits a corner (or adds a
+  // vertex) it carries an explicit `corners` polygon that takes over.
+  const isPolygonLot = !!(lot.corners && lot.corners.length >= 3);
+
   const lotFeature = useMemo(() => {
     if (!lot.center) return null;
+    if (isPolygonLot) return polygonFeature(lot.corners);
     return makeRectangle(lot.center, lot.width, lot.length, lot.rotation);
-  }, [lot]);
+  }, [lot, isPolygonLot]);
+
+  // Buildable polygon (only in polygon mode); the rectangle path uses
+  // applySetbacksToRect below.
+  const buildableCorners = useMemo(() => {
+    if (!lotConfirmed || !isPolygonLot) return null;
+    return offsetLotPolygon(lot.corners, setbacks, lot.rotation || 0);
+  }, [lot, isPolygonLot, lotConfirmed, setbacks]);
 
   const setbackFeature = useMemo(() => {
     if (!lot.center || !lotConfirmed) return null;
+    if (isPolygonLot) return buildableCorners ? polygonFeature(buildableCorners) : null;
     return applySetbacksToRect(
       lot.center,
       lot.width,
@@ -423,7 +448,7 @@ export default function App() {
       lot.rotation,
       setbacks
     );
-  }, [lot, lotConfirmed, setbacks]);
+  }, [lot, isPolygonLot, lotConfirmed, setbacks, buildableCorners]);
 
   const footprintFeature = useMemo(() => {
     if (!footprint || !floorPlan) return null;
@@ -437,6 +462,15 @@ export default function App() {
 
   const fitMargin = useMemo(() => {
     if (!footprint || !floorPlan || !lotConfirmed) return null;
+    if (isPolygonLot) {
+      const fpCorners = rectCorners(
+        footprint.center,
+        floorPlan.width,
+        floorPlan.depth,
+        footprint.rotation
+      );
+      return polygonFitMargin(fpCorners, buildableCorners);
+    }
     return footprintFitMargin({
       footprintCenter: footprint.center,
       footprintWidth: floorPlan.width,
@@ -445,7 +479,7 @@ export default function App() {
       lot,
       setbacks,
     });
-  }, [footprint, floorPlan, lot, setbacks, lotConfirmed]);
+  }, [footprint, floorPlan, lot, setbacks, lotConfirmed, isPolygonLot, buildableCorners]);
 
   // Single source of truth for validity: derive from fitMargin. Tolerance
   // for floating-point noise is applied inside footprintFitMargin itself
@@ -529,31 +563,38 @@ export default function App() {
   }
 
   const handleDragLot = useCallback((newCenter) => {
-    setLot((l) => ({ ...l, center: newCenter }));
+    setLot((l) => {
+      // Polygon lot: translate every corner by the same delta.
+      if (l.corners && l.corners.length >= 3 && l.center) {
+        const dLng = newCenter[0] - l.center[0];
+        const dLat = newCenter[1] - l.center[1];
+        return {
+          ...l,
+          center: newCenter,
+          corners: l.corners.map(([x, y]) => [x + dLng, y + dLat]),
+        };
+      }
+      return { ...l, center: newCenter };
+    });
   }, []);
 
-  // Resize the lot by dragging an edge. `dim` is "width" or "length", `deltaFt`
-  // is the whole-foot change (outward = grow), and `normal` is the outward unit
-  // direction (east, north) of the dragged edge. The OPPOSITE edge stays anchored
-  // by shifting the lot center half the change along the normal.
-  const handleResizeLot = useCallback(({ dim, deltaFt, normal }) => {
+  // Move a single lot corner (drag a corner handle). The first edit seeds the
+  // polygon from the current rectangle, after which the lot is a free polygon.
+  const handleMoveCorner = useCallback((index, lngLat) => {
     setLot((l) => {
-      if (!l.center) return l;
-      const MIN = 15; // ft — keep the lot usable
-      const MAX = 1500;
-      const cur = dim === "width" ? l.width : l.length;
-      const next = Math.max(MIN, Math.min(MAX, Math.round(cur + deltaFt)));
-      const used = next - cur;
-      if (!used) return l;
-      const [dLng, dLat] = feetToLngLat(
-        (normal[0] * used) / 2,
-        (normal[1] * used) / 2,
-        l.center[1]
-      );
-      const center = [l.center[0] + dLng, l.center[1] + dLat];
-      return dim === "width"
-        ? { ...l, width: next, center }
-        : { ...l, length: next, center };
+      const src = lotCornersOf(l);
+      const corners = src.map((c, i) => (i === index ? [lngLat[0], lngLat[1]] : c));
+      return { ...l, corners, center: cornersCentroid(corners) };
+    });
+  }, []);
+
+  // Insert a new corner on an edge (drag an edge "add point" handle) — turns a
+  // 4-sided lot into a 5-sided one, etc.
+  const handleAddVertex = useCallback((edgeIndex, lngLat) => {
+    setLot((l) => {
+      const corners = [...lotCornersOf(l)];
+      corners.splice(edgeIndex + 1, 0, [lngLat[0], lngLat[1]]);
+      return { ...l, corners, center: cornersCentroid(corners) };
     });
   }, []);
 
@@ -637,7 +678,10 @@ export default function App() {
     (newCenter) => {
       setFootprint((f) => {
         if (!f) return f;
-        if (!snapToSetbacks || !floorPlan || !lotConfirmed) {
+        // Rectangle-based clamp doesn't apply to a polygon lot — there the home
+        // moves freely and the validation badge signals fit instead.
+        const poly = lot.corners && lot.corners.length >= 3;
+        if (!snapToSetbacks || !floorPlan || !lotConfirmed || poly) {
           return { ...f, center: newCenter };
         }
         const { center: clamped } = clampFootprintToSetbacks({
@@ -678,7 +722,14 @@ export default function App() {
           : f
       );
     }
-    setLot((l) => ({ ...l, rotation: (l.rotation + delta) % 360 }));
+    setLot((l) => {
+      const next = { ...l, rotation: (l.rotation + delta) % 360 };
+      // Polygon lot: spin every corner around the lot center too.
+      if (l.corners && l.corners.length >= 3 && l.center) {
+        next.corners = l.corners.map((c) => rotateAround(c, l.center, delta));
+      }
+      return next;
+    });
   }
 
   // Snap rotation to nearest 0/90/180/270 (per doc).
@@ -1124,7 +1175,8 @@ export default function App() {
             mapStyle={mapStyle}
             is3D={is3D}
             onDragLot={handleDragLot}
-            onResizeLot={handleResizeLot}
+            onMoveCorner={handleMoveCorner}
+            onAddVertex={handleAddVertex}
             onDragFootprint={handleDragFootprint}
             onRotateFootprintBy={handleRotateFootprint}
             onRotateLotBy={handleRotateLotAndHome}

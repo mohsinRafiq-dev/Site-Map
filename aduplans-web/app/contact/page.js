@@ -6,9 +6,10 @@ export const metadata = {
   description: "Get in touch with the FrameUpNow team about ADU plans, steel framing, and your project.",
 };
 
-// FrameUpNow / ADUplans HQ — Tucson, AZ (same embed used on frameupnow.com).
-const MAP_EMBED =
-  "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d26993.58806682206!2d-110.8471315045875!3d32.2527408226108!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x86d66ed92b76e103%3A0x28d61d3b2d9b99b!2sTucson%2C%20AZ%2085715%2C%20USA!5e0!3m2!1sen!2sph!4v1713483596246!5m2!1sen!2sph";
+// FrameUpNow / ADUplans HQ — 1650 N Kolb Rd #132, Tucson, AZ 85715.
+const ADDRESS = "1650 N Kolb Rd #132, Tucson, AZ 85715";
+const MAP_EMBED = `https://maps.google.com/maps?q=${encodeURIComponent(ADDRESS)}&z=15&output=embed`;
+const MAP_LINK = `https://maps.google.com/?q=${encodeURIComponent(ADDRESS)}`;
 
 export default function ContactPage() {
   return (
@@ -86,13 +87,10 @@ export default function ContactPage() {
               </a>
             </InfoCard>
             <InfoCard title="Visit" icon={<PinIcon />}>
-              <a
-                href="https://maps.app.goo.gl/GGQsasiAAS5HKmFK6"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-forest"
-              >
-                Tucson, AZ 85715 USA
+              <a href={MAP_LINK} target="_blank" rel="noopener noreferrer" className="hover:text-forest">
+                1650 N Kolb Rd #132
+                <br />
+                Tucson, AZ 85715
               </a>
             </InfoCard>
             <InfoCard title="Hours" icon={<ClockIcon />}>
@@ -135,7 +133,7 @@ export default function ContactPage() {
           <div className="reveal mt-10 overflow-hidden rounded-3xl border-2 border-forest/25 shadow-[var(--shadow-lift)]">
             <iframe
               src={MAP_EMBED}
-              title="ADUplans.com / FrameUpNow location — Tucson, AZ 85715"
+              title="FrameUpNow — 1650 N Kolb Rd #132, Tucson, AZ 85715"
               className="block h-[420px] w-full"
               style={{ border: 0 }}
               loading="lazy"

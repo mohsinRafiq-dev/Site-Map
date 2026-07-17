@@ -356,3 +356,237 @@ export function rearBuildableCenter({
   });
   return center;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Arbitrary-polygon lot support — so a lot can be a trapezoid, pentagon, or any
+   irregular shape (not just a rectangle). A polygon lot is stored as an array
+   of [lng, lat] corners; these helpers build/offset/measure it.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const FEET_PER_DEG = M_PER_DEG_LAT / M_PER_FOOT;
+
+// The four corner [lng,lat]s of a rotated rectangle — same winding/order as
+// makeRectangle. Used to seed a polygon from the current rectangle lot.
+export function rectCorners(center, widthFt, heightFt, rotationDeg = 0) {
+  const [lng, lat] = center;
+  const halfW = widthFt / 2;
+  const halfH = heightFt / 2;
+  const rad = (rotationDeg * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  return [
+    [-halfW, -halfH],
+    [halfW, -halfH],
+    [halfW, halfH],
+    [-halfW, halfH],
+  ].map(([x, y]) => {
+    const xr = x * cos - y * sin;
+    const yr = x * sin + y * cos;
+    const [dLng, dLat] = feetToLngLat(xr, yr, lat);
+    return [lng + dLng, lat + dLat];
+  });
+}
+
+// GeoJSON polygon Feature from [lng,lat] corners (auto-closes the ring).
+export function polygonFeature(corners) {
+  const ring = corners.map((c) => [c[0], c[1]]);
+  ring.push(ring[0]);
+  return { type: "Feature", geometry: { type: "Polygon", coordinates: [ring] }, properties: {} };
+}
+
+// Average of the corners (used as the polygon's center / pivot).
+export function cornersCentroid(corners) {
+  let x = 0;
+  let y = 0;
+  for (const c of corners) {
+    x += c[0];
+    y += c[1];
+  }
+  return [x / corners.length, y / corners.length];
+}
+
+// Polygon area in square feet (shoelace, on the centered feet frame).
+export function polygonAreaSqFt(corners) {
+  const c = cornersCentroid(corners);
+  const p = cornersToFeet(corners, c);
+  let a2 = 0;
+  for (let i = 0; i < p.length; i++) {
+    const q = p[(i + 1) % p.length];
+    a2 += p[i][0] * q[1] - q[0] * p[i][1];
+  }
+  return Math.abs(a2) / 2;
+}
+
+// Oriented bounding-box dimensions (ft) of a polygon, measured in the lot's own
+// frame (rotated by `rotationDeg`) — an approximate "W × L" for irregular lots.
+export function polygonBoundsFeet(corners, rotationDeg = 0) {
+  const c = cornersCentroid(corners);
+  const R = (-rotationDeg * Math.PI) / 180;
+  const cos = Math.cos(R);
+  const sin = Math.sin(R);
+  const coslat = Math.cos((c[1] * Math.PI) / 180) || 1;
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (const [lng, lat] of corners) {
+    const ex = (lng - c[0]) * coslat * FEET_PER_DEG;
+    const ny = (lat - c[1]) * FEET_PER_DEG;
+    const x = ex * cos - ny * sin;
+    const y = ex * sin + ny * cos;
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+  }
+  return { w: maxX - minX, l: maxY - minY };
+}
+
+// ── centered feet ENU frame (origin at the polygon centroid) ─────────────────
+function cornersToFeet(corners, c) {
+  const coslat = Math.cos((c[1] * Math.PI) / 180) || 1;
+  return corners.map(([lng, lat]) => [
+    (lng - c[0]) * coslat * FEET_PER_DEG,
+    (lat - c[1]) * FEET_PER_DEG,
+  ]);
+}
+function feetToCorners(pts, c) {
+  const coslat = Math.cos((c[1] * Math.PI) / 180) || 1;
+  return pts.map(([x, y]) => [c[0] + x / (coslat * FEET_PER_DEG), c[1] + y / FEET_PER_DEG]);
+}
+function lineIntersect(L1, L2, fallback) {
+  const denom = L1.dx * L2.dy - L1.dy * L2.dx;
+  if (Math.abs(denom) < 1e-9) return fallback; // parallel
+  const t = ((L2.px - L1.px) * L2.dy - (L2.py - L1.py) * L2.dx) / denom;
+  return [L1.px + t * L1.dx, L1.py + t * L1.dy];
+}
+
+// Ray-cast point-in-polygon on a centered-feet ring.
+function insideFeet(p, ring) {
+  let ins = false;
+  const n = ring.length;
+  for (let i = 0, j = n - 1; i < n; j = i++) {
+    const xi = ring[i][0];
+    const yi = ring[i][1];
+    const xj = ring[j][0];
+    const yj = ring[j][1];
+    if (yi > p[1] !== yj > p[1] && p[0] < ((xj - xi) * (p[1] - yi)) / (yj - yi) + xi) {
+      ins = !ins;
+    }
+  }
+  return ins;
+}
+
+// Distance from point p to segment a→b (feet frame).
+function distToSeg(p, a, b) {
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const l2 = dx * dx + dy * dy;
+  let t = l2 ? ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l2 : 0;
+  t = Math.max(0, Math.min(1, t));
+  const cx = a[0] + t * dx;
+  const cy = a[1] + t * dy;
+  return Math.hypot(p[0] - cx, p[1] - cy);
+}
+
+// Inset a polygon lot inward by per-side setbacks → the buildable area.
+// Each edge is offset inward (by the setback for the direction it FACES:
+// front/back/left/right relative to the lot's `rotationDeg`), and adjacent
+// offset edges are intersected to form the new corners. Inward normals come
+// from the polygon WINDING (correct even for concave lots), and any offset
+// vertex that would escape the lot (a miter spike at a reflex corner) is pulled
+// back inside — so the buildable line never crosses outside the lot.
+export function offsetLotPolygon(corners, setbacks, rotationDeg = 0) {
+  if (!corners || corners.length < 3) return corners;
+  const c = cornersCentroid(corners);
+  const pts = cornersToFeet(corners, c);
+  const n = pts.length;
+
+  // Winding: CCW when signed area > 0 → interior is to the LEFT of each edge.
+  let area2 = 0;
+  for (let i = 0; i < n; i++) {
+    const a = pts[i];
+    const b = pts[(i + 1) % n];
+    area2 += a[0] * b[1] - b[0] * a[1];
+  }
+  const ccw = area2 > 0;
+
+  const R = (rotationDeg * Math.PI) / 180;
+  const cosR = Math.cos(R);
+  const sinR = Math.sin(R);
+  const frontDir = [-sinR, cosR];
+  const rightDir = [cosR, sinR];
+  const setbackForOutward = (ox, oy) => {
+    const f = ox * frontDir[0] + oy * frontDir[1];
+    const r = ox * rightDir[0] + oy * rightDir[1];
+    const opts = [
+      { v: f, s: setbacks.front },
+      { v: -f, s: setbacks.back },
+      { v: r, s: setbacks.right },
+      { v: -r, s: setbacks.left },
+    ];
+    opts.sort((a, b) => b.v - a.v);
+    return opts[0].s;
+  };
+
+  const lines = [];
+  for (let i = 0; i < n; i++) {
+    const a = pts[i];
+    const b = pts[(i + 1) % n];
+    let dx = b[0] - a[0];
+    let dy = b[1] - a[1];
+    const len = Math.hypot(dx, dy) || 1;
+    dx /= len;
+    dy /= len;
+    // inward normal from winding (consistent for concave polygons)
+    const nx = ccw ? -dy : dy;
+    const ny = ccw ? dx : -dx;
+    const d = setbackForOutward(-nx, -ny);
+    lines.push({ px: a[0] + nx * d, py: a[1] + ny * d, dx, dy, nx, ny, d });
+  }
+
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const L1 = lines[(i - 1 + n) % n];
+    const L2 = lines[i];
+    let p = lineIntersect(L1, L2, null);
+    // Reflex corner / parallel edges: miter escapes the lot. Fall back to
+    // offsetting the vertex along the average inward normal, which stays inside.
+    if (!p || !insideFeet(p, pts)) {
+      const v = pts[i];
+      let bx = L1.nx + L2.nx;
+      let by = L1.ny + L2.ny;
+      const bl = Math.hypot(bx, by) || 1;
+      bx /= bl;
+      by /= bl;
+      const dd = Math.max(L1.d, L2.d);
+      p = [v[0] + bx * dd, v[1] + by * dd];
+    }
+    out.push(p);
+  }
+  return feetToCorners(out, c);
+}
+
+// Min signed clearance (ft) from a footprint (its 4 corners) to a buildable
+// polygon: ≥0 inside, <0 outside. Robust for concave polygons — uses an
+// inside/outside test plus true distance to the nearest boundary segment.
+export function polygonFitMargin(footprintCorners, buildableCorners) {
+  if (!buildableCorners || buildableCorners.length < 3) return -Infinity;
+  const c = cornersCentroid(buildableCorners);
+  const bl = cornersToFeet(buildableCorners, c);
+  const fl = cornersToFeet(footprintCorners, c);
+  const n = bl.length;
+
+  let minMargin = Infinity;
+  for (const p of fl) {
+    let nearest = Infinity;
+    for (let i = 0; i < n; i++) {
+      const dseg = distToSeg(p, bl[i], bl[(i + 1) % n]);
+      if (dseg < nearest) nearest = dseg;
+    }
+    const m = insideFeet(p, bl) ? nearest : -nearest;
+    if (m < minMargin) minMargin = m;
+  }
+  if (minMargin < 0 && minMargin > -0.033) minMargin = 0;
+  return minMargin;
+}

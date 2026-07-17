@@ -5,18 +5,36 @@
 // setbacks are subtracted to get buildable area, footprint is W×D
 // of the selected plan. Acres = sq ft / 43,560.
 
+import { polygonAreaSqFt, polygonBoundsFeet, offsetLotPolygon } from "../lib/geometry";
+
 const SQFT_PER_ACRE = 43560;
 
 export default function LotInfoCard({ lot, setbacks, floorPlan }) {
   if (!lot?.center) return null;
 
-  const lotSqFt = lot.width * lot.length;
+  const poly = !!(lot.corners && lot.corners.length >= 3);
+
+  let lotSqFt;
+  let dimsLabel;
+  let buildableSqFt;
+  let buildableSub;
+  if (poly) {
+    lotSqFt = polygonAreaSqFt(lot.corners);
+    const b = polygonBoundsFeet(lot.corners, lot.rotation || 0);
+    dimsLabel = `~${Math.round(b.w)}' × ${Math.round(b.l)}'`;
+    const bp = offsetLotPolygon(lot.corners, setbacks || {}, lot.rotation || 0);
+    buildableSqFt = bp ? polygonAreaSqFt(bp) : 0;
+    buildableSub = "after setbacks";
+  } else {
+    lotSqFt = lot.width * lot.length;
+    dimsLabel = `${lot.width}' × ${lot.length}'`;
+    const buildableW = Math.max(0, lot.width - (setbacks?.left || 0) - (setbacks?.right || 0));
+    const buildableL = Math.max(0, lot.length - (setbacks?.front || 0) - (setbacks?.back || 0));
+    buildableSqFt = buildableW * buildableL;
+    buildableSub = `${buildableW}' × ${buildableL}'`;
+  }
+
   const lotAcres = lotSqFt / SQFT_PER_ACRE;
-
-  const buildableW = Math.max(0, lot.width - (setbacks?.left || 0) - (setbacks?.right || 0));
-  const buildableL = Math.max(0, lot.length - (setbacks?.front || 0) - (setbacks?.back || 0));
-  const buildableSqFt = buildableW * buildableL;
-
   const footprintSqFt = floorPlan ? floorPlan.width * floorPlan.depth : 0;
   const coverage = footprintSqFt && lotSqFt ? (footprintSqFt / lotSqFt) * 100 : null;
 
@@ -35,15 +53,15 @@ export default function LotInfoCard({ lot, setbacks, floorPlan }) {
         />
         <Stat
           label="Lot dims"
-          value={`${lot.width}' × ${lot.length}'`}
+          value={dimsLabel}
           unit=""
-          sub="W × L"
+          sub={poly ? "bounds" : "W × L"}
         />
         <Stat
           label="Buildable"
           value={fmt(buildableSqFt)}
           unit="sq ft"
-          sub={`${buildableW}' × ${buildableL}'`}
+          sub={buildableSub}
           warn={buildableSqFt <= 0}
         />
         {floorPlan && (

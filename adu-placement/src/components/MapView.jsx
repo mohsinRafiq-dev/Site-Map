@@ -8,7 +8,12 @@ import {
 } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { polygonCenter } from "../lib/geometry";
+import {
+  polygonCenter,
+  polygonAreaSqFt,
+  polygonBoundsFeet,
+  offsetLotPolygon,
+} from "../lib/geometry";
 import { renderFloorPlanSvgString } from "./FloorPlanSvg";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
@@ -52,7 +57,8 @@ const MapView = forwardRef(function MapView(
     mapStyle = "satellite",
     is3D = false,
     onDragLot,
-    onResizeLot,
+    onMoveCorner,
+    onAddVertex,
     onDragFootprint,
     onRotateFootprintBy,
     onRotateLotBy,
@@ -68,10 +74,11 @@ const MapView = forwardRef(function MapView(
   const onRotateByRef = useRef(onRotateFootprintBy);
   const rotateLotMarkerRef = useRef(null);
   const onRotateLotByRef = useRef(onRotateLotBy);
-  const resizeMarkersRef = useRef([]);
-  const onResizeLotRef = useRef(onResizeLot);
+  const cornerMarkersRef = useRef([]);
+  const addMarkersRef = useRef([]);
+  const onMoveCornerRef = useRef(onMoveCorner);
+  const onAddVertexRef = useRef(onAddVertex);
   const moveMarkerRef = useRef(null);
-  const dimLabelsRef = useRef([]);
   const styleReadyRef = useRef(false);
   const currentImagePlanIdRef = useRef(null);
   const currentStyleUrlRef = useRef(null);
@@ -109,8 +116,11 @@ const MapView = forwardRef(function MapView(
     onRotateLotByRef.current = onRotateLotBy;
   }, [onRotateLotBy]);
   useEffect(() => {
-    onResizeLotRef.current = onResizeLot;
-  }, [onResizeLot]);
+    onMoveCornerRef.current = onMoveCorner;
+  }, [onMoveCorner]);
+  useEffect(() => {
+    onAddVertexRef.current = onAddVertex;
+  }, [onAddVertex]);
 
   // ------- Init map (once) -------
   useEffect(() => {
@@ -859,108 +869,105 @@ const MapView = forwardRef(function MapView(
     rotateLotMarkerRef.current = null;
   }, [positionLotRotateHandle]);
 
-  // ------- Lot resize handles: drag an edge to change width / length -------
-  // A small handle pinned to the midpoint of each lot edge. Dragging one moves
-  // that edge in/out (opposite edge anchored) so the lot can be sized to match
-  // the real property. Only shown while the lot is being adjusted (pre-confirm).
+  // ------- Lot shape handles: corners, add-vertex, and move -------
+  // The lot can be ANY polygon. Every corner has a draggable handle (reshape into
+  // trapezoids, etc.); every edge midpoint has an "add point" handle (drag to
+  // insert a new corner → pentagons / notches). A center knob moves the whole
+  // lot. Handle COUNT tracks the ring, so we rebuild when the vertex count
+  // changes and just reposition on every render otherwise.
   const positionLotWidgets = useCallback(() => {
     const feat = lotFeatureRef.current;
     if (!feat) return;
-    const map = mapRef.current;
     const ring = feat.geometry.coordinates[0];
-    const c = polygonCenter(feat);
-    const pC = map ? map.project(c) : null;
-    for (const { marker, edge, el } of resizeMarkersRef.current) {
-      const mid = edgeMidpointGeo(feat, edge.i, edge.j, 0);
-      marker.setLngLat(mid);
-      // Point the double-arrow along this edge's resize direction on screen, so
-      // width handles read horizontal and length handles read vertical — and
-      // both stay correct when the lot is rotated.
-      if (map && pC && el && el.firstChild) {
-        const pMid = map.project(mid);
-        const ang = (Math.atan2(pMid.y - pC.y, pMid.x - pC.x) * 180) / Math.PI;
-        el.firstChild.style.transform = `rotate(${ang}deg)`;
+    const nV = ring.length - 1; // corners (ring is closed)
+    cornerMarkersRef.current.forEach((m, i) => {
+      if (i < nV) m.setLngLat(ring[i]);
+    });
+    addMarkersRef.current.forEach((m, i) => {
+      if (i < nV) {
+        m.setLngLat([
+          (ring[i][0] + ring[i + 1][0]) / 2,
+          (ring[i][1] + ring[i + 1][1]) / 2,
+        ]);
       }
-    }
+    });
     if (moveMarkerRef.current) moveMarkerRef.current.setLngLat(polygonCenter(feat));
-    const labels = dimLabelsRef.current;
-    if (labels.length === 2) {
-      // Live width/length, each pinned just outside the edge whose handle
-      // controls it (width ↔ right edge, length ↕ bottom edge).
-      labels[0].el.textContent = `↔ ${edgeLenFt(ring, 0, 1)} ft`;
-      labels[0].marker.setLngLat(edgeMidpointGeo(feat, 1, 2, 18));
-      labels[1].el.textContent = `↕ ${edgeLenFt(ring, 1, 2)} ft`;
-      labels[1].marker.setLngLat(edgeMidpointGeo(feat, 0, 1, 18));
-    }
   }, []);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    // Available on every step where the lot is shown (like the lot rotate knob),
-    // so the lot can be resized/moved even after the home is placed.
-    const show = !!lotFeature;
+    const feat = lotFeature;
+    const show = !!feat;
+    const nV = show ? feat.geometry.coordinates[0].length - 1 : 0;
 
-    const removeAll = () => {
-      map.off("render", positionLotWidgets);
-      resizeMarkersRef.current.forEach(({ marker }) => marker.remove());
-      resizeMarkersRef.current = [];
-      moveMarkerRef.current?.remove();
-      moveMarkerRef.current = null;
-      dimLabelsRef.current.forEach(({ marker }) => marker.remove());
-      dimLabelsRef.current = [];
+    const removeHandles = () => {
+      cornerMarkersRef.current.forEach((m) => m.remove());
+      cornerMarkersRef.current = [];
+      addMarkersRef.current.forEach((m) => m.remove());
+      addMarkersRef.current = [];
     };
 
     if (!show) {
-      removeAll();
+      map.off("render", positionLotWidgets);
+      removeHandles();
+      moveMarkerRef.current?.remove();
+      moveMarkerRef.current = null;
       return;
     }
 
-    if (!resizeMarkersRef.current.length) {
-      resizeMarkersRef.current = LOT_EDGES.map((edge) => {
-        const el = buildResizeHandleEl(edge.dim);
+    // (Re)build the per-vertex handles whenever the corner count changes.
+    if (cornerMarkersRef.current.length !== nV) {
+      removeHandles();
+      const ring = feat.geometry.coordinates[0];
+
+      // Corner handles — drag to move that corner.
+      cornerMarkersRef.current = Array.from({ length: nV }, (_, i) => {
+        const el = buildCornerHandleEl();
         el.addEventListener("pointerdown", (e) => {
-          const feat0 = lotFeatureRef.current;
-          if (!onResizeLotRef.current || !feat0) return;
+          if (!onMoveCornerRef.current) return;
           e.preventDefault();
           e.stopPropagation();
           map.dragPan.disable();
           el.classList.add("dragging");
-
-          // Fixed outward normal (unit east/north) from lot center through this
-          // edge's midpoint — constant for the whole drag (rotation is fixed).
-          const ring = feat0.geometry.coordinates[0];
-          const c = polygonCenter(feat0);
-          const coslat = Math.cos((c[1] * Math.PI) / 180) || 1;
-          const mid = [
-            (ring[edge.i][0] + ring[edge.j][0]) / 2,
-            (ring[edge.i][1] + ring[edge.j][1]) / 2,
-          ];
-          let nx = (mid[0] - c[0]) * coslat;
-          let ny = mid[1] - c[1];
-          const nlen = Math.hypot(nx, ny) || 1;
-          nx /= nlen;
-          ny /= nlen;
-
-          // Mouse position projected onto the outward normal, in feet.
-          const alongAt = (clientX, clientY) => {
-            const rect = map.getCanvas().getBoundingClientRect();
-            const ll = map.unproject([clientX - rect.left, clientY - rect.top]);
-            const eastFt = (ll.lng - c[0]) * coslat * FEET_PER_DEG;
-            const northFt = (ll.lat - c[1]) * FEET_PER_DEG;
-            return eastFt * nx + northFt * ny;
-          };
-
-          let prev = alongAt(e.clientX, e.clientY);
-          let accum = 0;
           const move = (ev) => {
-            const cur = alongAt(ev.clientX, ev.clientY);
-            accum += cur - prev;
-            prev = cur;
-            const step = Math.trunc(accum); // emit whole feet
-            if (step !== 0) {
-              accum -= step;
-              onResizeLotRef.current({ dim: edge.dim, deltaFt: step, normal: [nx, ny] });
+            const r = map.getCanvas().getBoundingClientRect();
+            const ll = map.unproject([ev.clientX - r.left, ev.clientY - r.top]);
+            onMoveCornerRef.current(i, [ll.lng, ll.lat]);
+          };
+          const up = () => {
+            window.removeEventListener("pointermove", move);
+            window.removeEventListener("pointerup", up);
+            map.dragPan.enable();
+            el.classList.remove("dragging");
+          };
+          window.addEventListener("pointermove", move);
+          window.addEventListener("pointerup", up);
+        });
+        return new mapboxgl.Marker({ element: el, anchor: "center" })
+          .setLngLat(ring[i])
+          .addTo(map);
+      });
+
+      // Add-vertex handles at each edge midpoint — drag to insert a new corner
+      // (splitting the edge), then keep dragging to place it.
+      addMarkersRef.current = Array.from({ length: nV }, (_, i) => {
+        const el = buildAddHandleEl();
+        el.addEventListener("pointerdown", (e) => {
+          if (!onAddVertexRef.current) return;
+          e.preventDefault();
+          e.stopPropagation();
+          map.dragPan.disable();
+          el.classList.add("dragging");
+          let inserted = false; // insert on first move, not on a plain click
+          const move = (ev) => {
+            const r = map.getCanvas().getBoundingClientRect();
+            const ll = map.unproject([ev.clientX - r.left, ev.clientY - r.top]);
+            if (!inserted) {
+              inserted = true;
+              onAddVertexRef.current(i, [ll.lng, ll.lat]); // new corner is i+1
+            } else if (onMoveCornerRef.current) {
+              onMoveCornerRef.current(i + 1, [ll.lng, ll.lat]);
             }
           };
           const up = () => {
@@ -972,14 +979,18 @@ const MapView = forwardRef(function MapView(
           window.addEventListener("pointermove", move);
           window.addEventListener("pointerup", up);
         });
-
-        const marker = new mapboxgl.Marker({ element: el, anchor: "center" })
-          .setLngLat(edgeMidpointGeo(lotFeature, edge.i, edge.j, 0))
+        const mid = [
+          (ring[i][0] + ring[i + 1][0]) / 2,
+          (ring[i][1] + ring[i + 1][1]) / 2,
+        ];
+        return new mapboxgl.Marker({ element: el, anchor: "center" })
+          .setLngLat(mid)
           .addTo(map);
-        return { marker, edge, el };
       });
+    }
 
-      // Move knob at the lot center — click and drag to reposition the whole lot.
+    // Move knob at the lot center — created once.
+    if (!moveMarkerRef.current) {
       const moveEl = buildMoveHandleEl();
       moveEl.addEventListener("pointerdown", (e) => {
         const feat0 = lotFeatureRef.current;
@@ -988,9 +999,9 @@ const MapView = forwardRef(function MapView(
         e.stopPropagation();
         map.dragPan.disable();
         moveEl.classList.add("dragging");
-        const rect0 = map.getCanvas().getBoundingClientRect();
+        const r0 = map.getCanvas().getBoundingClientRect();
         const startCenter = polygonCenter(feat0);
-        const startLL = map.unproject([e.clientX - rect0.left, e.clientY - rect0.top]);
+        const startLL = map.unproject([e.clientX - r0.left, e.clientY - r0.top]);
         const move = (ev) => {
           const r = map.getCanvas().getBoundingClientRect();
           const ll = map.unproject([ev.clientX - r.left, ev.clientY - r.top]);
@@ -1009,33 +1020,23 @@ const MapView = forwardRef(function MapView(
         window.addEventListener("pointerup", up);
       });
       moveMarkerRef.current = new mapboxgl.Marker({ element: moveEl, anchor: "center" })
-        .setLngLat(polygonCenter(lotFeature))
+        .setLngLat(polygonCenter(feat))
         .addTo(map);
-
-      // Live width / length dimension labels (non-interactive).
-      dimLabelsRef.current = [0, 1].map(() => {
-        const el = buildDimLabelEl();
-        const marker = new mapboxgl.Marker({ element: el, anchor: "center" })
-          .setLngLat(polygonCenter(lotFeature))
-          .addTo(map);
-        return { marker, el };
-      });
-
       map.on("render", positionLotWidgets);
     }
 
     positionLotWidgets();
-  }, [lotFeature, lotConfirmed, positionLotWidgets]);
+  }, [lotFeature, positionLotWidgets]);
 
   useEffect(() => () => {
     const map = mapRef.current;
     if (map) map.off("render", positionLotWidgets);
-    resizeMarkersRef.current.forEach(({ marker }) => marker.remove());
-    resizeMarkersRef.current = [];
+    cornerMarkersRef.current.forEach((m) => m.remove());
+    cornerMarkersRef.current = [];
+    addMarkersRef.current.forEach((m) => m.remove());
+    addMarkersRef.current = [];
     moveMarkerRef.current?.remove();
     moveMarkerRef.current = null;
-    dimLabelsRef.current.forEach(({ marker }) => marker.remove());
-    dimLabelsRef.current = [];
   }, [positionLotWidgets]);
 
   function syncWhenReady(srcId, feature) {
@@ -1200,51 +1201,32 @@ function topRightHandleGeo(feat, offsetFeet) {
   return [c[0] + (best.pt[0] - c[0]) * k, c[1] + (best.pt[1] - c[1]) * k];
 }
 
-// Lot edges → ring vertex indices + which dimension each resizes. Ring order
-// from makeRectangle: 0=(-W,-H) 1=(W,-H) 2=(W,H) 3=(-W,H).
-const LOT_EDGES = [
-  { key: "right", i: 1, j: 2, dim: "width" },
-  { key: "left", i: 3, j: 0, dim: "width" },
-  { key: "back", i: 2, j: 3, dim: "length" },
-  { key: "front", i: 0, j: 1, dim: "length" },
-];
-
-// Geo position of an edge's midpoint, optionally nudged `offsetFeet` outward.
-function edgeMidpointGeo(feat, i, j, offsetFeet) {
-  const ring = feat.geometry.coordinates[0];
-  const mid = [(ring[i][0] + ring[j][0]) / 2, (ring[i][1] + ring[j][1]) / 2];
-  if (!offsetFeet) return mid;
-  const c = polygonCenter(feat);
-  const coslat = Math.cos((c[1] * Math.PI) / 180) || 1;
-  const dist =
-    Math.hypot((mid[0] - c[0]) * coslat, mid[1] - c[1]) * FEET_PER_DEG;
-  const k = dist > 0 ? (dist + offsetFeet) / dist : 1;
-  return [c[0] + (mid[0] - c[0]) * k, c[1] + (mid[1] - c[1]) * k];
-}
-
-// The lot resize-handle DOM element (styled in App.css as `.resize-handle`).
-function buildResizeHandleEl(dim) {
+// A lot corner handle (styled in App.css as `.corner-handle`) — drag to move
+// that corner and reshape the lot.
+function buildCornerHandleEl() {
   const el = document.createElement("div");
-  el.className = "resize-handle resize-" + (dim === "width" ? "w" : "l");
+  el.className = "corner-handle";
   el.setAttribute("role", "button");
   el.setAttribute("tabindex", "0");
-  const label =
-    dim === "width" ? "Drag to change lot width" : "Drag to change lot length";
-  el.setAttribute("aria-label", label);
-  el.title = label;
-  el.innerHTML =
-    '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" ' +
-    'stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M6 9l-3 3 3 3"/><path d="M18 9l3 3-3 3"/><path d="M4 12h16"/></svg>';
+  el.setAttribute("aria-label", "Drag to move this lot corner");
+  el.title = "Drag corner";
   return el;
 }
 
-// Length (in whole feet) of the lot edge between ring vertices i and j.
-function edgeLenFt(ring, i, j) {
-  const coslat = Math.cos((ring[i][1] * Math.PI) / 180) || 1;
-  const dEast = (ring[j][0] - ring[i][0]) * coslat;
-  const dNorth = ring[j][1] - ring[i][1];
-  return Math.round(Math.hypot(dEast, dNorth) * FEET_PER_DEG);
+// An "add vertex" handle at an edge midpoint (styled as `.add-handle`) — drag to
+// insert a new corner and split the edge.
+function buildAddHandleEl() {
+  const el = document.createElement("div");
+  el.className = "add-handle";
+  el.setAttribute("role", "button");
+  el.setAttribute("tabindex", "0");
+  el.setAttribute("aria-label", "Drag to add a lot corner here");
+  el.title = "Drag to add a corner";
+  el.innerHTML =
+    '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" ' +
+    'stroke-width="3" stroke-linecap="round" aria-hidden="true">' +
+    '<path d="M12 5v14M5 12h14"/></svg>';
+  return el;
 }
 
 // The move-knob DOM element (styled in App.css as `.move-handle`).
@@ -1263,12 +1245,6 @@ function buildMoveHandleEl() {
   return el;
 }
 
-// A live dimension label (styled in App.css as `.dim-label`).
-function buildDimLabelEl() {
-  const el = document.createElement("div");
-  el.className = "dim-label";
-  return el;
-}
 
 // The rotate-handle DOM element (styled in App.css as `.rotate-handle`).
 function buildRotateHandleEl(extraClass, label = "Drag to rotate the home") {
@@ -1512,10 +1488,20 @@ function drawInfoPanel(
   py += 8 * r;
 
   // LOT section
-  if (lot && Number.isFinite(lot.width) && Number.isFinite(lot.length)) {
+  const lotPoly = !!(lot && lot.corners && lot.corners.length >= 3);
+  const lotSqFt = lot
+    ? lotPoly
+      ? polygonAreaSqFt(lot.corners)
+      : lot.width * lot.length
+    : 0;
+  if (lot && lot.center) {
     sectionTitle("Lot");
-    const lotSqFt = lot.width * lot.length;
-    row("Dimensions", `${lot.width}' × ${lot.length}'`);
+    if (lotPoly) {
+      const b = polygonBoundsFeet(lot.corners, lot.rotation || 0);
+      row("Dimensions", `~${Math.round(b.w)}' × ${Math.round(b.l)}' (irregular)`);
+    } else {
+      row("Dimensions", `${lot.width}' × ${lot.length}'`);
+    }
     row("Area", `${fmt(lotSqFt)} sq ft`);
     row("Acres", `${(lotSqFt / 43560).toFixed(3)}`);
     py += 8 * r;
@@ -1526,10 +1512,15 @@ function drawInfoPanel(
     sectionTitle("Setbacks");
     row("Front / Back", `${setbacks.front}' / ${setbacks.back}'`);
     row("Left / Right", `${setbacks.left}' / ${setbacks.right}'`);
-    if (lot) {
-      const bW = lot.width - setbacks.left - setbacks.right;
-      const bD = lot.length - setbacks.front - setbacks.back;
-      row("Buildable", `${bW}' × ${bD}'  (${fmt(bW * bD)} sf)`);
+    if (lot && lot.center) {
+      if (lotPoly) {
+        const bp = offsetLotPolygon(lot.corners, setbacks, lot.rotation || 0);
+        row("Buildable", `${fmt(bp ? polygonAreaSqFt(bp) : 0)} sf`);
+      } else {
+        const bW = lot.width - setbacks.left - setbacks.right;
+        const bD = lot.length - setbacks.front - setbacks.back;
+        row("Buildable", `${bW}' × ${bD}'  (${fmt(bW * bD)} sf)`);
+      }
     }
     py += 8 * r;
   }
@@ -1553,9 +1544,8 @@ function drawInfoPanel(
     if (footprint && Number.isFinite(footprint.rotation)) {
       row("Rotation", `${Math.round(footprint.rotation)}°`);
     }
-    if (lot && floorPlan) {
-      const cov =
-        (floorPlan.width * floorPlan.depth) / (lot.width * lot.length);
+    if (lot && floorPlan && lotSqFt) {
+      const cov = (floorPlan.width * floorPlan.depth) / lotSqFt;
       row("Lot coverage", `${(cov * 100).toFixed(1)}%`);
     }
     py += 8 * r;
