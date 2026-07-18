@@ -6,11 +6,6 @@ export const metadata = {
   description: "Get in touch with the FrameUpNow team about ADU plans, steel framing, and your project.",
 };
 
-// FrameUpNow / ADUplans HQ — 1650 N Kolb Rd #132, Tucson, AZ 85715.
-const ADDRESS = "1650 N Kolb Rd #132, Tucson, AZ 85715";
-const MAP_EMBED = `https://maps.google.com/maps?q=${encodeURIComponent(ADDRESS)}&z=15&output=embed`;
-const MAP_LINK = `https://maps.google.com/?q=${encodeURIComponent(ADDRESS)}`;
-
 export default function ContactPage() {
   return (
     <div>
@@ -86,13 +81,6 @@ export default function ContactPage() {
                 888-864-0184
               </a>
             </InfoCard>
-            <InfoCard title="Visit" icon={<PinIcon />}>
-              <a href={MAP_LINK} target="_blank" rel="noopener noreferrer" className="hover:text-forest">
-                1650 N Kolb Rd #132
-                <br />
-                Tucson, AZ 85715
-              </a>
-            </InfoCard>
             <InfoCard title="Hours" icon={<ClockIcon />}>
               <div>Monday to Friday: 7:30 AM – 5:30 PM (MST)</div>
               <div className="text-muted">Saturday to Sunday: Closed</div>
@@ -116,33 +104,6 @@ export default function ContactPage() {
           </aside>
         </div>
       </div>
-
-      {/* ── Map (Tucson HQ) ──────────────────────────────────────────────── */}
-      <section className="border-t border-line bg-mist/40">
-        <div className="container-x py-16 md:py-20">
-          <div className="reveal mx-auto max-w-2xl text-center">
-            <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-forest-600">
-              <span className="h-px w-6 bg-forest-600" /> Find Us
-            </span>
-            <h2 className="mt-3 font-display text-3xl text-ink md:text-4xl">Visit our team in Tucson</h2>
-            <p className="mt-4 text-ink-soft">
-              ADUplans.com is powered by FrameUpNow, headquartered in Tucson, Arizona.
-            </p>
-          </div>
-
-          <div className="reveal mt-10 overflow-hidden rounded-3xl border-2 border-forest/25 shadow-[var(--shadow-lift)]">
-            <iframe
-              src={MAP_EMBED}
-              title="FrameUpNow — 1650 N Kolb Rd #132, Tucson, AZ 85715"
-              className="block h-[420px] w-full"
-              style={{ border: 0 }}
-              loading="lazy"
-              allowFullScreen
-              referrerPolicy="no-referrer-when-downgrade"
-            />
-          </div>
-        </div>
-      </section>
     </div>
   );
 }
@@ -165,14 +126,6 @@ function PhoneIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.4 2.1L8 9.6a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z" />
-    </svg>
-  );
-}
-function PinIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z" />
-      <circle cx="12" cy="10" r="3" />
     </svg>
   );
 }

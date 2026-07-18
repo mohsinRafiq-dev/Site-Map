@@ -30,7 +30,7 @@ export default function HomePage() {
             Explore 4,000+ ADU Plans
           </h1>
           <p className="rise-in delay-1 mt-2 font-display text-xl italic text-white/95 md:text-2xl">
-            &amp; See the Floor Plan on Your Property for FREE
+            &amp; See Any Floor Plan on Your Property for FREE
           </p>
         </div>
       </section>
@@ -97,14 +97,13 @@ async function ExploreSection() {
             streamed node before React hydrates it — a benign class-only change. */}
         <div className="reveal" suppressHydrationWarning>
           <p className="text-[15px] leading-relaxed text-ink-soft md:text-base">
-            With <strong className="text-ink">more than 4,000 floor plans to choose from</strong>, finding
-            the perfect ADU has never been easier. Search for Permit-Ready ADU plans available in your
-            city or explore the full collection to{" "}
-            <strong className="text-ink">find the plan you love and build it anywhere</strong>. Then use
-            the <strong className="text-forest-700">FREE ADU-Plan-Fit Visualizer</strong> to see your
-            favorite design on your property in seconds. When you’re ready, FrameUpNow can transform your
-            chosen plan into a precision-engineered cold-formed steel frame package for permitting and
-            construction.
+            With <strong className="text-ink">more than 4,000 ADU floor plans</strong> to explore, finding
+            the right design has never been easier. Search plans available in your city or browse the
+            complete collection to{" "}
+            <strong className="text-ink">find the home you love and build it anywhere</strong>. Then use
+            the <strong className="text-forest-700">FREE ADU-Plan-Fit Visualizer</strong> to instantly see
+            your favorite plan on your property. When you’re ready, FrameUpNow can convert it into a
+            precision-engineered cold-formed steel framing package.
           </p>
 
           {/* Why convert to steel */}
@@ -134,7 +133,7 @@ async function ExploreSection() {
         <div className="reveal" suppressHydrationWarning>
           <div className="rounded-3xl border border-line bg-paper p-3 shadow-[var(--shadow-card)] md:p-4">
             <h2 className="text-center font-display text-xl italic text-forest-700 md:text-2xl">
-              Click a State to Explore Local Plans
+              Click State to Explore Local Plans
             </h2>
             <div className="mt-3">
               <USAMap states={facets.states} bare />
@@ -234,9 +233,9 @@ function ToolsSection() {
    ═══════════════════════════════════════════════════════════════════════ */
 const STEPS = [
   { n: 1, img: "/step-1.png", title: "Select a Plan", body: "Browse plans that are pre-approved by your local jurisdiction or select a plan from the entire library" },
-  { n: 2, img: "/step-2.png", title: "Use the Plan-My-Floor-Plan Visualizer and ADU Cost Estimator", body: "Use our free tools to see how the plan you’ve picked will look on your own lot and how much it will cost to complete your build." },
+  { n: 2, img: "/step-2.png", title: "Use the ADU-Plan-Fit Visualizer and ADU Cost Estimator", body: "Use our free tools to see how the plan you’ve picked will look on your own lot and how much it will cost to complete your build." },
   { n: 3, img: "/step-3.png", title: "Customize or Confirm Your Layout", body: "Review plan details and make any options or adjustments you need" },
-  { n: 4, img: "/step-4.png", title: "FrameUpNow Converts it from Wood to Steel", body: "We’ll deliver a precision-engineered cold-formed steel frame package ready to assemble" },
+  { n: 4, img: "/step-4.png", title: "FrameUpNow Engineers Your Steel Frame Package", body: "We’ll deliver a precision-engineered cold-formed steel frame package ready to assemble" },
 ];
 
 function StepsSection() {
@@ -278,7 +277,7 @@ async function FeaturedPlans() {
       {/* suppressHydrationWarning: streamed section — ScrollReveal toggles
           `is-visible` on these before React hydrates the chunk. */}
       <div className="reveal flex items-end justify-between gap-4" suppressHydrationWarning>
-        <h2 className="font-display text-2xl text-ink md:text-3xl">Featured Permit-Ready Plans</h2>
+        <h2 className="font-display text-2xl text-ink md:text-3xl">Featured ADU Plans</h2>
         <Link href="/plans" className="group inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-forest hover:text-forest-600">
           Browse All Plans
           <ArrowRightIcon size={15} className="transition-transform group-hover:translate-x-0.5" />
@@ -297,11 +296,11 @@ async function FeaturedPlans() {
    Why build in steel — 5 outlined feature cards
    ═══════════════════════════════════════════════════════════════════════ */
 const STEEL = [
+  { color: "purple", img: "/steel-fire.png", title: "Non-Combustible", body: "Steel is non-combustible and helps improve fire safety and durability." },
   { color: "blue", img: "/steel-faster.png", title: "Faster Install", body: "Prefabricated components speed up construction and reduce delays while using less manpower and equipment." },
   { color: "slate", img: "/steel-precision.png", title: "Engineered Precision", body: "Factory-accurate framing for a perfect fit and no on-site cutting." },
-  { color: "amber", img: "/steel-termite.png", title: "Resistant to Termites, Mold, and Warping", body: "Steel won’t rot, warp or attract unwanted pests." },
-  { color: "purple", img: "/steel-fire.png", title: "Non-Combustible", body: "Steel is non-combustible and helps improve fire safety and durability." },
   { color: "orange", img: "/steel-materials.png", title: "Materials List Clarity", body: "Detailed and quantified BIM created materials list ensures transparent pricing and easier purchasing." },
+  { color: "amber", img: "/steel-termite.png", title: "Resistant to Termites, Mold, and Warping", body: "Steel won’t rot, warp or attract unwanted pests." },
 ];
 
 const BORDER = {
@@ -310,6 +309,7 @@ const BORDER = {
   amber: "border-amber-200",
   purple: "border-purple-200",
   orange: "border-orange-200",
+  green: "border-forest/40",
 };
 
 function WhyBuildSection() {
@@ -401,19 +401,26 @@ const AUDIENCE = [
   { color: "blue", img: "/who-homeowners.png", title: "Homeowners", body: "Create extra space, build property value, and build smarter for your family." },
   { color: "orange", img: "/who-builders.png", title: "Builders", body: "Save time finding approved plans and streamline your framing process." },
   { color: "purple", img: "/who-developers.png", title: "Developers", body: "Scale projects with confidence using approved plans and steel framing solutions." },
+  { color: "green", svg: "architect", title: "Architects & Designers", body: "Access thousands of ADU plans for inspiration or starting points, then work with FrameUpNow to convert designs into precision-engineered cold-formed steel framing packages." },
 ];
 
 function WhoThisHelps() {
   return (
     <section className="container-x py-14 md:py-16">
       <h2 className="reveal text-center font-display text-3xl text-ink md:text-4xl">Who This Helps</h2>
-      <div className="reveal-stagger mx-auto mt-10 grid max-w-4xl gap-5 sm:grid-cols-3">
+      <div className="reveal-stagger mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {AUDIENCE.map((a) => (
           <div
             key={a.title}
             className={`group lift rounded-2xl border-2 ${BORDER[a.color]} bg-paper p-6 text-center shadow-[var(--shadow-card)]`}
           >
-            <Image src={a.img} alt="" aria-hidden width={72} height={72} className="icon-rise mx-auto h-16 w-16 object-contain" />
+            {a.img ? (
+              <Image src={a.img} alt="" aria-hidden width={72} height={72} className="icon-rise mx-auto h-16 w-16 object-contain" />
+            ) : (
+              <span className="icon-rise mx-auto grid h-16 w-16 place-items-center text-forest">
+                <ArchitectIcon />
+              </span>
+            )}
             <h3 className="mt-4 font-display text-lg text-ink">{a.title}</h3>
             <p className="mt-2 text-sm leading-relaxed text-ink-soft">{a.body}</p>
           </div>
@@ -456,6 +463,18 @@ function FeaturedSkeleton() {
   );
 }
 
+
+// Drafting compass — Architects & Designers ("Who This Helps").
+function ArchitectIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="4.4" r="1.6" />
+      <path d="M11.1 5.8 6 19M12.9 5.8 18 19" />
+      <path d="M9.4 11h5.2" />
+      <path d="M6 19l1.7-1.3M18 19l-1.7-1.3" />
+    </svg>
+  );
+}
 
 function HouseGlyph() {
   return (
