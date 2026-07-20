@@ -213,15 +213,17 @@ summary {
   background-image: radial-gradient(rgba(233, 239, 235, 0.055) 1px, transparent 1px);
 }
 
-/* The aduplans.com wordmark is a fixed-color (charcoal) PNG whose pin has a
-   transparent house knockout — so inverting it looks like a negative. Instead,
-   in dark mode sit it on a soft light plate: the real brand colors (green pin +
-   ".com") stay intact and the charcoal wordmark reads cleanly. */
-:root[data-theme="dark"] .site-logo-plate {
-  background: rgba(255, 255, 255, 0.95);
-  padding: 5px 12px;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+/* Header logo swaps by theme: the charcoal wordmark image reads on the light
+   header, but not on the dark one — so dark mode shows a footer-style pin +
+   white "aduplans.com / Powered by FrameUpNow" instead. */
+.header-logo-dark {
+  display: none;
+}
+:root[data-theme="dark"] .header-logo-light {
+  display: none;
+}
+:root[data-theme="dark"] .header-logo-dark {
+  display: inline-flex;
 }
 
 /* Vertical gradient hairline that threads stacked step cards into a timeline. */

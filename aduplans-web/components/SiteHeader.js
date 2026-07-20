@@ -75,19 +75,29 @@ export default function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-cream/90 backdrop-blur-md">
       <div className="container-x flex h-[4.75rem] items-center justify-between gap-4">
-        {/* Logo — the official aduplans.com wordmark ("Powered by FrameUpNow").
-            In dark mode it sits on a soft light plate (see globals.css) so the
-            charcoal wordmark stays legible while keeping the real brand colors. */}
+        {/* Logo — light mode uses the official wordmark image; dark mode swaps to
+            the footer-style pin + white "aduplans.com / Powered by FrameUpNow"
+            (the charcoal wordmark isn't legible on the dark header). Toggled by
+            data-theme in globals.css. */}
         <Link href="/" className="flex shrink-0 items-center" aria-label="aduplans.com — Powered by FrameUpNow">
-          <span className="site-logo-plate inline-flex items-center">
-            <Image
-              src="/logo-wordmark.png"
-              alt="aduplans.com — Powered by FrameUpNow"
-              width={814}
-              height={166}
-              priority
-              className="h-10 w-auto md:h-11"
-            />
+          <Image
+            src="/logo-wordmark.png"
+            alt="aduplans.com — Powered by FrameUpNow"
+            width={814}
+            height={166}
+            priority
+            className="header-logo-light h-10 w-auto md:h-11"
+          />
+          <span className="header-logo-dark items-center gap-2">
+            <Image src="/adu-logo.png" alt="" aria-hidden width={40} height={40} priority className="h-10 w-10 object-contain" />
+            <span className="flex flex-col leading-none">
+              <span className="font-sans text-[1.35rem] font-bold leading-none tracking-tight text-white">
+                aduplans<span className="text-forest-600">.com</span>
+              </span>
+              <span className="mt-1 text-[11px] font-normal leading-none text-white/60">
+                Powered by <span className="font-semibold text-white/85">FrameUpNow</span>
+              </span>
+            </span>
           </span>
         </Link>
 
