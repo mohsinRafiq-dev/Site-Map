@@ -85,6 +85,7 @@ function normalize(row) {
     loft: /yes/i.test(sel(row["Loft"]) || ""),
     architect: row["Architect/Designer"] || "",
     payment: sel(row["Payment-to-Acquire-Plan"]) || "",
+    status: sel(row["Status"]) || "", // Baserow Active/Inactive flag
     sectionCode: row["Section code"] || "",
     pradUrl: row["PRADU Jurisdiction URL"] || "",
     elevationImage: fileUrl(row["Elevation image"]),
@@ -142,7 +143,8 @@ async function main() {
       console.warn("[snapshot] Baserow returned 0 rows — keeping existing snapshot.");
       return;
     }
-    const plans = rows.map(normalize);
+    // Hide Inactive plans (Baserow Status column) — mirrors lib/baserow.js.
+    const plans = rows.map(normalize).filter((p) => !/^\s*inactive\s*$/i.test(p.status));
     const gz = zlib.gzipSync(Buffer.from(JSON.stringify(plans)), { level: 9 });
     fs.writeFileSync(OUT, gz);
     console.log(`[snapshot] wrote ${plans.length} plans → lib/plans-snapshot.json.gz (${Math.round(gz.length / 1024)} KB)`);

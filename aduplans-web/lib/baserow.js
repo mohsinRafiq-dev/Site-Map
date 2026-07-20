@@ -85,6 +85,7 @@ function normalize(row) {
     loft: /yes/i.test(sel(row["Loft"]) || ""),
     architect: row["Architect/Designer"] || "",
     payment: sel(row["Payment-to-Acquire-Plan"]) || "",
+    status: sel(row["Status"]) || "", // Baserow Active/Inactive flag
     sectionCode: row["Section code"] || "",
     pradUrl: row["PRADU Jurisdiction URL"] || "",
     elevationImage: fileUrl(row["Elevation image"]),
@@ -140,7 +141,10 @@ async function fetchAllPlans() {
     const batch = await Promise.all(remaining.slice(i, i + BATCH).map((p) => fetchPage(p)));
     for (const b of batch) rows.push(...b.results);
   }
-  return rows.map(normalize);
+  // Hide plans marked Inactive in Baserow's Status column (per FrameUpNow) — a
+  // jurisdiction whose plans are all Inactive then shows nothing. Blank/unset
+  // status is treated as active so an unpopulated field can't hide the catalog.
+  return rows.map(normalize).filter((p) => !/^\s*inactive\s*$/i.test(p.status));
 }
 
 // ── In-memory catalog cache (stale-while-revalidate) ─────────────────────────

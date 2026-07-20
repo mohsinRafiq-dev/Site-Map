@@ -21,6 +21,15 @@ const NAV = [
   { label: "Blogs", href: `${FUN}/blog`, external: true },
 ];
 
+// Top-of-nav tools ribbon (grouped box). "Plan Fit Visualizer" opens the
+// FrameUpNow placement tool; "Cost Estimator" and "Ask AI" are new — their
+// destinations are pending from FrameUpNow (placeholder "#" until supplied).
+const TOOLS = [
+  { label: "Plan Fit Visualizer", href: TOOL_URL, external: true },
+  { label: "Cost Estimator", href: "#", external: false },
+  { label: "Ask AI", href: "#", external: false },
+];
+
 const EXT = { target: "_blank", rel: "noopener noreferrer" };
 const linkCls =
   "rounded-full px-3 py-2 text-sm font-medium text-ink-soft transition-colors hover:bg-mist/60 hover:text-ink";
@@ -38,6 +47,24 @@ function NavLink({ item, className, onClick }) {
   return (
     <Link href={item.href} className={cls} onClick={onClick}>
       {item.label}
+    </Link>
+  );
+}
+
+// A single tool inside the ribbon. External tools (the placement tool) open in a
+// new tab; internal/placeholder tools use a client-side link.
+function ToolLink({ tool, className, onClick }) {
+  const label = tool.label;
+  if (tool.external) {
+    return (
+      <a href={tool.href} {...EXT} className={className} onClick={onClick}>
+        {label}
+      </a>
+    );
+  }
+  return (
+    <Link href={tool.href} className={className} onClick={onClick}>
+      {label}
     </Link>
   );
 }
@@ -65,14 +92,17 @@ export default function SiteHeader() {
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden items-center gap-0.5 lg:flex">
-          <a
-            href={TOOL_URL}
-            {...EXT}
-            className="mr-1 inline-flex items-center gap-1.5 rounded-full border border-forest/30 bg-mist/60 px-3.5 py-2 text-sm font-semibold text-forest-700 transition-colors hover:bg-mist hover:text-forest"
-          >
-            <PlanFitIcon /> Plan Fit Visualizer
-          </a>
+        <nav className="hidden items-center gap-1 lg:flex">
+          {/* Tools ribbon — grouped box */}
+          <div className="mr-1.5 flex items-center rounded-full border border-forest/30 bg-mist/50 p-1">
+            {TOOLS.map((t) => (
+              <ToolLink
+                key={t.label}
+                tool={t}
+                className="rounded-full px-3 py-1.5 text-sm font-semibold text-forest-700 transition-colors hover:bg-mist hover:text-forest"
+              />
+            ))}
+          </div>
           {NAV.map((item) => (
             <NavLink key={item.label} item={item} />
           ))}
@@ -103,14 +133,17 @@ export default function SiteHeader() {
       {open && (
         <div className="border-t border-line bg-cream lg:hidden">
           <nav className="container-x flex flex-col py-3">
-            <a
-              href={TOOL_URL}
-              {...EXT}
-              onClick={() => setOpen(false)}
-              className="mb-1 inline-flex items-center gap-2 rounded-xl border border-forest/30 bg-mist/60 px-3 py-2.5 text-sm font-semibold text-forest-700"
-            >
-              <PlanFitIcon /> Plan Fit Visualizer
-            </a>
+            {/* Tools ribbon — grouped box */}
+            <div className="mb-2 rounded-xl border border-forest/30 bg-mist/50 p-1">
+              {TOOLS.map((t) => (
+                <ToolLink
+                  key={t.label}
+                  tool={t}
+                  onClick={() => setOpen(false)}
+                  className="block rounded-lg px-3 py-2.5 text-sm font-semibold text-forest-700 hover:bg-mist"
+                />
+              ))}
+            </div>
             {NAV.map((item) => (
               <NavLink
                 key={item.label}
@@ -132,15 +165,5 @@ export default function SiteHeader() {
         </div>
       )}
     </header>
-  );
-}
-
-// A little "plan on a lot" glyph for the Plan Fit Visualizer link.
-function PlanFitIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="3" y="3" width="18" height="18" rx="2" strokeDasharray="3 3" />
-      <rect x="8" y="8" width="8" height="8" rx="1" />
-    </svg>
   );
 }
