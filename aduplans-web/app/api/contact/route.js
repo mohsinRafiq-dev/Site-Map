@@ -24,6 +24,15 @@ function splitName(fullName) {
   return { first: parts[0], last: parts.slice(1).join(" ") };
 }
 
+// Salesforce Web-to-Lead rejects phones outside 9–15 digits and is finicky about
+// formatting/country codes. Send clean digits: drop a leading US "1" so a normal
+// 10-digit US number is used (e.g. "1 (623) 759-1378" → "6237591378").
+function normalizePhone(raw) {
+  let d = (raw || "").replace(/\D/g, "");
+  if (d.length === 11 && d.startsWith("1")) d = d.slice(1);
+  return d;
+}
+
 export async function POST(request) {
   let data;
   try {
@@ -56,7 +65,7 @@ export async function POST(request) {
       first_name: first,
       last_name: last || fullName, // Salesforce requires Last Name
       email,
-      phone,
+      phone: normalizePhone(phone),
       company: process.env.SALESFORCE_LEAD_COMPANY || "ADUplans.com Lead",
       lead_source: "aduplans.com",
       // Subject isn't a standard Lead field — fold it into the description.
