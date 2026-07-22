@@ -129,8 +129,8 @@ export default function HowItWorksPage() {
   return (
     <div>
       <PageHero
-        image="/img-steel-site.jpg"
-        imagePosition="center 55%"
+        image="/hero-how-it-works.jpg"
+        imagePosition="center 65%"
         eyebrow="How It Works"
         title="Find Your Plan. Plan Your Build. Build Better in Steel."
       >

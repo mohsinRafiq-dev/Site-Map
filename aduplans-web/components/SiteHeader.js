@@ -7,9 +7,6 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { MenuIcon, CloseIcon } from "@/components/icons";
 
 const FUN = "https://www.frameupnow.com";
-// The FrameUpNow ADU Plan Fit Visualizer (placement tool). The top-of-site
-// entry is the unbranded "Plan Fit Visualizer" label per the naming convention.
-const TOOL_URL = process.env.NEXT_PUBLIC_TOOL_URL || "http://localhost:5173";
 
 // New aduplans.com nav (per the V1.2 mockup): How It Works · Why Steel ·
 // About Us · Blogs. Blogs is external (opens FrameUpNow's blog in a new tab);
@@ -21,13 +18,13 @@ const NAV = [
   { label: "Blogs", href: `${FUN}/blog`, external: true },
 ];
 
-// Top-of-nav tools ribbon (grouped box). "Plan Fit Visualizer" opens the
-// FrameUpNow placement tool; "Cost Estimator" and "Ask AI" are new — their
-// destinations are pending from FrameUpNow (placeholder "#" until supplied).
+// Top-of-nav tools ribbon (grouped box). Each opens its own content page on
+// this site; the Plan Fit Visualizer page in turn links out to the live
+// placement tool, and Ask AI links each question into ChatGPT.
 const TOOLS = [
-  { label: "Plan Fit Visualizer", href: TOOL_URL, external: true },
-  { label: "Cost Estimator", href: "#", external: false },
-  { label: "Ask AI", href: "#", external: false },
+  { label: "Plan Fit Visualizer", href: "/plan-fit-visualizer", external: false },
+  { label: "Cost Estimator", href: "/cost-estimator", external: false },
+  { label: "Ask AI", href: "/ask-ai", external: false },
 ];
 
 const EXT = { target: "_blank", rel: "noopener noreferrer" };
