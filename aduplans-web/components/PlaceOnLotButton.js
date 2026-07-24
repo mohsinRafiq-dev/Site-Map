@@ -27,7 +27,7 @@ export default function PlaceOnLotButton({ plan, large = false }) {
         <path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11Z" />
         <circle cx="12" cy="10" r="2.5" />
       </svg>
-      Place this floor plan on my lot
+      See This Plan on Your Property
       <span className="transition-transform group-hover:translate-x-0.5" aria-hidden>→</span>
     </a>
   );
