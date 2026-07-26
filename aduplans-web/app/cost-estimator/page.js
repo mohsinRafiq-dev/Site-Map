@@ -64,9 +64,14 @@ export default function CostEstimatorPage() {
               first model in the FrameUpNow plan collection.
             </p>
           </div>
-          <div className={`reveal ${framed}`}>
-            <Image src="/est-model-card.jpg" alt="The Absolute model card — FUN Collection, with a Learn More button" width={900} height={720} className="h-auto w-full" />
-          </div>
+          <a
+            href={`${FUN}/categories/f-u-n-collections`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`reveal group block ${framed} transition-transform hover:-translate-y-1`}
+          >
+            <Image src="/est-model-card.jpg" alt="The Absolute model card — FUN Collection. Click to browse the FUN Collection on FrameUpNow.com" width={900} height={720} className="h-auto w-full transition-transform duration-300 group-hover:scale-[1.02]" />
+          </a>
         </div>
 
         <div className={`reveal mx-auto mt-10 max-w-5xl ${framed}`}>
@@ -244,7 +249,7 @@ export default function CostEstimatorPage() {
             your ADU before you break ground.
           </p>
           <div className="relative mt-8 flex flex-wrap justify-center gap-3">
-            <a href={`${FUN}/plans`} target="_blank" rel="noopener noreferrer" className="rounded-full bg-amber px-7 py-3.5 text-sm font-semibold text-ink shadow-lg transition-transform hover:-translate-y-0.5">
+            <a href={`${FUN}/frames-plans`} target="_blank" rel="noopener noreferrer" className="rounded-full bg-amber px-7 py-3.5 text-sm font-semibold text-ink shadow-lg transition-transform hover:-translate-y-0.5">
               Browse the Plan Library →
             </a>
             <a href={`${FUN}/schedule-an-appointment`} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/30 px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10">
