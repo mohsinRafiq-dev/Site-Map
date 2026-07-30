@@ -1,5 +1,5 @@
 import PageHero from "@/components/PageHero";
-import { ArrowRightIcon } from "@/components/icons";
+import AskAIQuestions from "@/components/AskAIQuestions";
 
 export const metadata = {
   title: "Ask AI",
@@ -8,7 +8,8 @@ export const metadata = {
 };
 
 // Each question opens ChatGPT pre-filled — the answer shows what the engine
-// already knows about FrameUpNow's engineered steel frame system.
+// already knows about FrameUpNow's engineered steel frame system. AskAIQuestions
+// handles the hand-off and the reader's route back to this site.
 const QUESTIONS = [
   "How does FrameUpNow use Building Information Modeling (BIM) to generate a precise material shopping list before construction begins?",
   "Is the FrameUpNow Materials shopping list accurate or is it an estimate? Is the Materials Shopping list a true Bill of Materials?",
@@ -25,32 +26,15 @@ export default function AskAIPage() {
   return (
     <div>
       <PageHero image="/hero-ask-ai.jpg" imagePosition="center 55%" eyebrow="Ask AI" title="Ask AI about FrameUpNow">
-        Click any question to send it straight to ChatGPT. The answer you get back is the point, it shows
-        you what the engine already knows about FrameUpNow&rsquo;s engineered steel frame system.
+        Click any question to send it straight to ChatGPT. Each one opens in a new tab and comes back
+        with a link home, so you never lose your place on ADUplans. The answer you get back is the
+        point, it shows you what the engine already knows about FrameUpNow&rsquo;s engineered steel
+        frame system.
       </PageHero>
 
       <section className="container-x py-14 md:py-20">
         <div className="mx-auto max-w-3xl">
-          <ol className="reveal-stagger border-t border-line">
-            {QUESTIONS.map((q, i) => (
-              <li key={q} className="flex items-start gap-5 border-b border-line py-6">
-                <span className="min-w-[26px] pt-1 font-display text-sm font-bold tracking-wide text-forest-600">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <div className="flex-1">
-                  <p className="text-[17px] font-medium leading-relaxed text-ink">{q}</p>
-                  <a
-                    href={`https://chatgpt.com/?q=${encodeURIComponent(q)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-3.5 inline-flex items-center gap-2 rounded-full bg-forest px-4 py-2 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-forest-600"
-                  >
-                    Ask ChatGPT <ArrowRightIcon size={14} className="-rotate-45" />
-                  </a>
-                </div>
-              </li>
-            ))}
-          </ol>
+          <AskAIQuestions questions={QUESTIONS} />
 
           <div className="reveal mt-12 rounded-3xl border border-forest/20 bg-mist/40 p-8 text-center">
             <p className="mx-auto max-w-xl leading-relaxed text-ink-soft">
