@@ -112,12 +112,39 @@ export default function ContactForm() {
   return (
     <>
       <form onSubmit={handleSubmit} noValidate className="grid gap-4">
-        <Field label="Full Name" name="fullName" type="text" autoComplete="name" {...fieldProps} />
+        <Field
+          label="Full Name"
+          name="fullName"
+          type="text"
+          autoComplete="name"
+          placeholder="Jane Smith"
+          {...fieldProps}
+        />
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Phone Number" name="phone" type="tel" autoComplete="tel" {...fieldProps} />
-          <Field label="Email Address" name="email" type="email" autoComplete="email" {...fieldProps} />
+          <Field
+            label="Phone Number"
+            name="phone"
+            type="tel"
+            autoComplete="tel"
+            placeholder="(201) 555-0123"
+            {...fieldProps}
+          />
+          <Field
+            label="Email Address"
+            name="email"
+            type="email"
+            autoComplete="email"
+            placeholder="jane@example.com"
+            {...fieldProps}
+          />
         </div>
-        <Field label="Subject" name="subject" type="text" {...fieldProps} />
+        <Field
+          label="Subject"
+          name="subject"
+          type="text"
+          placeholder="Question about the Absolute model"
+          {...fieldProps}
+        />
 
         <div>
           <label htmlFor="message" className="mb-1.5 block text-sm font-medium text-ink">
@@ -128,11 +155,12 @@ export default function ContactForm() {
             name="message"
             rows={5}
             required
+            placeholder="Tell us about your project — lot location, timeline, and what you'd like to build."
             aria-invalid={errors.message ? "true" : undefined}
             aria-describedby={errors.message ? "message-error" : undefined}
             onInput={() => clearFieldError("message")}
             onBlur={validateField}
-            className={`w-full rounded-xl border bg-cream/60 px-4 py-2.5 text-sm text-ink outline-none transition-colors focus:bg-paper ${
+            className={`w-full rounded-xl border bg-cream/60 px-4 py-2.5 text-sm text-ink outline-none transition-colors placeholder:text-muted focus:bg-paper ${
               errors.message
                 ? "border-red-500 focus:border-red-500"
                 : "border-line focus:border-forest"
@@ -198,7 +226,7 @@ function FieldError({ id, message }) {
   );
 }
 
-function Field({ label, name, type = "text", autoComplete, errors, onInput, onBlur }) {
+function Field({ label, name, type = "text", autoComplete, placeholder, errors, onInput, onBlur }) {
   const error = errors[name];
   return (
     <div>
@@ -211,11 +239,12 @@ function Field({ label, name, type = "text", autoComplete, errors, onInput, onBl
         type={type}
         required
         autoComplete={autoComplete}
+        placeholder={placeholder}
         aria-invalid={error ? "true" : undefined}
         aria-describedby={error ? `${name}-error` : undefined}
         onInput={() => onInput(name)}
         onBlur={onBlur}
-        className={`w-full rounded-xl border bg-cream/60 px-4 py-2.5 text-sm text-ink outline-none transition-colors focus:bg-paper ${
+        className={`w-full rounded-xl border bg-cream/60 px-4 py-2.5 text-sm text-ink outline-none transition-colors placeholder:text-muted focus:bg-paper ${
           error ? "border-red-500 focus:border-red-500" : "border-line focus:border-forest"
         }`}
       />
