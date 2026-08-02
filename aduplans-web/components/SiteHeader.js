@@ -118,13 +118,12 @@ export default function SiteHeader() {
         {/* Right actions */}
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <a
-            href={`${FUN}/contact-us`}
-            {...EXT}
+          <Link
+            href="/contact"
             className="hidden rounded-full bg-forest px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-forest-600 sm:inline-flex"
           >
             Contact Us
-          </a>
+          </Link>
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
@@ -161,14 +160,13 @@ export default function SiteHeader() {
               />
             ))}
             <div className="mt-3 border-t border-line pt-3">
-              <a
-                href={`${FUN}/contact-us`}
-                {...EXT}
+              <Link
+                href="/contact"
                 onClick={() => setOpen(false)}
                 className="block rounded-full bg-forest px-4 py-2.5 text-center text-sm font-semibold text-white"
               >
                 Contact Us
-              </a>
+              </Link>
             </div>
           </nav>
         </div>

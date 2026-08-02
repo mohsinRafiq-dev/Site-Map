@@ -339,6 +339,37 @@ background-color:none !important;
         line-height: 1.4;
       }
 
+      /* Standing assumption behind every shipping figure. Always visible, and
+         deliberately not styled as .note above — that one is the red minimum-
+         charge warning, this is quiet guidance. Tinted rather than white, and
+         radius/padding match .stat-tile so it reads as part of that same set
+         without being mistaken for another metric. */
+      .note-info {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        background: var(--surface-tint);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 11px 13px;
+        margin: 12px 0 0;
+        font-size: 12.5px;
+        line-height: 1.5;
+        color: var(--ink-soft);
+      }
+
+      .note-info-icon {
+        width: 22px;
+        height: 22px;
+        background: var(--brand-light);
+        color: var(--brand-mid);
+        border-radius: 7px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
       .hidden { display: none; }
 
       /* ---------- HIGHLIGHT METRIC INPUTS ---------- */
@@ -1946,6 +1977,13 @@ background-color:none !important;
           </div>
 
           <p id="minimumNote" class="note hidden">Minimum shipping charge applied based on trailer count.</p>
+
+          <p class="note-info">
+            <span class="note-info-icon" aria-hidden="true">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            </span>
+            <span>Shipping estimates are based on round-trip delivery to metropolitan areas and current fuel prices.</span>
+          </p>
         </div>
 
         <div class="map-card">
