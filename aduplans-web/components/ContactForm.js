@@ -148,7 +148,7 @@ export default function ContactForm() {
 
         <div>
           <label htmlFor="message" className="mb-1.5 block text-sm font-medium text-ink">
-            Message
+            Message<RequiredMark />
           </label>
           <textarea
             id="message"
@@ -213,6 +213,17 @@ export default function ContactForm() {
   );
 }
 
+// Every field on this form is required. Hidden from screen readers because the
+// inputs already carry `required`, which announces it properly — reading out a
+// bare "star" on top of that is just noise.
+function RequiredMark() {
+  return (
+    <span aria-hidden="true" className="text-red-600 dark:text-red-400">
+      *
+    </span>
+  );
+}
+
 function FieldError({ id, message }) {
   if (!message) return null;
   return (
@@ -231,7 +242,7 @@ function Field({ label, name, type = "text", autoComplete, placeholder, errors, 
   return (
     <div>
       <label htmlFor={name} className="mb-1.5 block text-sm font-medium text-ink">
-        {label}
+        {label}<RequiredMark />
       </label>
       <input
         id={name}
