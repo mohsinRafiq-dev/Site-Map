@@ -2,13 +2,20 @@
      FrameUpNow → Plan Fit Visualizer  ·  "See This Plan on Your Property"
 
      Paste this whole block into ONE Webflow HTML Embed on the plan Collection
-     Page template. It needs no CMS fields: it reads the home's Width / Depth
-     straight out of the "Dimension" spec card already rendered on the page,
-     converts 47'-8" style values into decimal feet, and deep-links the
-     visualizer so the plan drops onto the customer's lot to scale.
+     Page template, then bind the Placement Overlay field (see below).
 
-     If the footprint can't be determined the button hides itself, exactly as
-     aduplans.com hides it for plans that aren't placeable.
+     Where the footprint comes from, in priority order:
+       1. The Placement Overlay filename  (e.g. absolute_43x18.png)  — JT's
+          numbers, authoritative, and they match the drawing exactly.
+       2. The "Dimension" spec card already rendered on the page, parsed out of
+          the markup (handles "Depth : 18'" and "Width: 47'-8\"" alike).
+     If neither yields a width and depth, the button hides itself.
+
+     ── ONE THING TO BIND ──────────────────────────────────────────────────────
+     In the embed editor, put your cursor between the two quotes of
+     data-overlay="" below, then click the purple  + Add Field  button and pick
+     Placement Overlay. Leave everything else alone. An empty field is fine —
+     the plan just falls back to the outline.
      ═══════════════════════════════════════════════════════════════════════ -->
 
 <style>
@@ -32,7 +39,8 @@
 @media(min-width:640px){ .fun-place-btn{ width:auto; } }
 </style>
 
-<a class="fun-place-btn" href="#" target="_blank" rel="noopener noreferrer">
+<a class="fun-place-btn" href="#" target="_blank" rel="noopener noreferrer"
+   data-overlay="">
   <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11Z"/>
@@ -67,10 +75,21 @@
     return Math.round((feet + (inches || 0) / 12) * 100) / 100;
   }
 
+  // "…/abc123_absolute_43x18.png" -> { W:43, D:18 }
+  // Webflow prefixes a hash and may re-encode to .avif/.webp — both fine.
+  function dimsFromFilename(url) {
+    if (!url) return null;
+    var name = decodeURIComponent(String(url).split("?")[0].split("/").pop() || "");
+    var m = name.match(/_(\d+(?:\.\d+)?)\s*[x×X]\s*(\d+(?:\.\d+)?)\s*\.[a-z0-9]+$/i);
+    if (!m) return null;
+    var W = parseFloat(m[1]), D = parseFloat(m[2]);
+    return W > 0 && D > 0 ? { W: W, D: D } : null;
+  }
+
   // The Dimension card renders two different shapes across the catalog:
   //   <p>Depth : </p><p>18'</p>      and      <p>Depth: 47'-8"</p>
   // Reading textContent handles both. Label case varies too ("WIdth:").
-  function readDims() {
+  function dimsFromPage() {
     var W = null, D = null;
     var items = document.querySelectorAll(".frame-specs_item");
     for (var i = 0; i < items.length; i++) {
@@ -99,23 +118,25 @@
   function readName() {
     var h = document.querySelector("h1");
     var n = clean(h && h.textContent);
-    if (n) return n;
-    return clean(document.title).split("|")[0].trim();
+    return n || clean(document.title).split("|")[0].trim();
   }
 
   function init() {
     var btn = document.querySelector(".fun-place-btn");
     if (!btn) return;
 
-    var seg  = location.pathname.split("/").filter(Boolean);
-    var slug = seg[seg.length - 1] || "plan";
-    var dims = readDims();
-    var W = dims.W, D = dims.D, sqft = readSqft();
+    var seg     = location.pathname.split("/").filter(Boolean);
+    var slug    = seg[seg.length - 1] || "plan";
+    var overlay = clean(btn.getAttribute("data-overlay"));
+    var sqft    = readSqft();
 
-    // A handful of items are missing one dimension in the CMS (e.g. Absolute has
-    // no Width, Encinitas-Hunter no Depth). Derive the missing side from livable
-    // area rather than hiding the button — the customer can still resize in the
-    // tool. Absolute: 774 / 18 = 43, which matches its plan exactly.
+    // JT's filename wins — it's measured off the drawing being displayed.
+    var dims = dimsFromFilename(overlay) || dimsFromPage();
+    var W = dims.W, D = dims.D;
+
+    // A few items are missing one dimension in the CMS (Absolute has no Width,
+    // Encinitas-Hunter no Depth). Derive the missing side from livable area
+    // rather than hiding the button — the customer can resize in the tool.
     if (sqft) {
       if (W && !D) D = Math.round((sqft / W) * 100) / 100;
       else if (D && !W) W = Math.round((sqft / D) * 100) / 100;
@@ -127,6 +148,7 @@
     q.set("plan", slug);
     q.set("w", String(W));
     q.set("d", String(D));
+    if (overlay) q.set("img", overlay);   // real drawing; omitted → to-scale outline
     if (sqft) q.set("sqft", String(sqft));
     q.set("name", readName());
     q.set("series", SERIES[seg[0]] || "FrameUpNow");
