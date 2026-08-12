@@ -294,7 +294,10 @@ export default function App() {
     const w = parseFloat(params.get("w"));
     const d = parseFloat(params.get("d"));
     const img = params.get("img");
-    if (w && d && img) {
+    // An image is optional: frameupnow.com sends only the footprint (its floor
+    // plan files are presentation sheets, not to-scale top-down drawings), and
+    // the map falls back to rendering a clean to-scale outline instead.
+    if (w && d) {
       const sqft = parseInt(params.get("sqft"), 10) || Math.round(w * d);
       applyPlan({
         id: planId,

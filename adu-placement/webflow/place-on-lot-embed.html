@@ -1,0 +1,145 @@
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     FrameUpNow → Plan Fit Visualizer  ·  "See This Plan on Your Property"
+
+     Paste this whole block into ONE Webflow HTML Embed on the plan Collection
+     Page template. It needs no CMS fields: it reads the home's Width / Depth
+     straight out of the "Dimension" spec card already rendered on the page,
+     converts 47'-8" style values into decimal feet, and deep-links the
+     visualizer so the plan drops onto the customer's lot to scale.
+
+     If the footprint can't be determined the button hides itself, exactly as
+     aduplans.com hides it for plans that aren't placeable.
+     ═══════════════════════════════════════════════════════════════════════ -->
+
+<style>
+.fun-place-btn{
+  display:none;                       /* revealed by the script once it has dims */
+  align-items:center; justify-content:center; gap:10px;
+  width:100%; margin-top:16px; padding:16px 28px;
+  border:0; border-radius:9999px;
+  background:#5e8e39; color:#fff;
+  font-weight:600; font-size:16px; line-height:1.25; font-style:normal;
+  text-align:center; text-decoration:none; cursor:pointer;
+  box-shadow:0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.1);
+  transition:background-color .15s cubic-bezier(.4,0,.2,1),
+             transform .15s cubic-bezier(.4,0,.2,1);
+}
+.fun-place-btn.is-ready{ display:inline-flex; }
+.fun-place-btn:hover{ background:#4f7830; transform:translateY(-2px); color:#fff; }
+.fun-place-btn:focus-visible{ outline:2px solid #5e8e39; outline-offset:2px; }
+.fun-place-btn .fun-arrow{ transition:transform .15s cubic-bezier(.4,0,.2,1); }
+.fun-place-btn:hover .fun-arrow{ transform:translateX(2px); }
+@media(min-width:640px){ .fun-place-btn{ width:auto; } }
+</style>
+
+<a class="fun-place-btn" href="#" target="_blank" rel="noopener noreferrer">
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11Z"/>
+    <circle cx="12" cy="10" r="2.5"/>
+  </svg>
+  See This Plan on Your Property
+  <span class="fun-arrow" aria-hidden="true">&rarr;</span>
+</a>
+
+<script>
+(function () {
+  var TOOL = "https://planfitvisualizer.vercel.app";
+
+  // Path segment → the "series" label shown on the plan card in the tool.
+  var SERIES = {
+    "affordable-homes-adus": "FrameUpNow ADU",
+    "garage-shop-sheds":     "Garage / Shop",
+    "barndominium":          "Barndominium"
+  };
+
+  function clean(s) {
+    return (s || "").replace(/‍/g, "").replace(/\s+/g, " ").trim();
+  }
+
+  // "47'-8\"" -> 47.67   |   "18'" -> 18   |   "12'-0\"" -> 12
+  function toFeet(raw) {
+    var m = clean(raw).match(/(\d+(?:\.\d+)?)\s*['’′]?(?:\s*-\s*(\d+(?:\.\d+)?)\s*["”″]?)?/);
+    if (!m) return null;
+    var feet = parseFloat(m[1]);
+    if (!isFinite(feet) || feet <= 0) return null;
+    var inches = m[2] ? parseFloat(m[2]) : 0;
+    return Math.round((feet + (inches || 0) / 12) * 100) / 100;
+  }
+
+  // The Dimension card renders two different shapes across the catalog:
+  //   <p>Depth : </p><p>18'</p>      and      <p>Depth: 47'-8"</p>
+  // Reading textContent handles both. Label case varies too ("WIdth:").
+  function readDims() {
+    var W = null, D = null;
+    var items = document.querySelectorAll(".frame-specs_item");
+    for (var i = 0; i < items.length; i++) {
+      var m = clean(items[i].textContent).match(/^(w\s*idth|depth)\s*:\s*(.+)$/i);
+      if (!m) continue;
+      var val = toFeet(m[2]);
+      if (!val) continue;
+      if (/^w/i.test(m[1])) { if (W === null) W = val; }
+      else if (D === null) { D = val; }
+    }
+    return { W: W, D: D };
+  }
+
+  function readSqft() {
+    var out = null;
+    var cells = document.querySelectorAll(".header_key-feature-item");
+    for (var i = 0; i < cells.length; i++) {
+      var t = clean(cells[i].textContent);
+      if (!/livable sq/i.test(t)) continue;
+      var m = t.match(/([\d,]+)/);
+      if (m) out = parseInt(m[1].replace(/,/g, ""), 10);
+    }
+    return out && isFinite(out) ? out : null;
+  }
+
+  function readName() {
+    var h = document.querySelector("h1");
+    var n = clean(h && h.textContent);
+    if (n) return n;
+    return clean(document.title).split("|")[0].trim();
+  }
+
+  function init() {
+    var btn = document.querySelector(".fun-place-btn");
+    if (!btn) return;
+
+    var seg  = location.pathname.split("/").filter(Boolean);
+    var slug = seg[seg.length - 1] || "plan";
+    var dims = readDims();
+    var W = dims.W, D = dims.D, sqft = readSqft();
+
+    // A handful of items are missing one dimension in the CMS (e.g. Absolute has
+    // no Width, Encinitas-Hunter no Depth). Derive the missing side from livable
+    // area rather than hiding the button — the customer can still resize in the
+    // tool. Absolute: 774 / 18 = 43, which matches its plan exactly.
+    if (sqft) {
+      if (W && !D) D = Math.round((sqft / W) * 100) / 100;
+      else if (D && !W) W = Math.round((sqft / D) * 100) / 100;
+    }
+
+    if (!W || !D) return;   // genuinely no footprint — leave the button hidden
+
+    var q = new URLSearchParams();
+    q.set("plan", slug);
+    q.set("w", String(W));
+    q.set("d", String(D));
+    if (sqft) q.set("sqft", String(sqft));
+    q.set("name", readName());
+    q.set("series", SERIES[seg[0]] || "FrameUpNow");
+    q.set("src", "frameupnow");
+
+    btn.href = TOOL + "/?" + q.toString();
+    btn.classList.add("is-ready");
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();
+</script>

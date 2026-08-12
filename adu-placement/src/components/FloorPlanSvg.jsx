@@ -472,7 +472,10 @@ export function renderFloorPlanSvgString(plan, { forMap = false } = {}) {
   const wallStroke = Math.max(0.35, Math.min(width, depth) / 60);
   const intStroke = wallStroke * 0.55;
 
-  const rooms = layout.rooms
+  // Deep-linked plans (?plan= from aduplans.com / frameupnow.com) carry only
+  // their footprint — no room layout. Render the outline alone so the customer
+  // still sees a correctly-scaled home on their lot.
+  const rooms = (layout?.rooms || [])
     .map(
       (r) =>
         `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.d}" fill="${
@@ -482,7 +485,7 @@ export function renderFloorPlanSvgString(plan, { forMap = false } = {}) {
     )
     .join("");
 
-  const doors = (layout.doors || [])
+  const doors = (layout?.doors || [])
     .map((d) => doorString(d, intStroke))
     .join("");
 
