@@ -2024,8 +2024,15 @@ background-color:none !important;
     try {
       var set=function(sel,v){ if(v){ document.querySelectorAll(sel).forEach(function(el){ el.value=v; }); } };
       set('[name="sqft"]', p.get('sqft')); set('#sqft', p.get('sqft'));
-      set('[name="stateField"]', p.get('state'));
-      set('[name="jurisdiction"]', p.get('jurisdiction'));
+      // These two inputs carry an id but no name attribute, so the [name=...]
+      // selectors above never matched and every plan kept the markup's default
+      // ("CA" / "Agoura Hills"). Match on id as well, and always write — a plan
+      // with a blank State or Jurisdiction must clear the field, not inherit it.
+      var setAlways = function (sel, v) {
+        document.querySelectorAll(sel).forEach(function (el) { el.value = v || ''; });
+      };
+      setAlways('#stateField, [name="stateField"]', p.get('state'));
+      setAlways('#jurisdiction, [name="jurisdiction"]', p.get('jurisdiction'));
       // Proceed button: open the contact page in a new tab (not inside the iframe).
       var pb = document.getElementById('proceed');
       if (pb) pb.onclick = function(){ window.open('https://www.frameupnow.com/contact-us', '_blank', 'noopener'); return false; };
