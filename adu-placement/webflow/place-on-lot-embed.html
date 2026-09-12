@@ -5,7 +5,9 @@
      Page template, then bind the two fields marked below.
 
      How the plan is identified, in priority order:
-       1. Plan ID  — the plan's PRADU/Baserow record (e.g. 00159). The tool
+       1. Plan ID  — the plan's PRADU/Baserow record (e.g. 00159), taken from
+          the Plan ID field if the page has one, otherwise from the lookup
+          table in Page Settings (see plan-id-map-snippet.html). The tool
           looks it up and gets the lot-based floor plan and true footprint
           straight from the database. This is the same path aduplans.com uses.
        2. Fallback — for plans with no Plan ID yet (the FUN Collection), the
@@ -123,13 +125,34 @@
     return n || clean(document.title).split("|")[0].trim();
   }
 
+  // Slug -> PRADU Plan ID, from the compact table in Page Settings
+  // (window.FUN_PLAN_MAP). Used when the page has no Plan ID field of its own.
+  var _table = null;
+  function lookupPlanId(slug) {
+    if (_table === null) {
+      _table = {};
+      String(window.FUN_PLAN_MAP || "").split(";").forEach(function (grp) {
+        var i = grp.indexOf("~");
+        if (i < 0) return;
+        var city = grp.slice(0, i);
+        grp.slice(i + 1).split("|").forEach(function (e) {
+          var j = e.lastIndexOf(":");
+          if (j < 0) return;
+          var rest = e.slice(0, j);
+          _table[rest ? city + "-" + rest : city] = e.slice(j + 1);
+        });
+      });
+    }
+    return _table[slug] || "";
+  }
+
   function init() {
     var btn = document.querySelector(".fun-place-btn");
     if (!btn) return;
 
     var seg    = location.pathname.split("/").filter(Boolean);
     var slug   = seg[seg.length - 1] || "plan";
-    var planId = clean(btn.getAttribute("data-planid"));
+    var planId = clean(btn.getAttribute("data-planid")) || lookupPlanId(slug);
     var q      = new URLSearchParams();
 
     // ── Preferred: the plan's database record does all the work ──────────────
