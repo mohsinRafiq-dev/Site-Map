@@ -15,6 +15,10 @@ import {
 //   SALESFORCE_LEAD_COMPANY  optional. Salesforce requires Company on a Lead;
 //                            defaults to "ADUplans.com Lead".
 //   SALESFORCE_WEBTOLEAD_URL optional. Override the endpoint (sandbox testing).
+//   SALESFORCE_DEBUG_EMAIL   optional, temporary. When set, Salesforce emails a
+//                            full processing trace for every submission to this
+//                            address instead of staying silent. Use it to find
+//                            out why a lead is rejected, then remove it again.
 //
 // Why validation is so strict here: Web-to-Lead replies HTTP 200 with an empty
 // body whether it accepted the lead or binned it. There is no success signal to
@@ -23,9 +27,15 @@ import {
 // which is exactly what produced the run of "Salesforce Could Not Create This
 // Lead" emails: submissions whose phone fell outside Salesforce's 9–15 digit
 // rule were forwarded blindly.
+
+// No query string here on purpose. `encoding` goes in the POST body instead, so
+// Salesforce receives it exactly once — a rejection email listing
+// "encoding = UTF-8" twice means the value arrived in both the URL and the body,
+// which is the signature of a stray second form or a URL override carrying its
+// own query string.
 const WEBTOLEAD_URL =
   process.env.SALESFORCE_WEBTOLEAD_URL ||
-  "https://webto.salesforce.com/servlet/servlet.WebToLead?encoding=UTF-8";
+  "https://webto.salesforce.com/servlet/servlet.WebToLead";
 
 // Web-to-Lead has no SLA worth relying on; don't let a wedged endpoint hold the
 // serverless function open until the platform kills it.
@@ -106,12 +116,15 @@ export async function POST(request) {
   const subject = data.subject.trim();
   const message = data.message.trim();
 
+  const phone = normalizePhone(data.phone).slice(0, LIMITS.phone);
+
   const params = new URLSearchParams({
     oid: orgId,
+    encoding: "UTF-8",
     first_name: first.slice(0, LIMITS.firstName),
     last_name: (last || fullName).slice(0, LIMITS.lastName),
     email: data.email.trim().slice(0, LIMITS.email),
-    phone: normalizePhone(data.phone).slice(0, LIMITS.phone),
+    phone,
     company: (process.env.SALESFORCE_LEAD_COMPANY || "ADUplans.com Lead").slice(0, 255),
     // Lead Source is a picklist. "aduplans.com" must exist as a value on the
     // Lead Source field in the org, or Salesforce discards the value.
@@ -119,6 +132,25 @@ export async function POST(request) {
     // Lead has no Subject field, so it goes at the top of the description.
     description: `Subject: ${subject}\n\n${message}`,
   });
+
+  // Web-to-Lead answers 200 whether it created the Lead or binned it, so a
+  // rejection is invisible from here. Setting SALESFORCE_DEBUG_EMAIL asks
+  // Salesforce to email a full processing trace to that address instead —
+  // every field it received and the rule that rejected the record. Set it in
+  // Vercel, submit one test lead, read the email, then delete the variable:
+  // leaving it on emails the address on every real submission.
+  const debugEmail = process.env.SALESFORCE_DEBUG_EMAIL;
+  if (debugEmail) {
+    params.set("debug", "1");
+    params.set("debugEmail", debugEmail);
+    // Logged alongside the trace so the exact bytes are visible. A phone that
+    // looks fine in an email but carries a non-breaking space or a Unicode dash
+    // shows up here as a digit count that disagrees with the printed value.
+    console.log(
+      `[contact] debug on — phone="${phone}" (${phone.length} digits), ` +
+        `oid="${orgId}" (${orgId.length} chars)`
+    );
+  }
 
   try {
     const res = await fetch(WEBTOLEAD_URL, {
