@@ -67,12 +67,45 @@ function imageProxyDevPlugin() {
   };
 }
 
+
+// Dev-only plan lookup so ?plan=<PlanID> deep links work on localhost exactly
+// as they do on Vercel. Mirrors api/plan.js; reads BASEROW_TOKEN from .env.
+function planApiDevPlugin(env) {
+  return {
+    name: "plan-api-dev",
+    apply: "serve",
+    configureServer(server) {
+      server.middlewares.use("/api/plan", async (req, res) => {
+        const send = (code, body) => {
+          res.statusCode = code;
+          res.setHeader("Content-Type", "application/json");
+          res.end(JSON.stringify(body));
+        };
+        try {
+          const id = new URL(req.url, "http://localhost").searchParams.get("id");
+          const mod = await import("./api/plan.js");
+          await mod.default(
+            { query: { id } },
+            {
+              status(c) { this._c = c; return this; },
+              json(b) { send(this._c || 200, b); return this; },
+              setHeader() { return this; },
+            }
+          );
+        } catch (e) {
+          send(502, { error: e.message });
+        }
+      });
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   // Load ALL env vars (the "" prefix includes non-VITE ones like RESEND_API_KEY).
   const env = loadEnv(mode, process.cwd(), "");
 
   return {
-    plugins: [react(), leadEmailDevPlugin(env), imageProxyDevPlugin()],
+    plugins: [react(), leadEmailDevPlugin(env), imageProxyDevPlugin(), planApiDevPlugin(env)],
 
     server: {
       port: 5173,

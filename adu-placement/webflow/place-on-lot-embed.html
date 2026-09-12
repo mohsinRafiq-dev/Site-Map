@@ -2,25 +2,28 @@
      FrameUpNow → Plan Fit Visualizer  ·  "See This Plan on Your Property"
 
      Paste this whole block into ONE Webflow HTML Embed on the plan Collection
-     Page template, then bind the Placement Overlay field (see below).
+     Page template, then bind the two fields marked below.
 
-     Where the footprint comes from, in priority order:
-       1. The Placement Overlay filename  (e.g. absolute_43x18.png)  — JT's
-          numbers, authoritative, and they match the drawing exactly.
-       2. The "Dimension" spec card already rendered on the page, parsed out of
-          the markup (handles "Depth : 18'" and "Width: 47'-8\"" alike).
-     If neither yields a width and depth, the button hides itself.
+     How the plan is identified, in priority order:
+       1. Plan ID  — the plan's PRADU/Baserow record (e.g. 00159). The tool
+          looks it up and gets the lot-based floor plan and true footprint
+          straight from the database. This is the same path aduplans.com uses.
+       2. Fallback — for plans with no Plan ID yet (the FUN Collection), the
+          Width/Depth are read out of the "Dimension" card on the page and the
+          home is drawn as a to-scale outline.
+     If neither yields anything, the button hides itself.
 
-     ── ONE THING TO BIND ──────────────────────────────────────────────────────
-     In the embed editor, put your cursor between the two quotes of
-     data-overlay="" below, then click the purple  + Add Field  button and pick
-     Placement Overlay. Leave everything else alone. An empty field is fine —
-     the plan just falls back to the outline.
+     ── TWO THINGS TO BIND ─────────────────────────────────────────────────────
+     In the embed editor, put the cursor between the quotes and click the purple
+     + Add Field button:
+        data-planid=""   -> Plan ID
+        data-overlay=""  -> Placement Overlay   (optional; leave if unused)
+     Empty is fine for either — the plan just falls back to the next option.
      ═══════════════════════════════════════════════════════════════════════ -->
 
 <style>
 .fun-place-btn{
-  display:none;                       /* revealed by the script once it has dims */
+  display:none;                       /* revealed by the script once it has a plan */
   align-items:center; justify-content:center; gap:10px;
   width:100%; margin-top:16px; padding:16px 28px;
   border:0; border-radius:9999px;
@@ -40,6 +43,7 @@
 </style>
 
 <a class="fun-place-btn" href="#" target="_blank" rel="noopener noreferrer"
+   data-planid=""
    data-overlay="">
   <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -54,7 +58,6 @@
 (function () {
   var TOOL = "https://planfitvisualizer.vercel.app";
 
-  // Path segment → the "series" label shown on the plan card in the tool.
   var SERIES = {
     "affordable-homes-adus": "FrameUpNow ADU",
     "garage-shop-sheds":     "Garage / Shop",
@@ -65,7 +68,7 @@
     return (s || "").replace(/‍/g, "").replace(/\s+/g, " ").trim();
   }
 
-  // "47'-8\"" -> 47.67   |   "18'" -> 18   |   "12'-0\"" -> 12
+  // "47'-8\"" -> 47.67   |   "18'" -> 18
   function toFeet(raw) {
     var m = clean(raw).match(/(\d+(?:\.\d+)?)\s*['’′]?(?:\s*-\s*(\d+(?:\.\d+)?)\s*["”″]?)?/);
     if (!m) return null;
@@ -76,7 +79,6 @@
   }
 
   // "…/abc123_absolute_43x18.png" -> { W:43, D:18 }
-  // Webflow prefixes a hash and may re-encode to .avif/.webp — both fine.
   function dimsFromFilename(url) {
     if (!url) return null;
     var name = decodeURIComponent(String(url).split("?")[0].split("/").pop() || "");
@@ -86,9 +88,9 @@
     return W > 0 && D > 0 ? { W: W, D: D } : null;
   }
 
-  // The Dimension card renders two different shapes across the catalog:
-  //   <p>Depth : </p><p>18'</p>      and      <p>Depth: 47'-8"</p>
-  // Reading textContent handles both. Label case varies too ("WIdth:").
+  // The Dimension card renders two shapes across the catalogue:
+  //   <p>Depth : </p><p>18'</p>   and   <p>Depth: 47'-8"</p>
+  // textContent handles both. Label case varies too ("WIdth:").
   function dimsFromPage() {
     var W = null, D = null;
     var items = document.querySelectorAll(".frame-specs_item");
@@ -125,30 +127,39 @@
     var btn = document.querySelector(".fun-place-btn");
     if (!btn) return;
 
-    var seg     = location.pathname.split("/").filter(Boolean);
-    var slug    = seg[seg.length - 1] || "plan";
+    var seg    = location.pathname.split("/").filter(Boolean);
+    var slug   = seg[seg.length - 1] || "plan";
+    var planId = clean(btn.getAttribute("data-planid"));
+    var q      = new URLSearchParams();
+
+    // ── Preferred: the plan's database record does all the work ──────────────
+    if (planId) {
+      q.set("plan", planId);
+      q.set("src", "frameupnow");
+      btn.href = TOOL + "/?" + q.toString();
+      btn.classList.add("is-ready");
+      return;
+    }
+
+    // ── Fallback: no Plan ID yet, so send the footprint from the page ────────
     var overlay = clean(btn.getAttribute("data-overlay"));
     var sqft    = readSqft();
-
-    // JT's filename wins — it's measured off the drawing being displayed.
-    var dims = dimsFromFilename(overlay) || dimsFromPage();
+    var dims    = dimsFromFilename(overlay) || dimsFromPage();
     var W = dims.W, D = dims.D;
 
-    // A few items are missing one dimension in the CMS (Absolute has no Width,
-    // Encinitas-Hunter no Depth). Derive the missing side from livable area
-    // rather than hiding the button — the customer can resize in the tool.
+    // A few plans are missing one dimension on the site. Derive the missing
+    // side from livable area rather than hiding the button — the customer can
+    // still resize in the tool.
     if (sqft) {
       if (W && !D) D = Math.round((sqft / W) * 100) / 100;
       else if (D && !W) W = Math.round((sqft / D) * 100) / 100;
     }
+    if (!W || !D) return;   // nothing to place — leave the button hidden
 
-    if (!W || !D) return;   // genuinely no footprint — leave the button hidden
-
-    var q = new URLSearchParams();
     q.set("plan", slug);
     q.set("w", String(W));
     q.set("d", String(D));
-    if (overlay) q.set("img", overlay);   // real drawing; omitted → to-scale outline
+    if (overlay) q.set("img", overlay);
     if (sqft) q.set("sqft", String(sqft));
     q.set("name", readName());
     q.set("series", SERIES[seg[0]] || "FrameUpNow");

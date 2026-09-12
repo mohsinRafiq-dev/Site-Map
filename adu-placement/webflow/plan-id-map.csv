@@ -1,0 +1,180 @@
+Slug,Plan ID,Elevation,SF,Lot-based file
+carlsbad-contemporary-studio,00159,Contemporary,400,00159_22.10x23.9.png
+carlsbad-farmhouse-studio,00160,Farmhouse,400,00160_16.10x29.9.png
+carlsbad-spanish-studio,00161,Spanish,400,00161_22.2x29.4.png
+carlsbad-contemporary-1bed1bath,00162,Contemporary,671,00162_22.10x43.4.png
+carlsbad-farmhouse-1bed1bath,00163,Farmhouse,671,00163_23.7x45.6.png
+carlsbad-spanish-1bed1bath,00164,Spanish,671,00164_22.4x45.5.png
+carlsbad-contemporary-2bed2bath,00165,Contemporary,791,00165_43.10x24.1.png
+carlsbad-farmhouse-2bed2bath,00166,Farmhouse,791,00166_49.8x23.10.png
+carlsbad-spanish-2bed2bath,00167,Spanish,788,00167_43.10x23.7.png
+carlsbad-contemporary-3bed2bath,00168,Contemporary,985,00168_47.8x29.7.png
+carlsbad-farmhouse-3bed2bath,00169,Farmhouse,985,00169_53.4x29.7.png
+carlsbad-spanish-3bed2bath,00170,Spanish,985,00170_53.4x29.7.png
+chino-craftsman-studio,00183,Craftsman,497,00183_19.6x32.6.png
+chino-ranch-studio,00184,Ranch,497,00184_19.6x32.6.png
+chino-spanish-studio,00185,Spanish,497,00185_19.6x28.png
+chino-craftsman-1bed1bath,00186,Craftsman,746,00186_26.6x46.1.png
+chino-ranch-1bed1bath,00187,Ranch,746,00187_25.10x45.1.png
+chino-spanish-1bed1bath,00188,Spanish,746,00188_19.6x38.3.png
+chino-craftsman-2bed2bath,00189,Craftsman,998,00189_37.1x43.9.png
+chino-ranch-2bed2bath,00190,Ranch,998,00190_37.1x44.png
+chino-spanish-2bed2bath,00191,Spanish,998,00191_37.1x37.4.png
+encinitas-studio-a,00331,,351,00331_13x31.10.png
+encinitas-studio-b,00332,,351,00332_13x31.10.png
+encinitas-studio-c,00333,,351,00333_13x31.10.png
+encinitas-1bed1bath-a,00334,,555,00334_27.7x31.11.png
+encinitas-1bed1bath-b,00335,,555,00335_27.7x31.11.png
+encinitas-1bed1bath-c,00336,,555,00336_27.7x31.11.png
+encinitas-2bed2bath-a,00337,,745,00337_27.7x32.png
+encinitas-2bed2bath-b,00338,,745,00338_27.7x32.png
+encinitas-2bed2bath-c,00339,,745,00339_27.7x32.png
+encinitas-3bed2bath-a,00340,,939,00340_27.7x40.png
+encinitas-3bed2bath-b,00341,,939,00341_27.7x40.png
+encinitas-3bed2bath-c,00342,,939,00342_27.7x40.png
+marina-modern-studio,00558,Modern,389,00558_17.10x25.10.png
+marina-ranch-studio,00559,Ranch,389,00559_17.10x25.10.png
+marina-spanish-studio,00560,Spanish,389,00560_17.10x25.10.png
+marina-modern-1bed1bath,00561,Modern,499,00561_16.5x34.6.png
+marina-ranch-1bed1bath,00562,Ranch,499,00562_16.5x34.6.png
+marina-spanish-1bed1bath,00563,Spanish,499,00563_16.5x34.6.png
+marina-modern-2bed2bath,00564,Modern,789,00564_18x48.png
+marina-ranch-2bed2bath,00565,Ranch,789,00565_18x47.11.png
+marina-spanish-2bed2bath,00566,Spanish,786,00566_18x47.11.png
+menifee-craftsman-studio-base,00571,Craftsman Base,414,00571_18x23.png
+menifee-craftsman-studio-porch,00572,Craftsman Porch,414,00572_24.2x29.2.png
+menifee-spanish-studio-base,00573,Spanish Base,414,00573_24.5x23.png
+menifee-spanish-studio-porch,00574,Spanish Porch,414,00574_24.5x29.9.png
+menifee-ranch-studio-base,00567,Ranch Base,306,00567_17x18.png
+menifee-ranch-studio-porch,00568,Ranch Porch,306,00568_17x24.4.png
+menifee-tuscan-studio-base,00569,Tuscan Base,306,00569_17x18.png
+menifee-tuscan-studio-porch,00570,Tuscan Porch,306,00570_17x24.4.png
+menifee-craftsman-1bed1bath-base,00579,Craftsman Base,730,00579_18x40.png
+menifee-craftsman-1bed1bath-porch,00580,Craftsman Porch,730,00580_24.7x46.2.png
+menifee-spanish-1bed1bath-base,00581,Spanish Base,730,00581_24.7x40.png
+menifee-spanish-1bed1bath-porch,00582,Spanish Porch,730,00582_24.7x46.2.png
+menifee-ranch-1bed1bath-base,00575,Ranch Base,587,00575_17x34.6.png
+menifee-ranch-1bed1bath-porch,00576,Ranch Porch,587,00576_23.2x40.8.png
+menifee-tuscan-1bed1bath-base,00577,Tuscan Base,587,00577_17x34.6.png
+menifee-tuscan-1bed1bath-porch,00578,Tuscan Porch,587,00578_23.3x40.9.png
+menifee-craftsman-2bed2bath-base,00587,Craftsman Base,909,00587_31x40.png
+menifee-craftsman-2bed2bath-porch,00588,Craftsman Porch,909,00588_31x46.9.png
+menifee-spanish-2bed2bath-base,00589,Spanish Base,909,00589_31x40.png
+menifee-spanish-2bed2bath-porch,00590,Spanish Porch,909,00590_31x46.10.png
+menifee-spanish-2bed2bath-tower,00591,Spanish Tower,909,00591_31x46.9.png
+menifee-ranch-2bed1bath-base,00583,Ranch Base,779,00583_45.10x17.png
+menifee-ranch-2bed1bath-porch,00584,Ranch Porch,779,00584_45.10x22.png
+menifee-tuscan-2bed1bath-base,00585,Tuscan Base,779,00585_45.1x17.png
+menifee-tuscan-2bed1bath-porch,00586,Tuscan Porch,779,00586_45.10x22.1.png
+menifee-craftsman-3bed2bath-base,00596,Craftsman Base,1200,00596_43.8x45.10.png
+menifee-craftsman-3bed2bath-porch,00597,Craftsman Porch,1200,00597_43.8x52.png
+menifee-spanish-3bed2bath-base,00598,Spanish Base,1200,00598_43.8x45.10.png
+menifee-spanish-3bed2bath-porch,00599,Spanish Porch,1200,00599_43.8x52.7.png
+menifee-spanish-3bed2bath-tower,00600,Spanish Tower,1200,00600_43.8x52.7.png
+menifee-ranch-3bed1bath-base,00592,Ranch Base,988,00592_45.10x30.6.png
+menifee-ranch-3bed1bath-porch,00593,Ranch Porch,988,00593_45.10x30.6.png
+menifee-tuscan-3bed1bath-base,00594,Tuscan Base,988,00594_45.10x30.6.png
+menifee-tuscan-3bed1bath-porch,00595,Tuscan Porch,988,00595_45.10x30.6.png
+paradise-contemporarybarn-studio,00696,Contemporary Barn,485,00696_19.5x31.3.png
+paradise-craftsman-studio,00697,Craftsman,485,00697_19.5x31.3.png
+paradise-ranch-studio,00698,Ranch,485,00698_19.5x31.3.png
+paradise-alpine-1bed1bath,00699,Alpine,491,00699_26.9x23.11.png
+paradise-farmhouse-1bed1bath,00700,Farmhouse,491,00700_26.9x23.11.png
+paradise-traditional-1bed1bath,00701,Coop,491,00701_26.9x23.11.png
+paradise-alpine-2bed1bath,00703,Alpine,656,00703_29.7x29.10.png
+paradise-traditional-2bed1bath,02724,Coop,656,02724_29.7x29.10.png
+paradise-contemporarybarn-2bed1bath,00712,Contemporary Barn,733,00712_55.2x16.10.png
+paradise-craftsman-2bed1bath,00713,Craftsman,733,00713_55.2x16.10.png
+paradise-ranch-2bed1bath,00714,Ranch,733,00714_55.2x16.10.png
+salinas-craftsman-1bed1bath-a,00742,Craftsman,495,00742_20.5x34.6.png
+salinas-midcentury-1bed1bath-a,00743,Mid Century,495,00743_20.3x34.8.png
+salinas-ranch-1bed1bath-a,00744,Ranch,495,00744_20.8x34.8.png
+salinas-spanish-1bed1bath-a,00745,Spanish,495,00745_16.6x30.png
+salinas-craftsman-1bed1bath-b,00746,Craftsman,553,00746_20x32.5.png
+salinas-midcentury-1bed1bath-b,00747,Mid Century,553,00747_20x32.5.png
+salinas-ranch-1bed1bath-b,00748,Ranch,553,00748_20x32.5.png
+salinas-spanish-1bed1bath-b,00749,Spanish,553,00749_20x27.9.png
+salinas-craftsman-2bed1bath,00750,Craftsman,746,00750_29.2x40.2.png
+salinas-midcentury-2bed1bath,00751,Mid Century,746,00751_29.2x40.2.png
+salinas-ranch-2bed1bath,00752,Ranch,746,00752_29.2x40.2.png
+salinas-spanish-2bed1bath,00753,Spanish,746,00753_29.2x33.7.png
+salinas-craftsman-2bed2bath,00754,Craftsman,749,00754_37.7x25.8.png
+salinas-midcentury-2bed2bath,00755,Mid Century,749,00755_37.7x25.8.png
+salinas-ranch-2bed2bath,00756,Ranch,749,00756_37.7x25.8.png
+salinas-spanish-2bed2bath,00757,Spanish,749,00757_37.7x26.3.png
+santaana-contemporary-1bed1bath,00770,Contemporary,525,00770_36.7x22.9.png
+santaana-contemporary-2bed1bath,00771,Contemporary,749,00771_43.10x20.10.png
+santaana-ranch-studio-base,00758,Ranch,399,00758_17x22.8.png
+santaana-ranch-studio-porch,00759,Ranch Porch,399,00759_23.2x28.10.png
+santaana-spanish-studio-base,00760,Spanish,399,00760_17x22.8.png
+santaana-spanish-studio-porch,00761,Spanish Porch,399,00761_17x28.10.png
+santaana-traditional-studio-base,00762,Traditional,399,00762_17x22.8.png
+santaana-traditional-studio-porch,00763,Traditional Porch,399,00763_23.3x28.11.png
+santaana-ranch-1bed1bath-base,00764,Ranch,499,00764_16.4x30.1.png
+santaana-ranch-1bed1bath-porch,00765,Ranch Porch,499,00765_22.6x36.3.png
+santaana-spanish-1bed1bath-base,00766,Spanish,499,00766_16.4x30.1.png
+santaana-spanish-1bed1bath-porch,00767,Spanish Porch,499,00767_16.4x36.4.png
+santaana-traditional-1bed1bath-base,00768,Traditional,499,00768_16.4x30.1.png
+santaana-traditional-1bed1bath-porch,00769,Traditional Porch,499,00769_22.7x36.4.png
+santaana-ranch-2bed2bath-base,00772,Ranch Base,749,00772_30x28.11.png
+santaana-ranch-2bed2bath-porch,00773,Ranch Porch,749,00773_30x28.11.png
+santaana-spanish-2bed2bath-base,00774,Spanish Base,749,00774_30x28.11.png
+santaana-spanish-2bed2bath-porch,00775,Spanish Porch,749,00775_30x28.11.png
+santaana-traditional-2bed2bath-base,00776,Traditional Base,749,00776_30x28.11.png
+santaana-traditional-2bed2bath-porch,00777,Traditional Porch,749,00777_30x28.11.png
+siskiyou-craftsman-studio-a,00814,Craftsman,396,00814_17.10x28.2.png
+siskiyou-farmhouse-studio-a,00815,Farmhouse,396,00815_17.10x28.2.png
+siskiyou-modern-studio-a,00816,Modern,396,00816_17.10x28.2.png
+siskiyou-craftsman-studio-b-base,00820,Craftsman Option B,624,00820_25.10x30.3.png
+siskiyou-craftsman-studio-b-garage,00817,Craftsman Option A,624,00817_37.10x30.4.png
+siskiyou-farmhouse-studio-b-base,00821,Farmhouse Option B,624,00821_25.10x30.4.png
+siskiyou-farmhouse-studio-b-garage,00818,Farmhouse Option A,624,00818_37.10x30.4.png
+siskiyou-modern-studio-b-base,00822,Modern Option B,624,00822_25.10x30.3.png
+siskiyou-modern-studio-b-garage,00819,Modern Option A,624,00819_37.10x30.3.png
+siskiyou-craftsman-1bed1bath,00823,Craftsman Option A,624,00823_35.10x31.11.png
+siskiyou-farmhouse-1bed1bath,00824,Farmhouse Option A,624,00824_35.10x31.11.png
+siskiyou-modern-1bed1bath,00825,Modern Option A,624,00825_35.10x31.11.png
+siskiyou-craftsman-2bed1bath-base,00829,Craftsman Option A,960,00829_40x30.4.png
+siskiyou-craftsman-2bed1bath-garage,00832,Craftsman Option B,960,00832_52x30.4.png
+siskiyou-farmhouse-2bed1bath-base,00830,Farmhouse Option A,960,00830_40x30.4.png
+siskiyou-farmhouse-2bed1bath-garage,00833,Farmhouse Option B,960,00833_52x30.4.png
+siskiyou-modern-2bed1bath-base,00831,Modern Option A,960,00831_39.10x30.2.png
+siskiyou-modern-2bed1bath-garage,00834,Modern Option B,960,00834_51.10x31.2.png
+siskiyou-craftsman-3bed2bath,00838,Craftsman Option B,1396,00838_63.3x40.png
+siskiyou-farmhouse-3bed2bath,00839,Farmhouse Option B,1396,00839_63.3x40.1.png
+siskiyou-modern-3bed2bath,00840,Modern Option B,1396,00840_63.3x40.1.png
+siskiyou-craftsman-3bed3bath,00841,Craftsman Option A,1650,00841_63.10x53.10.png
+siskiyou-farmhouse-3bed3bath,00842,Farmhouse Option A,1650,00842_63.10x53.10.png
+siskiyou-modern-3bed3bath,00843,Modern Option A,1650,00843_63.10x53.10.png
+summit-1bed1bath,00957,,593,00957_24.10x33.3.png
+summit-2bed2bath,00959,,934,00959_28.6x40.1.png
+temecula-spanish-studio,00871,,493,00871_23.7x35.10.png
+temecula-traditional-studio,00872,,493,00872_23.8x35.7.png
+temecula-craftsman-studio,00870,,493,00870_23.8x35.9.png
+temecula-spanish-1bed1bath,00877,,625,00877_23.7x43.7.png
+temecula-traditional-1bed1bath,00878,,625,00878_23.3x43.png
+temecula-craftsman-1bed1bath,00876,,625,00876_23.3x43.png
+temecula-spanish-2bed1bath,00883,Spanish,748,00883_44x23.3.png
+temecula-traditional-2bed1bath,00884,Traditional,748,00884_44x23.3.png
+temecula-craftsman-2bed1bath,00882,Craftsman,748,00882_44x23.3.png
+temecula-spanish-2bed2bath,00889,Spanish,909,00889_31x47.5.png
+temecula-traditional-2bed2bath,00890,Traditional,909,00890_31x46.5.png
+temecula-craftsman-2bed2bath,00888,Craftsman,909,00888_31x47.5.png
+temecula-spanish-3bed2bath,00895,Spanish,1194,00895_37.8x35.png
+temecula-traditional-3bed2bath,00896,Traditional,1194,00896_37.8x35.png
+temecula-craftsman-3bed2bath,00894,Craftsman,1194,00894_37.8x35.png
+whittier-craftsman-studio,00918,Craftsman,311,00918_17x23.6.png
+whittier-spanish-studio,00919,Spanish,311,00919_17x24.png
+whittier-traditional-studio,00920,Traditional,311,00920_17x23.7.png
+whittier-craftsman-1bed1bath,00921,Craftsman,495,00921_22x29.7.png
+whittier-spanish-1bed1bath,00922,Spanish,495,00922_22.6x29.6.png
+whittier-traditional-1bed1bath,00923,Traditional,495,00923_22x29.7.png
+whittier-craftsman-2bed1bath,00924,Craftsman,757,00924_44.1x23.3.png
+whittier-spanish-2bed1bath,00925,Spanish,757,00925_44.1x25.8.png
+whittier-traditional-2bed1bath,00926,Traditional,757,00926_44.1x24.1.png
+whittier-craftsman-2bed2bath,00927,Craftsman,800,00927_43.10x23.3.png
+whittier-spanish-2bed2bath,00928,Spanish,800,00928_43.10x24.png
+whittier-traditional-2bed2bath,00929,Traditional,800,00929_43.10x23.8.png
+la-1bed1bath,00459,,800,00459_25.2x42.4.png
+la-2bed1bath,00460,,1200,00460_30x40.png
+la-3bed1bath,00461,,1200,00461_32x54.png
