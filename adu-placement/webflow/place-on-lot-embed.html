@@ -7,7 +7,8 @@
      How the plan is identified, in priority order:
        1. Plan ID  — the plan's PRADU/Baserow record (e.g. 00159), taken from
           the Plan ID field if the page has one, otherwise from the lookup
-          table in Page Settings (see plan-id-map-snippet.html). The tool
+          table in Page Settings (see plan-id-map-snippet.html), otherwise from
+          the page URL when it ends in one (perris-01372). The tool
           looks it up and gets the lot-based floor plan and true footprint
           straight from the database. This is the same path aduplans.com uses.
        2. Fallback — for plans with no Plan ID yet (the FUN Collection), the
@@ -146,13 +147,21 @@
     return _table[slug] || "";
   }
 
+  // Newer plan pages carry their Plan ID in the URL (perris-01372,
+  // inyo-county-01680), so they need no table entry. The table is checked
+  // first so a wrong ID in a URL can still be overridden there.
+  function idFromSlug(slug) {
+    var m = String(slug).match(/-(\d{5})$/);
+    return m ? m[1] : "";
+  }
+
   function init() {
     var btn = document.querySelector(".fun-place-btn");
     if (!btn) return;
 
     var seg    = location.pathname.split("/").filter(Boolean);
     var slug   = seg[seg.length - 1] || "plan";
-    var planId = clean(btn.getAttribute("data-planid")) || lookupPlanId(slug);
+    var planId = clean(btn.getAttribute("data-planid")) || lookupPlanId(slug) || idFromSlug(slug);
     var q      = new URLSearchParams();
 
     // ── Preferred: the plan's database record does all the work ──────────────
