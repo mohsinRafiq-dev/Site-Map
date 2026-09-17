@@ -647,7 +647,9 @@ const MapView = forwardRef(function MapView(
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
+    let cancelled = false;
     const run = () => {
+      if (cancelled) return;
       // View mode "footprint" hides the rendered floor plan entirely.
       if (viewMode === "footprint") {
         removeImageLayer(map);
@@ -679,7 +681,9 @@ const MapView = forwardRef(function MapView(
         ? Promise.resolve(floorPlan.image)
         : rasterizeFloorPlan(floorPlan);
       imageUrlPromise.then((pngUrl) => {
-        if (!mapRef.current) return;
+        // A newer run (or unmount) supersedes this one — adding the layer now
+        // would fight whatever it drew.
+        if (cancelled || !mapRef.current) return;
         removeImageLayer(map);
         try {
           map.addSource(FP_IMG_SRC, {
@@ -714,6 +718,10 @@ const MapView = forwardRef(function MapView(
     } else {
       run();
     }
+    return () => {
+      cancelled = true;
+      map.off("load", run); // drop a queued run that is now out of date
+    };
   }, [floorPlan, footprintFeature, viewMode, styleEpoch]);
 
   // Rotate handle: a DOM marker pinned just outside the home's TOP-RIGHT corner.
@@ -1039,11 +1047,25 @@ const MapView = forwardRef(function MapView(
     moveMarkerRef.current = null;
   }, [positionLotWidgets]);
 
+  // Values waiting for the map's "load", newest-only per source. A deep-linked
+  // plan (?plan=) arrives while the map is still loading, so these effects can
+  // fire several times before "load" — queueing one listener per call replayed
+  // the stale values in order, and an early null wiped what the newest drew.
+  const pendingSrcRef = useRef(new Map());
+
   function syncWhenReady(srcId, feature) {
     const map = mapRef.current;
     if (!map) return;
     if (!styleReadyRef.current) {
-      map.once("load", () => syncSrc(map, srcId, feature));
+      const alreadyQueued = pendingSrcRef.current.has(srcId);
+      pendingSrcRef.current.set(srcId, feature); // overwrite: last write wins
+      if (!alreadyQueued) {
+        map.once("load", () => {
+          const latest = pendingSrcRef.current.get(srcId);
+          pendingSrcRef.current.delete(srcId);
+          syncSrc(map, srcId, latest);
+        });
+      }
       return;
     }
     syncSrc(map, srcId, feature);
