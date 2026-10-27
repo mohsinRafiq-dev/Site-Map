@@ -1,0 +1,6 @@
+# Netlify settings for aduplans.com. In the Netlify UI set
+# Base directory = aduplans-web; Netlify's Next.js runtime is applied
+# automatically, so only the build itself is declared here.
+[build]
+  command = "npm run build"
+  publish = ".next"
