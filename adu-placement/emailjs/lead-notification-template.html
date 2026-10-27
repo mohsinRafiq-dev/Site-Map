@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>New ADU Lead</title>
+<style>
+  @media only screen and (max-width:620px) {
+    .wrap { width:100% !important; }
+    .px { padding-left:20px !important; padding-right:20px !important; }
+    .stack { display:block !important; width:100% !important; box-sizing:border-box; }
+    .stack-gap { padding:0 0 10px 0 !important; }
+    .btn { display:block !important; text-align:center !important; margin:0 0 10px 0 !important; }
+    .hero-title { font-size:26px !important; line-height:32px !important; }
+  }
+  a { text-decoration:none; }
+</style>
+</head>
+<body style="margin:0;padding:0;background:#efece3;-webkit-text-size-adjust:100%;">
+
+<!-- Inbox preview line -->
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;font-size:1px;line-height:1px;color:#efece3;">
+  ADU Plan Fit Visualizer · {{name}} from {{location}} just placed the {{plan_name}} on their lot · {{timeline}}
+</div>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#efece3;">
+<tr><td align="center" style="padding:28px 12px 40px;">
+
+  <table role="presentation" class="wrap" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+
+    <!-- ── Brand bar ── -->
+    <tr><td style="padding:0 4px 14px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td style="font-size:13px;font-weight:800;letter-spacing:3px;color:#14301a;">
+          &#9650; FRAMEUPNOW
+          <span style="display:inline-block;margin-left:8px;background:#14301a;color:#7ee2a0;border-radius:6px;padding:4px 9px;font-size:10px;font-weight:800;letter-spacing:1.4px;vertical-align:1px;">&#128208; ADU PLAN FIT VISUALIZER</span>
+        </td>
+        <td align="right" style="font-size:12px;color:#7a857a;">{{submitted_at}}</td>
+      </tr></table>
+    </td></tr>
+
+    <!-- ── Hero ── -->
+    <tr><td style="background:#14301a;background-image:linear-gradient(135deg,#0f2414 0%,#1f4d2b 60%,#2d6a3a 100%);border-radius:20px 20px 0 0;padding:34px 36px 64px;" class="px">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td style="background:#22c55e;border-radius:999px;padding:6px 14px;font-size:11px;font-weight:800;letter-spacing:1.5px;color:#062b12;">&#9679; NEW LEAD</td>
+        <td style="width:8px;"></td>
+        <td style="background:rgba(245,165,36,0.18);border:1px solid #f5a524;border-radius:999px;padding:5px 13px;font-size:11px;font-weight:700;letter-spacing:.5px;color:#ffd58a;">&#9201; {{timeline}}</td>
+      </tr></table>
+      <div style="margin-top:22px;font-size:12px;font-weight:700;letter-spacing:2px;color:#7ee2a0;">FROM THE ADU PLAN FIT VISUALIZER</div>
+      <div class="hero-title" style="margin-top:8px;font-size:32px;line-height:38px;font-weight:800;color:#ffffff;letter-spacing:-.5px;">
+        {{first_name}} wants to build an ADU&nbsp;&#127969;
+      </div>
+      <div style="margin-top:10px;font-size:15px;line-height:22px;color:#b9d4b8;">
+        They used the ADU Plan Fit Visualizer to put the <strong style="color:#ffffff;">{{plan_name}}</strong> on their lot in {{location}}, then asked to be contacted.
+      </div>
+    </td></tr>
+
+    <!-- ── Customer card (overlaps the hero) ── -->
+    <tr><td style="background:#ffffff;padding:0 24px;" class="px">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:-40px;background:#ffffff;border:1px solid #e6e2d6;border-radius:16px;box-shadow:0 10px 30px rgba(20,48,26,0.14);">
+        <tr><td style="padding:22px 22px 8px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+            <td style="width:58px;height:58px;border-radius:50%;background:#f5a524;background-image:linear-gradient(135deg,#ffc35c,#f08c1a);text-align:center;font-size:21px;font-weight:800;color:#3b2200;">{{initials}}</td>
+            <td style="padding-left:16px;">
+              <div style="font-size:20px;font-weight:800;color:#142016;">{{name}}</div>
+              <div style="margin-top:3px;font-size:13px;color:#6b776c;">{{company}} &nbsp;&middot;&nbsp; &#128205; {{location}}</div>
+            </td>
+          </tr></table>
+        </td></tr>
+        <tr><td style="padding:12px 22px 22px;">
+          <a class="btn" href="mailto:{{email}}" style="display:inline-block;background:#1f4d2b;color:#ffffff;font-size:14px;font-weight:700;padding:12px 22px;border-radius:10px;margin-right:8px;">&#9993;&nbsp; Email {{first_name}}</a>
+          <a class="btn" href="tel:{{phone_link}}" style="display:inline-block;background:#fff6e5;color:#8a5200;border:1px solid #f5c773;font-size:14px;font-weight:700;padding:11px 22px;border-radius:10px;margin-right:8px;">&#128222;&nbsp; {{phone}}</a>
+          <a class="btn" href="{{map_link}}" style="display:inline-block;background:#f1f5ef;color:#1f4d2b;border:1px solid #d3e2cf;font-size:14px;font-weight:700;padding:11px 22px;border-radius:10px;">&#128506;&nbsp; Map</a>
+        </td></tr>
+      </table>
+    </td></tr>
+
+    <!-- ── Satellite view of the lot ── -->
+    <tr><td style="background:#ffffff;padding:26px 24px 0;" class="px">
+      <div style="font-size:11px;font-weight:800;letter-spacing:1.6px;color:#2d6a3a;margin-bottom:10px;">THE PROPERTY</div>
+      <a href="{{map_link}}" style="display:block;">
+        <img src="{{map_image}}" width="552" alt="Satellite view of {{address}}" style="display:block;width:100%;max-width:552px;height:auto;border-radius:14px 14px 0 0;border:0;background:#dfe6dc;">
+      </a>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#14301a;border-radius:0 0 14px 14px;">
+        <tr>
+          <td style="padding:14px 18px;font-size:14px;font-weight:600;color:#ffffff;">{{address}}</td>
+          <td align="right" style="padding:14px 18px;white-space:nowrap;"><a href="{{map_link}}" style="font-size:13px;font-weight:700;color:#7ee2a0;">Open map &rarr;</a></td>
+        </tr>
+      </table>
+    </td></tr>
+
+    <!-- ── Stat tiles ── -->
+    <tr><td style="background:#ffffff;padding:18px 18px 0;" class="px">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td class="stack stack-gap" width="33%" style="padding:0 6px;">
+          <div style="background:#f4f8f2;border:1px solid #dbe8d6;border-radius:14px;padding:16px 14px;text-align:center;">
+            <div style="font-size:26px;font-weight:800;color:#1f4d2b;">{{plan_sqft}}</div>
+            <div style="margin-top:4px;font-size:11px;font-weight:700;letter-spacing:1.2px;color:#6b776c;">SQ FT ADU</div>
+          </div>
+        </td>
+        <td class="stack stack-gap" width="33%" style="padding:0 6px;">
+          <div style="background:#fff8ea;border:1px solid #f6e0b5;border-radius:14px;padding:16px 14px;text-align:center;">
+            <div style="font-size:26px;font-weight:800;color:#a05f00;">{{lot_size}}</div>
+            <div style="margin-top:4px;font-size:11px;font-weight:700;letter-spacing:1.2px;color:#6b776c;">LOT (FT)</div>
+          </div>
+        </td>
+        <td class="stack stack-gap" width="33%" style="padding:0 6px;">
+          <div style="background:#f4f8f2;border:1px solid #dbe8d6;border-radius:14px;padding:16px 14px;text-align:center;">
+            <div style="font-size:26px;font-weight:800;color:#1f4d2b;">{{plan_id}}</div>
+            <div style="margin-top:4px;font-size:11px;font-weight:700;letter-spacing:1.2px;color:#6b776c;">PLAN ID</div>
+          </div>
+        </td>
+      </tr></table>
+    </td></tr>
+
+    <!-- ── Details ── -->
+    <tr><td style="background:#ffffff;padding:26px 24px 6px;" class="px">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+
+        <!-- The plan -->
+        <td class="stack stack-gap" width="50%" valign="top" style="padding-right:8px;">
+          <div style="border:1px solid #e6e2d6;border-radius:14px;padding:18px;">
+            <div style="font-size:11px;font-weight:800;letter-spacing:1.6px;color:#2d6a3a;margin-bottom:12px;">THE PLAN</div>
+            <div style="font-size:17px;font-weight:800;color:#142016;">{{plan_name}}</div>
+            <div style="margin-top:3px;font-size:13px;color:#6b776c;">{{plan_series}}</div>
+            <div style="margin-top:14px;font-size:12px;color:#6b776c;">Setbacks</div>
+            <div style="margin-top:2px;font-size:13px;font-weight:600;color:#142016;">{{setbacks}}</div>
+          </div>
+        </td>
+
+        <!-- The project -->
+        <td class="stack stack-gap" width="50%" valign="top" style="padding-left:8px;">
+          <div style="border:1px solid #e6e2d6;border-radius:14px;padding:18px;">
+            <div style="font-size:11px;font-weight:800;letter-spacing:1.6px;color:#2d6a3a;margin-bottom:12px;">THE PROJECT</div>
+            <div style="font-size:12px;color:#6b776c;">Build method</div>
+            <div style="margin:2px 0 10px;font-size:14px;font-weight:700;color:#142016;">{{build_method}}</div>
+            <div style="font-size:12px;color:#6b776c;">Financing</div>
+            <div style="margin:2px 0 10px;font-size:14px;font-weight:700;color:#142016;">{{financing}}</div>
+            <div style="font-size:12px;color:#6b776c;">Intended use</div>
+            <div style="margin-top:2px;font-size:14px;font-weight:700;color:#142016;">{{intended_use}}</div>
+          </div>
+        </td>
+
+      </tr></table>
+    </td></tr>
+
+    <!-- ── Contact strip ── -->
+    <tr><td style="background:#ffffff;padding:12px 24px 30px;border-radius:0 0 20px 20px;" class="px">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f7f5ef;border-radius:14px;">
+        <tr><td style="padding:16px 18px;font-size:13px;line-height:24px;color:#142016;">
+          <span style="color:#6b776c;">Email</span>&nbsp; <a href="mailto:{{email}}" style="color:#1f4d2b;font-weight:700;">{{email}}</a><br>
+          <span style="color:#6b776c;">Phone</span>&nbsp; <a href="tel:{{phone_link}}" style="color:#1f4d2b;font-weight:700;">{{phone}}</a><br>
+          <span style="color:#6b776c;">GPS</span>&nbsp; <span style="font-family:Menlo,Consolas,monospace;font-size:12px;">{{coordinates}}</span>
+        </td></tr>
+      </table>
+    </td></tr>
+
+    <!-- ── Footer ── -->
+    <tr><td align="center" style="padding:22px 20px 0;font-size:12px;line-height:19px;color:#8a938a;">
+      Hit <strong style="color:#14301a;">Reply</strong> to answer {{first_name}} directly.<br>
+      This lead was submitted through the <strong style="color:#14301a;">FrameUpNow ADU Plan Fit Visualizer</strong>.<br>
+      Steel-framed ADUs, build-ready.
+    </td></tr>
+
+  </table>
+
+</td></tr>
+</table>
+</body>
+</html>

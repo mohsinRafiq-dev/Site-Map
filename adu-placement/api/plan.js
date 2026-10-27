@@ -85,26 +85,32 @@ function normalize(row) {
 }
 
 export default async function handler(req, res) {
-  const id = String(req.query.id || "").trim();
-  if (!id) return res.status(400).json({ error: "missing id" });
+  const { status, body, cacheControl } = await lookupPlan(req.query.id);
+  if (cacheControl) res.setHeader("Cache-Control", cacheControl);
+  return res.status(status).json(body);
+}
 
-  const token = process.env.BASEROW_TOKEN;
-  if (!token) return res.status(500).json({ error: "BASEROW_TOKEN is not configured" });
+// Host-agnostic lookup shared by this Vercel handler, the Netlify function
+// (netlify/functions/plan.mjs) and the Vite dev middleware.
+// Returns { status, body, cacheControl? }.
+export async function lookupPlan(rawId, { token = process.env.BASEROW_TOKEN, table = TABLE } = {}) {
+  const id = String(rawId || "").trim();
+  if (!id) return { status: 400, body: { error: "missing id" } };
+  if (!token) return { status: 500, body: { error: "BASEROW_TOKEN is not configured" } };
 
   const url =
-    `https://api.baserow.io/api/database/rows/table/${TABLE}/` +
+    `https://api.baserow.io/api/database/rows/table/${table}/` +
     `?user_field_names=true&size=1&filter__${PLAN_ID_FIELD}__equal=${encodeURIComponent(id)}`;
 
   try {
     const upstream = await fetch(url, { headers: { Authorization: `Token ${token}` } });
-    if (!upstream.ok) return res.status(502).json({ error: `Baserow HTTP ${upstream.status}` });
+    if (!upstream.ok) return { status: 502, body: { error: `Baserow HTTP ${upstream.status}` } };
     const data = await upstream.json();
     const plan = normalize((data.results || [])[0]);
-    if (!plan) return res.status(404).json({ error: "plan not found, or has no to-scale floor plan" });
+    if (!plan) return { status: 404, body: { error: "plan not found, or has no to-scale floor plan" } };
     // The catalogue changes rarely; let the CDN absorb repeat clicks.
-    res.setHeader("Cache-Control", "public, max-age=300, s-maxage=3600");
-    return res.status(200).json(plan);
+    return { status: 200, body: plan, cacheControl: "public, max-age=300, s-maxage=3600" };
   } catch {
-    return res.status(502).json({ error: "lookup failed" });
+    return { status: 502, body: { error: "lookup failed" } };
   }
 }

@@ -69,7 +69,7 @@ function imageProxyDevPlugin() {
 
 
 // Dev-only plan lookup so ?plan=<PlanID> deep links work on localhost exactly
-// as they do on Vercel. Mirrors api/plan.js; reads BASEROW_TOKEN from .env.
+// as they do in production. Uses api/plan.js; reads BASEROW_TOKEN from .env.
 function planApiDevPlugin(env) {
   return {
     name: "plan-api-dev",
@@ -83,15 +83,12 @@ function planApiDevPlugin(env) {
         };
         try {
           const id = new URL(req.url, "http://localhost").searchParams.get("id");
-          const mod = await import("./api/plan.js");
-          await mod.default(
-            { query: { id } },
-            {
-              status(c) { this._c = c; return this; },
-              json(b) { send(this._c || 200, b); return this; },
-              setHeader() { return this; },
-            }
-          );
+          const { lookupPlan } = await import("./api/plan.js");
+          const { status, body } = await lookupPlan(id, {
+            token: env.BASEROW_TOKEN,
+            table: env.BASEROW_TABLE_ID || undefined,
+          });
+          send(status, body);
         } catch (e) {
           send(502, { error: e.message });
         }

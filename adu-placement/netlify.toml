@@ -1,0 +1,9 @@
+# Netlify settings for the Plan Fit Visualizer. In the Netlify UI set
+# Base directory = adu-placement; everything else is read from here.
+# /api/plan and /api/img are routed by the `config.path` in each function.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[functions]
+  directory = "netlify/functions"
