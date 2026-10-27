@@ -1,6 +1,10 @@
 # Netlify settings for aduplans.com. In the Netlify UI set
-# Base directory = aduplans-web; Netlify's Next.js runtime is applied
-# automatically, so only the build itself is declared here.
+# Base directory = aduplans-web.
 [build]
   command = "npm run build"
   publish = ".next"
+
+# Netlify did not auto-detect Next.js in this monorepo (Runtime: Not set) and
+# served the raw .next folder, 404ing every page — so declare the runtime.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
