@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>New aduplans.com message</title>
+<style>
+  @media only screen and (max-width:620px) {
+    .wrap { width:100% !important; }
+    .px { padding-left:20px !important; padding-right:20px !important; }
+    .btn { display:block !important; text-align:center !important; margin:0 0 10px 0 !important; }
+    .hero-title { font-size:26px !important; line-height:32px !important; }
+    .stack { display:block !important; width:100% !important; }
+  }
+  a { text-decoration:none; }
+</style>
+</head>
+<body style="margin:0;padding:0;background:#f6f4ee;-webkit-text-size-adjust:100%;">
+
+<!-- Inbox preview line -->
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;font-size:1px;line-height:1px;color:#f6f4ee;">
+  aduplans.com contact form · {{name}}: {{topic}}
+</div>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f6f4ee;">
+<tr><td align="center" style="padding:28px 12px 40px;">
+
+  <table role="presentation" class="wrap" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+
+    <!-- ── Brand bar ── -->
+    <tr><td style="padding:0 4px 14px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td style="font-size:15px;font-weight:800;color:#16241d;letter-spacing:-.2px;">
+          &#128205; aduplans<span style="color:#5a8738;">.com</span>
+          <span style="font-size:11px;font-weight:600;color:#6b7770;letter-spacing:0;">&nbsp;&middot; Powered by FrameUpNow</span>
+        </td>
+        <td align="right" style="font-size:12px;color:#6b7770;">{{submitted_at}}</td>
+      </tr></table>
+    </td></tr>
+
+    <!-- ── Hero ── -->
+    <tr><td style="background:#5a8738;background-image:linear-gradient(125deg,#5a8738 0%,#3b5a1f 100%);border-radius:20px 20px 0 0;padding:32px 36px 66px;" class="px">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td style="background:#e0a75e;border-radius:999px;padding:6px 14px;font-size:11px;font-weight:800;letter-spacing:1.5px;color:#3a2506;">&#9993;&nbsp; CONTACT FORM</td>
+        <td style="width:8px;"></td>
+        <td style="background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.35);border-radius:999px;padding:5px 13px;font-size:11px;font-weight:700;letter-spacing:.5px;color:#ffffff;">{{salesforce_badge}}</td>
+      </tr></table>
+      <div class="hero-title" style="margin-top:22px;font-size:31px;line-height:37px;font-weight:800;color:#ffffff;letter-spacing:-.5px;">
+        {{first_name}} sent you a message
+      </div>
+      <div style="margin-top:12px;font-size:16px;line-height:23px;color:#eaf0e0;">
+        &ldquo;{{topic}}&rdquo;
+      </div>
+    </td></tr>
+
+    <!-- ── Sender card (overlaps the hero) ── -->
+    <tr><td style="background:#ffffff;padding:0 24px;" class="px">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:-42px;background:#ffffff;border:1px solid #e4e0d6;border-radius:16px;box-shadow:0 10px 30px rgba(22,36,29,0.13);">
+        <tr><td style="padding:22px 22px 8px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+            <td style="width:56px;height:56px;border-radius:50%;background:#eaf0e0;border:2px solid #5a8738;text-align:center;font-size:20px;font-weight:800;color:#3b5a1f;">{{initials}}</td>
+            <td style="padding-left:16px;">
+              <div style="font-size:20px;font-weight:800;color:#16241d;">{{name}}</div>
+              <div style="margin-top:3px;font-size:13px;color:#6b7770;">{{email}} &nbsp;&middot;&nbsp; {{phone}}</div>
+            </td>
+          </tr></table>
+        </td></tr>
+        <tr><td style="padding:12px 22px 22px;">
+          <a class="btn" href="mailto:{{email}}" style="display:inline-block;background:#5a8738;color:#ffffff;font-size:14px;font-weight:700;padding:12px 22px;border-radius:999px;margin-right:8px;">&#8617;&nbsp; Reply to {{first_name}}</a>
+          <a class="btn" href="tel:{{phone_link}}" style="display:inline-block;background:#fdf5ea;color:#8a5a17;border:1px solid #efd2a8;font-size:14px;font-weight:700;padding:11px 22px;border-radius:999px;">&#128222;&nbsp; Call {{phone}}</a>
+        </td></tr>
+      </table>
+    </td></tr>
+
+    <!-- ── The message ── -->
+    <tr><td style="background:#ffffff;padding:28px 24px 6px;" class="px">
+      <div style="font-size:11px;font-weight:800;letter-spacing:1.6px;color:#5a8738;margin-bottom:10px;">THE MESSAGE</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#faf8f3;border-radius:14px;border-left:4px solid #e0a75e;">
+        <tr><td style="padding:20px 22px;">
+          <div style="font-size:13px;font-weight:700;color:#47544d;margin-bottom:10px;">Subject: {{topic}}</div>
+          <div style="font-size:15px;line-height:24px;color:#16241d;white-space:pre-wrap;">{{message}}</div>
+        </td></tr>
+      </table>
+    </td></tr>
+
+    <!-- ── Details ── -->
+    <tr><td style="background:#ffffff;padding:18px 24px 30px;border-radius:0 0 20px 20px;" class="px">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #eeeae1;border-radius:14px;">
+        <tr>
+          <td style="padding:12px 18px;border-bottom:1px solid #eeeae1;font-size:12px;color:#6b7770;width:30%;">Email</td>
+          <td style="padding:12px 18px;border-bottom:1px solid #eeeae1;font-size:14px;font-weight:700;"><a href="mailto:{{email}}" style="color:#3b5a1f;">{{email}}</a></td>
+        </tr>
+        <tr>
+          <td style="padding:12px 18px;border-bottom:1px solid #eeeae1;font-size:12px;color:#6b7770;">Phone</td>
+          <td style="padding:12px 18px;border-bottom:1px solid #eeeae1;font-size:14px;font-weight:700;"><a href="tel:{{phone_link}}" style="color:#3b5a1f;">{{phone}}</a></td>
+        </tr>
+        <tr>
+          <td style="padding:12px 18px;border-bottom:1px solid #eeeae1;font-size:12px;color:#6b7770;">Sent from</td>
+          <td style="padding:12px 18px;border-bottom:1px solid #eeeae1;font-size:13px;"><a href="{{page_url}}" style="color:#3b5a1f;word-break:break-all;">{{page_url}}</a></td>
+        </tr>
+        <tr>
+          <td style="padding:12px 18px;font-size:12px;color:#6b7770;">Salesforce</td>
+          <td style="padding:12px 18px;font-size:13px;color:#16241d;">{{salesforce_note}}</td>
+        </tr>
+      </table>
+    </td></tr>
+
+    <!-- ── Footer ── -->
+    <tr><td align="center" style="padding:22px 20px 0;font-size:12px;line-height:19px;color:#6b7770;">
+      Hit <strong style="color:#16241d;">Reply</strong> to answer {{first_name}} directly.<br>
+      Sent by the <strong style="color:#16241d;">aduplans.com</strong> contact form &middot; Find your plan, frame it in steel.
+    </td></tr>
+
+  </table>
+
+</td></tr>
+</table>
+</body>
+</html>

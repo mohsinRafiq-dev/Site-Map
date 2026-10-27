@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { validateContact } from "@/lib/contactValidation";
+import { sendContactEmail } from "@/lib/contactEmail";
 
 // Contact form. Submits to /api/contact, which creates a Salesforce Lead via
-// Web-to-Lead.
+// Web-to-Lead, and emails the team a copy through EmailJS.
 //
 // Two layers of error reporting, because they fail differently:
 //   · per-field messages under each input — typing mistakes, caught locally
@@ -57,33 +58,45 @@ export default function ContactForm() {
     setErrors({});
     setToast("");
 
+    let res = null;
+    let body = {};
     try {
-      const res = await fetch("/api/contact", {
+      res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      const body = await res.json().catch(() => ({}));
+      body = await res.json().catch(() => ({}));
+    } catch {
+      /* server unreachable — res stays null */
+    }
 
-      if (!res.ok) {
-        setStatus("idle");
-        // The server re-runs the same validation; if it disagrees with us, its
-        // answer wins and lands back on the individual fields.
-        if (body.errors) {
-          setErrors(body.errors);
-          form.querySelector(`[name="${Object.keys(body.errors)[0]}"]`)?.focus();
-          return;
-        }
-        setToast(body.error || "Something went wrong. Please try again.");
-        return;
-      }
+    // Salesforce is the system of record; EmailJS sends the team a copy. The
+    // copy also goes out when the server or Salesforce is down (no response or
+    // 5xx), so a real message still reaches someone. It doesn't go out for
+    // rejected input (4xx) — the person is about to fix and resend it.
+    const emailWorthy = !res || res.ok || res.status >= 500;
+    const emailed = emailWorthy && (await sendContactEmail(data, { savedToSalesforce: !!res?.ok }));
 
+    if (res?.ok || emailed) {
       form.reset();
       setStatus("sent");
-    } catch {
-      setStatus("idle");
-      setToast("We couldn't reach the server. Please check your connection and try again.");
+      return;
     }
+
+    setStatus("idle");
+    if (!res) {
+      setToast("We couldn't reach the server. Please check your connection and try again.");
+      return;
+    }
+    // The server re-runs the same validation; if it disagrees with us, its
+    // answer wins and lands back on the individual fields.
+    if (body.errors) {
+      setErrors(body.errors);
+      form.querySelector(`[name="${Object.keys(body.errors)[0]}"]`)?.focus();
+      return;
+    }
+    setToast(body.error || "Something went wrong. Please try again.");
   }
 
   if (status === "sent") {
