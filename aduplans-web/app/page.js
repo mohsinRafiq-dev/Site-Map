@@ -27,7 +27,7 @@ export default function HomePage() {
         <div aria-hidden className="dot-grid pointer-events-none absolute inset-0 opacity-[0.12]" />
         <div className="container-x relative py-10 md:py-12">
           <h1 className="rise-in font-display text-3xl font-extrabold uppercase tracking-tight md:text-4xl">
-            Explore 4,000+ ADU Plans
+            Explore 5,000+ ADU Plans
           </h1>
           <p className="rise-in delay-1 mt-2 font-display text-xl italic text-white/95 md:text-2xl">
             &amp; See Any Floor Plan on Your Property for FREE
@@ -97,7 +97,7 @@ async function ExploreSection() {
             streamed node before React hydrates it — a benign class-only change. */}
         <div className="reveal" suppressHydrationWarning>
           <p className="text-[15px] leading-relaxed text-ink-soft md:text-base">
-            With <strong className="text-ink">more than 4,000 ADU floor plans</strong> to explore, finding
+            With <strong className="text-ink">more than 5,000 ADU floor plans</strong> to explore, finding
             the right design has never been easier. Search plans available in your city or browse the
             complete collection to{" "}
             <strong className="text-ink">find the home you love and build it anywhere</strong>. Then use

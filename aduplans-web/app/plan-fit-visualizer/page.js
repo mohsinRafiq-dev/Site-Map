@@ -50,14 +50,14 @@ export default function PlanFitVisualizerPage() {
     <div>
       <PageHero image="/hero-plan-fit.jpg" imagePosition="center 65%" eyebrow="Plan Fit Visualizer" title="Will an ADU Fit on My Lot? Find Out in Minutes">
         The FREE Plan Fit Visualizer shows you exactly what fits on your property in just minutes. Simply
-        return to the homepage, explore 4,000+ ADU floor plans, and select the design you love. Then click
+        return to the homepage, explore 5,000+ ADU floor plans, and select the design you love. Then click
         &ldquo;See This Plan on Your Property&rdquo; to place the home&rsquo;s real footprint on your actual
         lot using your property address. The visualizer checks available space and setback requirements,
         helping you determine whether the plan fits before you spend time or money with a builder,
         surveyor, or architect.
         <span className="mt-6 flex flex-wrap justify-center gap-3">
           <Link href="/" className="rounded-full bg-forest px-7 py-3.5 text-sm font-semibold text-white shadow-lg transition-transform hover:-translate-y-0.5">
-            Explore 4,000+ ADU Plans →
+            Explore 5,000+ ADU Plans →
           </Link>
         </span>
       </PageHero>
