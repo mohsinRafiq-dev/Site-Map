@@ -72,8 +72,11 @@ export async function GET(request) {
     headers: {
       "Content-Type": contentType,
       "Content-Length": String(body.length),
-      // Hit S3 once, ever — cache for a year at the Vercel edge and the browser.
+      // Hit S3 once, ever — cache for a year at the CDN edge and the browser.
       "Cache-Control": "public, max-age=31536000, s-maxage=31536000, immutable",
+      // Netlify's cache key ignores query strings unless told otherwise, which
+      // served the first cached image for every ?url= — so key on url and w.
+      "Netlify-Vary": "query=url|w",
     },
   });
 }
