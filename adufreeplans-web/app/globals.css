@@ -1,0 +1,345 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────────────────────
+   ADUFreePlans design system — a premium, architectural look.
+   Brand blue + warm cream + charcoal ink, with a warm amber accent.
+   (Copied from ADUFreePlans: the `forest-*` / `mist` token names are kept so the
+   class names match, but they now hold BLUE values — no green on this site.)
+   ───────────────────────────────────────────────────────────────────────── */
+
+@theme {
+  --color-cream: #f6f4ee;
+  --color-paper: #ffffff;
+  --color-ink: #142033;
+  --color-ink-soft: #475262;
+  --color-muted: #6b7585;
+
+  /* ADUFreePlans brand blue (#2b6cb0) — the single brand color, used everywhere. */
+  --color-forest: #2b6cb0;
+  --color-forest-600: #235a94; /* darker shade — accent text + button hover */
+  --color-forest-700: #1b4677; /* darkest — strong accents / headings */
+  --color-mist: #e4eef8;        /* light tint of the brand green */
+
+  --color-amber: #e0a75e;
+  --color-amber-600: #cf9445;
+
+  --color-line: #e4e0d6;
+  --color-line-soft: #eeeae1;
+
+  /* Always-dark surfaces (footer, overlays, badges) — constant in both themes */
+  --color-night: #142033;
+
+  /* Plus Jakarta Sans (headings) + Inter (body). */
+  --font-display: var(--font-display-src), "Segoe UI", system-ui, sans-serif;
+  --font-sans: var(--font-sans-src), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-xl: 1.25rem;
+  --shadow-card: 0 1px 2px rgba(20, 32, 51, 0.04), 0 8px 24px -12px rgba(20, 32, 51, 0.18);
+  --shadow-lift: 0 2px 6px rgba(20, 32, 51, 0.06), 0 20px 40px -18px rgba(20, 32, 51, 0.28);
+
+  /* Smooth, slightly-eased timing used for card + icon micro-interactions. */
+  --ease-smooth: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-forest);
+  color: #fff;
+}
+
+/* ── Keyboard focus — a single consistent, visible ring on every interactive
+   element (mouse clicks don't trigger :focus-visible, so it stays clean). ──── */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-forest);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+/* SVG map states: a presentation-attribute stroke can't show an offset ring, so
+   highlight the shape itself on keyboard focus (CSS beats the inline stroke). */
+.us-state:focus-visible {
+  outline: none;
+  stroke: var(--color-amber);
+  stroke-width: 2.5px;
+}
+
+/* Background behind the embedded PRADU estimator iframe — mirrors the
+   estimator's own --bg so the wrapper card blends in both themes. */
+:root {
+  --est-bg: #eef1f5;
+}
+
+/* ── Dark mode — flip the surface/text palette; `night` stays constant ────── */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-cream: #0d1520;      /* page background */
+  --color-paper: #152131;      /* cards / elevated */
+  --color-ink: #e9eef5;        /* primary text */
+  --color-ink-soft: #adb9c8;
+  --color-muted: #7e8b9b;
+  --color-mist: #172638;       /* subtle brand-green tint */
+  --color-forest: #5d9ce0;     /* lightened brand green — reads better on dark */
+  --color-forest-600: #7fb3ea; /* lighter accent for dark backgrounds */
+  --color-forest-700: #3f80c8;
+  --color-line: #273648;
+  --color-line-soft: #1e2b3b;
+  --est-bg: #0d1520;           /* estimator iframe background (dark) */
+}
+
+/* Smooth the switch (not on first paint) */
+:root.theme-ready body,
+:root.theme-ready .bg-paper,
+:root.theme-ready .bg-cream {
+  transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease;
+}
+
+/* Tailwind v4 no longer defaults buttons to a pointer cursor — restore it. */
+button:not(:disabled),
+[role="button"]:not(:disabled),
+summary {
+  cursor: pointer;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.015em;
+}
+
+.container-x {
+  width: 100%;
+  max-width: 96rem; /* wider layout — less dead space on large screens */
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+@media (min-width: 768px) {
+  .container-x { padding-inline: 1.75rem; }
+}
+@media (min-width: 1280px) {
+  .container-x { padding-inline: 2rem; }
+}
+
+/* US map state-code labels — enlarge on phones so they stay legible when the
+   whole SVG scales down (the map is ~1028 user-units wide). */
+.us-map-label {
+  font-size: 14px;
+  font-weight: 700;
+}
+.us-map-label.leader {
+  font-size: 12px;
+}
+@media (max-width: 639px) {
+  .us-map-label {
+    font-size: 27px;
+  }
+  .us-map-label.leader {
+    font-size: 22px;
+  }
+}
+
+.card-hover {
+  transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.35s ease;
+}
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lift);
+}
+
+/* ── Buttery card + icon micro-interactions ──────────────────────────────── */
+/* Smooth lift for interactive cards. */
+.lift {
+  transition: transform 0.4s var(--ease-smooth), box-shadow 0.4s ease, border-color 0.3s ease;
+  will-change: transform;
+}
+.lift:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lift);
+}
+/* Icon inside a `.group` card gently rises + grows on hover. */
+.icon-rise {
+  transition: transform 0.45s var(--ease-smooth);
+  will-change: transform;
+}
+.group:hover .icon-rise {
+  transform: translateY(-4px) scale(1.09);
+}
+/* A soft, slow bob for hero/section accent icons. */
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+.animate-bob { animation: bob 4s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lift, .icon-rise { transition: none; }
+  .group:hover .icon-rise { transform: none; }
+  .animate-bob { animation: none; }
+}
+
+/* Brand-green CTA band surface — solid brand color, used on every page's CTA. */
+.hero-surface {
+  background: #2b6cb0;
+}
+
+/* ── Interior-page hero — a soft, branded, light backdrop (About, Why Steel,
+   How It Works, Contact). Radial brand-green + amber washes over cream. ────── */
+.page-hero {
+  position: relative;
+  background:
+    radial-gradient(55% 75% at 88% -15%, rgba(43, 108, 176, 0.13), transparent 60%),
+    radial-gradient(45% 65% at 2% 0%, rgba(224, 167, 94, 0.10), transparent 55%),
+    var(--color-cream);
+}
+
+/* Faint dotted grid used to add texture behind heroes and feature bands. */
+.dot-grid {
+  background-image: radial-gradient(rgba(20, 32, 51, 0.06) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+:root[data-theme="dark"] .dot-grid {
+  background-image: radial-gradient(rgba(233, 238, 245, 0.055) 1px, transparent 1px);
+}
+
+/* Vertical gradient hairline that threads stacked step cards into a timeline. */
+.timeline-line {
+  background: linear-gradient(to bottom, var(--color-forest) 0%, var(--color-forest) 70%, transparent 100%);
+}
+
+/* Thin brand-gradient rule / top accent on feature cards. */
+.accent-bar {
+  background: linear-gradient(90deg, var(--color-forest), var(--color-amber));
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.rise-in { animation: riseIn 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+
+/* ── Hero animations ─────────────────────────────────────────────────────── */
+
+/* Slow, subtle Ken-Burns drift on the background collage */
+@keyframes kenburns {
+  from { transform: scale(1.06) translate(0, 0); }
+  to   { transform: scale(1.16) translate(-1.5%, -1.5%); }
+}
+.animate-kenburns { animation: kenburns 24s ease-in-out infinite alternate; }
+
+/* Gentle float for decorative glow orbs */
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+}
+.animate-floaty { animation: floaty 6s ease-in-out infinite; }
+.animate-floaty-slow { animation: floaty 9s ease-in-out infinite; }
+
+/* Bouncing scroll-cue arrow */
+@keyframes bounceDown {
+  0%, 100% { transform: translateY(0); opacity: 0.65; }
+  50% { transform: translateY(9px); opacity: 1; }
+}
+.animate-bounce-down { animation: bounceDown 1.7s ease-in-out infinite; }
+
+/* Clean static green gradient for the accent line (calmer than a moving shine) */
+.shimmer-green {
+  background: linear-gradient(100deg, #7fb3ea 0%, #c9e0f8 55%, #7fb3ea 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Gentle one-in nudge for the scroll cue — subtle, not a constant bounce */
+@keyframes nudge {
+  0%, 70%, 100% { transform: translateY(0); }
+  82% { transform: translateY(3px); }
+}
+.animate-nudge { animation: nudge 3.2s ease-in-out infinite; }
+
+/* Staggered entrance delays */
+.delay-1 { animation-delay: 0.08s; }
+.delay-2 { animation-delay: 0.18s; }
+.delay-3 { animation-delay: 0.30s; }
+.delay-4 { animation-delay: 0.44s; }
+.delay-5 { animation-delay: 0.58s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-kenburns, .animate-floaty, .animate-floaty-slow,
+  .animate-bounce-down, .animate-nudge, .rise-in { animation: none; }
+  /* rise-in elements animate opacity/transform from a hidden state — make sure
+     they stay visible when motion is disabled. */
+  .rise-in { opacity: 1; transform: none; }
+}
+
+/* ── Scroll reveal (sections & cards rise in as they enter view) ──────────── */
+/* Only hide when JS is ready + motion is allowed, so no-JS stays visible. */
+@media (prefers-reduced-motion: no-preference) {
+  html.js-ready .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.75s cubic-bezier(0.2, 0.7, 0.2, 1),
+      transform 0.75s cubic-bezier(0.2, 0.7, 0.2, 1);
+    will-change: opacity, transform;
+  }
+  html.js-ready .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+  /* Staggered children (e.g. card grids) */
+  html.js-ready .reveal-stagger > * {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s cubic-bezier(0.2, 0.7, 0.2, 1),
+      transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  html.js-ready .reveal-stagger.is-visible > * {
+    opacity: 1;
+    transform: none;
+  }
+  html.js-ready .reveal-stagger.is-visible > *:nth-child(1) { transition-delay: 0.04s; }
+  html.js-ready .reveal-stagger.is-visible > *:nth-child(2) { transition-delay: 0.10s; }
+  html.js-ready .reveal-stagger.is-visible > *:nth-child(3) { transition-delay: 0.16s; }
+  html.js-ready .reveal-stagger.is-visible > *:nth-child(4) { transition-delay: 0.22s; }
+  html.js-ready .reveal-stagger.is-visible > *:nth-child(5) { transition-delay: 0.28s; }
+  html.js-ready .reveal-stagger.is-visible > *:nth-child(6) { transition-delay: 0.34s; }
+  html.js-ready .reveal-stagger.is-visible > *:nth-child(7) { transition-delay: 0.40s; }
+  html.js-ready .reveal-stagger.is-visible > *:nth-child(8) { transition-delay: 0.46s; }
+}
+
+/* Nicer default focus ring for keyboard users */
+:focus-visible {
+  outline: 2px solid var(--color-forest);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line) transparent;
+}
