@@ -195,7 +195,7 @@ export default function CostEstimatorPage() {
             ))}
           </ul>
           <div className="mt-6 rounded-2xl border-l-4 border-amber bg-amber/10 p-5 text-sm leading-relaxed text-ink">
-            The Shopping List for an ADUFreePlans.com home is available only after the customer order and the
+            The Shopping List for an HousePlansFree.com home is available only after the customer order and the
             wood plan has been engineered to a Steel Skeleton.
           </div>
         </div>

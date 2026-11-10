@@ -26,7 +26,7 @@ const STEPS = [
       },
       {
         h: "Choose any plan in the collection",
-        p: "You are not limited to the plans listed for your jurisdiction. You can select any design from the entire ADUFreePlans.com library and submit it through your jurisdiction’s standard plan review and permitting process.",
+        p: "You are not limited to the plans listed for your jurisdiction. You can select any design from the entire HousePlansFree.com library and submit it through your jurisdiction’s standard plan review and permitting process.",
       },
     ],
     note: "Search by bedrooms, bathrooms, square footage, number of stories, garage options, location, and other features to find a plan that fits your property, lifestyle, and goals.",
@@ -134,7 +134,7 @@ export default function HowItWorksPage() {
         eyebrow="How It Works"
         title="Find Your Plan. Plan Your Build. Build Better in Steel."
       >
-        ADUFreePlans.com helps you move from searching for the right ADU plan to preparing for
+        HousePlansFree.com helps you move from searching for the right ADU plan to preparing for
         construction — all in one place. Choose from thousands of ADU floor plans, use our free tools
         to see how yours fits and what it costs, then let FrameUpNow convert it into a
         precision-engineered cold-formed steel framing system.
@@ -147,7 +147,7 @@ export default function HowItWorksPage() {
         title="Permit-ready plans, engineered to build"
       >
         <p>
-          Every plan on ADUFreePlans.com is designed to move from selection to permitting to construction.
+          Every plan on HousePlansFree.com is designed to move from selection to permitting to construction.
           Choose a local Permit-Ready design or any plan in the library, then use our free tools to see
           how it fits and what it will cost — before you commit.
         </p>

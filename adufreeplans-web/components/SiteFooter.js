@@ -33,24 +33,22 @@ export default function SiteFooter() {
     <footer className="relative mt-24 bg-night text-white/75">
       {/* top accent line + soft glow */}
       <div className="h-px w-full bg-gradient-to-r from-transparent via-forest-600/70 to-transparent" />
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(60%_100%_at_50%_0%,rgba(43,108,176,0.18),transparent)]" />
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(60%_100%_at_50%_0%,rgba(2,57,137,0.18),transparent)]" />
 
       <div className="container-x relative grid gap-12 py-16 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.1fr]">
         {/* Brand */}
         <div className="lg:pr-8">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <Image src="/adu-logo.png" alt="adufreeplans.com" width={40} height={40} className="h-10 w-10 object-contain" />
-            <span className="flex flex-col items-end leading-none">
-              <span className="font-sans text-[1.35rem] font-bold leading-none tracking-tight text-white">
-                adufreeplans<span className="text-forest-600">.com</span>
-              </span>
-              <span className="mt-1 text-right text-[11px] font-normal leading-none text-white/55">
-                Powered by <span className="font-semibold text-white/80">FrameUpNow</span>
-              </span>
-            </span>
+          <Link href="/" className="inline-flex items-center">
+            <Image
+              src="/logo-wordmark-white.png"
+              alt="HousePlansFree.com — powered by FrameUpNow.com"
+              width={1515}
+              height={264}
+              className="h-11 w-auto"
+            />
           </Link>
           <p className="mt-5 max-w-sm text-sm leading-relaxed text-white/55">
-            Find your perfect plan on adufreeplans.com. Then have FrameUpNow precision-engineer it in
+            Find your perfect plan on houseplansfree.com. Then have FrameUpNow precision-engineer it in
             cold-formed steel so that you can build stronger, smarter, and faster.
           </p>
           <div className="mt-6 flex items-center gap-3">
@@ -99,7 +97,7 @@ export default function SiteFooter() {
         <div className="container-x flex flex-col items-center justify-between gap-2 py-5 text-xs text-white/45 sm:flex-row">
           <p>© {new Date().getFullYear()} FrameUpNow. All Rights Reserved.</p>
           <p>
-            ADUFreePlans — thousands of free, Permit-Ready ADU plans.
+            HousePlansFree — thousands of free, Permit-Ready ADU plans.
           </p>
         </div>
       </div>

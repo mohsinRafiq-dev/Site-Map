@@ -144,7 +144,7 @@ async function fetchAllPlans() {
   // Hide plans marked Inactive in Baserow's Status column (per FrameUpNow) — a
   // jurisdiction whose plans are all Inactive then shows nothing. Blank/unset
   // status is treated as active so an unpopulated field can't hide the catalog.
-  // ADUFreePlans only lists FREE plans: Payment-to-Acquire-Plan = "No Charge".
+  // HousePlansFree only lists FREE plans: Payment-to-Acquire-Plan = "No Charge".
   return rows
     .map(normalize)
     .filter((p) => !/^\s*inactive\s*$/i.test(p.status))
@@ -212,7 +212,7 @@ async function loadPlans() {
     // build-time snapshot, or an empty catalog as a last resort. Check the
     // deployment's Runtime Logs for the real cause (e.g. a missing
     // BASEROW_TOKEN shows as "Baserow HTTP 401").
-    console.error("[adufreeplans] plan load failed:", e?.message);
+    console.error("[houseplansfree] plan load failed:", e?.message);
     return _snapshot || [];
   }
 }

@@ -1,6 +1,6 @@
 import { getAllPlans } from "@/lib/baserow";
 
-const BASE = "https://adufreeplans.com";
+const BASE = "https://houseplansfree.com";
 
 // Refresh hourly so plans JT adds to Baserow appear in the sitemap without a
 // redeploy. getAllPlans() runs on the server and already drops Inactive plans,
@@ -41,7 +41,7 @@ export default async function sitemap() {
   } catch (e) {
     // A Baserow hiccup must not take the whole sitemap down — serve the
     // marketing pages rather than nothing at all.
-    console.error("[adufreeplans] sitemap plan load failed:", e?.message);
+    console.error("[houseplansfree] sitemap plan load failed:", e?.message);
   }
 
   return [...staticUrls, ...planUrls];

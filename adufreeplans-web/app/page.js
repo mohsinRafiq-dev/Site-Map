@@ -22,7 +22,7 @@ export default function HomePage() {
       {/* ── Hero banner ──────────────────────────────────────────────────── */}
       <section
         className="relative overflow-hidden text-center text-white"
-        style={{ background: "linear-gradient(100deg, #1b4677 0%, #235a94 55%, #1b4677 100%)" }}
+        style={{ background: "linear-gradient(100deg, #01245a 0%, #022f72 55%, #01245a 100%)" }}
       >
         <div aria-hidden className="dot-grid pointer-events-none absolute inset-0 opacity-[0.12]" />
         <div className="container-x relative py-10 md:py-12">
@@ -349,7 +349,7 @@ function CtaBand() {
         {/* Left — copy + actions */}
         <div
           className="relative flex flex-col justify-center px-8 py-8 text-white md:px-10"
-          style={{ background: "linear-gradient(120deg, #1b4677 0%, #235a94 100%)" }}
+          style={{ background: "linear-gradient(120deg, #01245a 0%, #022f72 100%)" }}
         >
           <div aria-hidden className="dot-grid pointer-events-none absolute inset-0 opacity-[0.1]" />
           <h2 className="relative max-w-md font-display text-2xl leading-snug">

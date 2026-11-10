@@ -1,4 +1,4 @@
-# Netlify settings for adufreeplans.com. In the Netlify UI set
+# Netlify settings for houseplansfree.com. In the Netlify UI set
 # Base directory = adufreeplans-web.
 [build]
   command = "npm run build"

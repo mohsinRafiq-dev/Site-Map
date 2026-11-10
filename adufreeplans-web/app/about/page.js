@@ -6,7 +6,7 @@ import FeatureSplit from "@/components/FeatureSplit";
 export const metadata = {
   title: "About Us",
   description:
-    "ADUFreePlans.com was created by FrameUpNow to make ADUs easier to find, understand, and build — from plan search to a precision-engineered cold-formed steel frame.",
+    "HousePlansFree.com was created by FrameUpNow to make ADUs easier to find, understand, and build — from plan search to a precision-engineered cold-formed steel frame.",
 };
 
 const STRUGGLES = [
@@ -65,10 +65,10 @@ export default function AboutPage() {
       <PageHero
         image="/img-adu.jpg"
         imagePosition="center 62%"
-        eyebrow="About ADUFreePlans.com"
+        eyebrow="About HousePlansFree.com"
         title="Making ADUs Easier to Find, Understand, and Build"
       >
-        ADUFreePlans.com was created by FrameUpNow to help address one of the most significant challenges
+        HousePlansFree.com was created by FrameUpNow to help address one of the most significant challenges
         facing families and communities today: the need for more practical, attainable housing options.
       </PageHero>
 
@@ -94,7 +94,7 @@ export default function AboutPage() {
           </ul>
           <p className="reveal mt-6 text-lg leading-relaxed text-ink-soft">
             Important information is often spread across jurisdiction websites, designers, builders,
-            lenders, and other sources. ADUFreePlans.com was created to bring those resources together and
+            lenders, and other sources. HousePlansFree.com was created to bring those resources together and
             give homeowners, builders, and developers a clearer place to begin.
           </p>
         </div>
@@ -106,7 +106,7 @@ export default function AboutPage() {
         <div className="container-x relative">
           <div className="reveal mx-auto max-w-3xl text-center">
             <span className="text-xs font-semibold uppercase tracking-widest text-forest-600">
-              Why We Created ADUFreePlans.com
+              Why We Created HousePlansFree.com
             </span>
             <h2 className="mt-2 font-display text-3xl text-ink md:text-4xl">
               A better path from housing need to buildable solution

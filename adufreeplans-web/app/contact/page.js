@@ -15,7 +15,7 @@ export default function ContactPage() {
           {/* Left — brand-green panel */}
           <div
             className="relative flex flex-col justify-center px-6 py-14 text-white md:px-12 md:py-20"
-            style={{ background: "linear-gradient(125deg, #2b6cb0 0%, #1b4677 100%)" }}
+            style={{ background: "linear-gradient(125deg, #023989 0%, #01245a 100%)" }}
           >
             <div aria-hidden className="dot-grid pointer-events-none absolute inset-0 opacity-[0.1]" />
             <div className="relative mx-auto w-full max-w-md lg:mr-0">

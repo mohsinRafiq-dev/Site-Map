@@ -13,7 +13,7 @@ import {
 // both Production and Preview — .env.local only covers local dev):
 //   SALESFORCE_ORG_ID        required. The 15/18-char Org ID, "00D…".
 //   SALESFORCE_LEAD_COMPANY  optional. Salesforce requires Company on a Lead;
-//                            defaults to "ADUFreePlans.com Lead".
+//                            defaults to "HousePlansFree.com Lead".
 //   SALESFORCE_WEBTOLEAD_URL optional. Override the endpoint (sandbox testing).
 //   SALESFORCE_DEBUG_EMAIL   optional, temporary. When set, Salesforce emails a
 //                            full processing trace for every submission to this
@@ -125,10 +125,10 @@ export async function POST(request) {
     last_name: (last || fullName).slice(0, LIMITS.lastName),
     email: data.email.trim().slice(0, LIMITS.email),
     phone,
-    company: (process.env.SALESFORCE_LEAD_COMPANY || "ADUFreePlans.com Lead").slice(0, 255),
+    company: (process.env.SALESFORCE_LEAD_COMPANY || "HousePlansFree.com Lead").slice(0, 255),
     // Lead Source is a picklist. "aduplans.com" must exist as a value on the
     // Lead Source field in the org, or Salesforce discards the value. Kept as
-    // "aduplans.com" until FrameUpNow adds "adufreeplans.com" to the picklist.
+    // "aduplans.com" until FrameUpNow adds "houseplansfree.com" to the picklist.
     lead_source: "aduplans.com",
     // Lead has no Subject field, so it goes at the top of the description.
     description: `Subject: ${subject}\n\n${message}`,

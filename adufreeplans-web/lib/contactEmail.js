@@ -33,7 +33,7 @@ export async function sendContactEmail(data, { savedToSalesforce }) {
         template_id: TEMPLATE_ID,
         user_id: PUBLIC_KEY,
         template_params: {
-          email_subject: `adufreeplans.com · New Message — ${name || "Unknown"}`,
+          email_subject: `houseplansfree.com · New Message — ${name || "Unknown"}`,
           reply_to: email,
           name: name || "—",
           first_name: name.split(/\s+/)[0] || "this visitor",

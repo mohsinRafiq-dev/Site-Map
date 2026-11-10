@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────────────────────────────────
-   ADUFreePlans design system — a premium, architectural look.
-   Brand blue + warm cream + charcoal ink, with a warm amber accent.
-   (Copied from ADUFreePlans: the `forest-*` / `mist` token names are kept so the
+   HousePlansFree design system — a premium, architectural look.
+   Logo blue (#023989) + warm cream + charcoal ink, with a warm amber accent.
+   (Copied from ADUplans: the `forest-*` / `mist` token names are kept so the
    class names match, but they now hold BLUE values — no green on this site.)
    ───────────────────────────────────────────────────────────────────────── */
 
@@ -14,11 +14,11 @@
   --color-ink-soft: #475262;
   --color-muted: #6b7585;
 
-  /* ADUFreePlans brand blue (#2b6cb0) — the single brand color, used everywhere. */
-  --color-forest: #2b6cb0;
-  --color-forest-600: #235a94; /* darker shade — accent text + button hover */
-  --color-forest-700: #1b4677; /* darkest — strong accents / headings */
-  --color-mist: #e4eef8;        /* light tint of the brand green */
+  /* HousePlansFree logo blue (#023989) — the single brand color, used everywhere. */
+  --color-forest: #023989;
+  --color-forest-600: #022f72; /* darker shade — accent text + button hover */
+  --color-forest-700: #01245a; /* darkest — strong accents / headings */
+  --color-mist: #e3eaf6;        /* light tint of the brand blue */
 
   --color-amber: #e0a75e;
   --color-amber-600: #cf9445;
@@ -93,10 +93,10 @@ summary:focus-visible,
   --color-ink: #e9eef5;        /* primary text */
   --color-ink-soft: #adb9c8;
   --color-muted: #7e8b9b;
-  --color-mist: #172638;       /* subtle brand-green tint */
-  --color-forest: #5d9ce0;     /* lightened brand green — reads better on dark */
-  --color-forest-600: #7fb3ea; /* lighter accent for dark backgrounds */
-  --color-forest-700: #3f80c8;
+  --color-mist: #172638;       /* subtle brand-blue tint */
+  --color-forest: #5b8fe6;     /* lightened brand blue — reads better on dark */
+  --color-forest-600: #86aaf0; /* lighter accent for dark backgrounds */
+  --color-forest-700: #3a73d1;
   --color-line: #273648;
   --color-line-soft: #1e2b3b;
   --est-bg: #0d1520;           /* estimator iframe background (dark) */
@@ -193,7 +193,7 @@ summary {
 
 /* Brand-green CTA band surface — solid brand color, used on every page's CTA. */
 .hero-surface {
-  background: #2b6cb0;
+  background: #023989;
 }
 
 /* ── Interior-page hero — a soft, branded, light backdrop (About, Why Steel,
@@ -201,7 +201,7 @@ summary {
 .page-hero {
   position: relative;
   background:
-    radial-gradient(55% 75% at 88% -15%, rgba(43, 108, 176, 0.13), transparent 60%),
+    radial-gradient(55% 75% at 88% -15%, rgba(2, 57, 137, 0.13), transparent 60%),
     radial-gradient(45% 65% at 2% 0%, rgba(224, 167, 94, 0.10), transparent 55%),
     var(--color-cream);
 }
@@ -213,6 +213,17 @@ summary {
 }
 :root[data-theme="dark"] .dot-grid {
   background-image: radial-gradient(rgba(233, 238, 245, 0.055) 1px, transparent 1px);
+}
+
+/* Header logo swaps by theme: blue wordmark on the light header, white on dark. */
+.header-logo-dark {
+  display: none;
+}
+:root[data-theme="dark"] .header-logo-light {
+  display: none;
+}
+:root[data-theme="dark"] .header-logo-dark {
+  display: block;
 }
 
 /* Vertical gradient hairline that threads stacked step cards into a timeline. */
@@ -269,7 +280,7 @@ summary {
 
 /* Clean static green gradient for the accent line (calmer than a moving shine) */
 .shimmer-green {
-  background: linear-gradient(100deg, #7fb3ea 0%, #c9e0f8 55%, #7fb3ea 100%);
+  background: linear-gradient(100deg, #86aaf0 0%, #d0ddf8 55%, #86aaf0 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;

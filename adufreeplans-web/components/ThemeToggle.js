@@ -34,7 +34,7 @@ export default function ThemeToggle() {
     // Setting the attribute triggers the MutationObserver → store re-render.
     document.documentElement.setAttribute("data-theme", next);
     try {
-      localStorage.setItem("adufreeplans-theme", next);
+      localStorage.setItem("houseplansfree-theme", next);
     } catch {
       /* ignore */
     }

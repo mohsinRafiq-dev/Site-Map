@@ -23,8 +23,8 @@ const jakarta = Plus_Jakarta_Sans({
 
 export const metadata = {
   title: {
-    default: "ADUFreePlans — Free ADU floor plans you can place on your lot",
-    template: "%s · ADUFreePlans",
+    default: "HousePlansFree — Free ADU floor plans you can place on your lot",
+    template: "%s · HousePlansFree",
   },
   description:
     "Browse thousands of FREE build-ready ADU floor plans and place any of them on your property to scale — free, no survey or architect required.",
@@ -49,7 +49,7 @@ export default function RootLayout({ children }) {
         {/* Set the theme before first paint to avoid a flash of the wrong theme */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('adufreeplans-theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('houseplansfree-theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`,
           }}
         />
       </head>

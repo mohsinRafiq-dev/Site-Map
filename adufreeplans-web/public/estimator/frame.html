@@ -43,12 +43,12 @@ background-color:none !important;
 
 
    :root {
-        --brand: #2b6cb0;
-        --brand-dark: #163a63;
-        --brand-mid: #1f5290;
-        --brand-bright: #4a90d9;
-        --brand-light: #e4eef8;
-        --brand-glow: rgba(43, 108, 176, 0.22);
+        --brand: #023989;
+        --brand-dark: #01245a;
+        --brand-mid: #022f72;
+        --brand-bright: #2f66c0;
+        --brand-light: #e3eaf6;
+        --brand-glow: rgba(2, 57, 137, 0.22);
         --ink: #0f1420;
         --ink-soft: #4b5563;
         --muted: #8a93a0;
@@ -60,7 +60,7 @@ background-color:none !important;
         --surface-tint: #f1f5fa;
         --danger: #c1392b;
         --danger-bg: #fdecea;
-        --success: #1a5fb4;
+        --success: #0b47a3;
         --success-bg: #d6e6fa;
         --readonly-bg: #f1f3f7;
         --shadow-card: 0 40px 80px -30px rgba(15, 28, 48, 0.25), 0 10px 24px -10px rgba(15, 28, 48, 0.10);
@@ -104,9 +104,9 @@ background-color:none !important;
         position: relative;
         padding: 32px 38px 36px;
         background:
-          radial-gradient(700px 300px at 90% 0%, rgba(74, 144, 217, 0.45) 0%, transparent 60%),
-          radial-gradient(500px 250px at 0% 100%, rgba(74, 144, 217, 0.25) 0%, transparent 60%),
-          linear-gradient(135deg, #163a63 0%, #1f5290 60%, #2b6cb0 100%);
+          radial-gradient(700px 300px at 90% 0%, rgba(47, 102, 192, 0.45) 0%, transparent 60%),
+          radial-gradient(500px 250px at 0% 100%, rgba(47, 102, 192, 0.25) 0%, transparent 60%),
+          linear-gradient(135deg, #01245a 0%, #022f72 60%, #023989 100%);
         color: white;
         overflow: hidden;
       }
@@ -465,13 +465,13 @@ background-color:none !important;
         border: 3px solid var(--brand);
         border-radius: 50%;
         margin-top: -7px;
-        box-shadow: 0 4px 10px rgba(15, 28, 48, 0.25), 0 0 0 6px rgba(43, 108, 176, 0.0);
+        box-shadow: 0 4px 10px rgba(15, 28, 48, 0.25), 0 0 0 6px rgba(2, 57, 137, 0.0);
         cursor: grab;
         transition: box-shadow 0.15s ease, transform 0.1s ease;
       }
 
       input[type="range"]:hover::-webkit-slider-thumb {
-        box-shadow: 0 4px 12px rgba(15, 28, 48, 0.3), 0 0 0 6px rgba(43, 108, 176, 0.15);
+        box-shadow: 0 4px 12px rgba(15, 28, 48, 0.3), 0 0 0 6px rgba(2, 57, 137, 0.15);
       }
 
       input[type="range"]:active::-webkit-slider-thumb {
@@ -771,7 +771,7 @@ background-color:none !important;
       }
 
       .stat-tile.accent {
-        background: linear-gradient(135deg, #e4eef8 0%, #cfe2f6 100%);
+        background: linear-gradient(135deg, #e3eaf6 0%, #cfe2f6 100%);
         border-color: #aecdf0;
       }
 
@@ -1040,7 +1040,7 @@ background-color:none !important;
         grid-template-columns: auto 1fr auto;
         gap: 16px;
         align-items: center;
-        background: linear-gradient(135deg, #163a63 0%, #1f5290 100%);
+        background: linear-gradient(135deg, #01245a 0%, #022f72 100%);
         border-radius: 14px;
         padding: 18px 22px;
         margin-top: 18px;
@@ -1057,7 +1057,7 @@ background-color:none !important;
         right: -40px;
         width: 200px;
         height: 200px;
-        background: radial-gradient(circle, rgba(74, 144, 217, 0.4), transparent 70%);
+        background: radial-gradient(circle, rgba(47, 102, 192, 0.4), transparent 70%);
         pointer-events: none;
       }
 
@@ -1225,12 +1225,12 @@ background-color:none !important;
      in dark mode (theme synced via postMessage from PlanEstimator.js). Because
      est.css is variable-driven, overriding :root vars re-skins the whole tool. */
   html[data-theme="dark"]{
-    --brand:#5d9ce0; --brand-mid:#4a88cc; --brand-bright:#7fb3ea; --brand-light:#172638;
-    --brand-glow:rgba(93,156,224,0.28);
+    --brand:#5b8fe6; --brand-mid:#3a73d1; --brand-bright:#86aaf0; --brand-light:#172638;
+    --brand-glow:rgba(91,143,230,0.28);
     --ink:#e9eef5; --ink-soft:#adb9c8; --muted:#7e8b9b;
     --line:#273648; --line-strong:#3a4a5e;
     --bg:#0d1520; --surface:#152131; --surface-soft:#1b2838; --surface-tint:#182536;
-    --danger:#e57368; --danger-bg:#3a2320; --success:#5d9ce0; --success-bg:#172e4a;
+    --danger:#e57368; --danger-bg:#3a2320; --success:#5b8fe6; --success-bg:#172e4a;
     --readonly-bg:#1b2838;
     --shadow-card:0 40px 80px -30px rgba(0,0,0,0.55), 0 10px 24px -10px rgba(0,0,0,0.4);
     --shadow-soft:0 8px 22px -10px rgba(0,0,0,0.45);
@@ -1258,7 +1258,7 @@ background-color:none !important;
     display:inline-flex; align-items:center; gap:7px;
     font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase;
     color:var(--brand); background:var(--brand-light);
-    border:1px solid rgba(93,156,224,0.30);
+    border:1px solid rgba(91,143,230,0.30);
     padding:6px 14px; border-radius:999px; margin-bottom:16px;
   }
   .est-hero-badge svg{ width:14px; height:14px; }
@@ -1280,7 +1280,7 @@ background-color:none !important;
     transition:border-color .18s ease, transform .18s ease, box-shadow .18s ease;
   }
   .est-choice:hover{ transform:translateY(-2px); border-color:var(--brand-bright); box-shadow:0 16px 32px -18px var(--brand-glow); }
-  .est-choice.featured{ border-color:rgba(93,156,224,0.45); background:linear-gradient(180deg, var(--brand-light), var(--surface)); }
+  .est-choice.featured{ border-color:rgba(91,143,230,0.45); background:linear-gradient(180deg, var(--brand-light), var(--surface)); }
   .est-choice-ribbon{
     position:absolute; top:14px; right:14px;
     font-size:9px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;
@@ -2321,7 +2321,7 @@ background-color:none !important;
           directionsRenderer = new DirectionsRenderer({
             map: map,
             suppressMarkers: false,
-            polylineOptions: { strokeColor: "#2b6cb0", strokeWeight: 5 }
+            polylineOptions: { strokeColor: "#023989", strokeWeight: 5 }
           });
 
           warehouseMarker = new google.maps.Marker({

@@ -15,7 +15,7 @@ const FUN = "https://www.frameupnow.com";
 const STEPS = [
   { n: 1, title: "Enter Your Lot Information", body: "Type in your address or manual lot dimensions. The tool pulls available property data to establish your buildable area." },
   { n: 2, title: "Generate Placement Options", body: "The Visualizer produces ADU footprint options sized to fit your lot, factoring in general setback rules and existing structures on the property." },
-  { n: 3, title: "Compare Permit Ready Plans", body: "Each placement option links to matching designs from FrameUpNow's Permit Ready designs collections, and ADUFreePlans.com plans already approved in many USA jurisdictions are ready to submit with minimal review time. Homeowners who want something custom can move straight into FrameUpNow's engineering service, where design and structural review happen together instead of in sequence." },
+  { n: 3, title: "Compare Permit Ready Plans", body: "Each placement option links to matching designs from FrameUpNow's Permit Ready designs collections, and HousePlansFree.com plans already approved in many USA jurisdictions are ready to submit with minimal review time. Homeowners who want something custom can move straight into FrameUpNow's engineering service, where design and structural review happen together instead of in sequence." },
   { n: 4, title: "Save or Schedule a Consultation", body: "Once you find a fit you like, save it or schedule a consultation to move from concept to a real project timeline." },
 ];
 
@@ -85,7 +85,7 @@ export default function PlanFitVisualizerPage() {
               The Visualizer works like a configurator for your property instead of a car or a house you
               will never build. You enter an address or your lot dimensions. The tool then generates ADU
               placement options sized to your available space, checked against basic setback requirements,
-              and matched against FrameUpNow and ADUFreePlans design collections.
+              and matched against FrameUpNow and HousePlansFree design collections.
             </p>
             <p>
               Think of it this way. Zillow lets you imagine a house. A car configurator lets you build a
@@ -132,7 +132,7 @@ export default function PlanFitVisualizerPage() {
           <h2 className="font-display text-2xl text-ink md:text-3xl">Built on IBC Engineered Framing</h2>
           <p className="mt-3 leading-relaxed text-ink-soft">
             Every design option the Visualizer surfaces connects back to a real, buildable product.
-            ADUFreePlans.com plans and FrameUpNow.com plans are built around cold formed steel (CFS) framing and
+            HousePlansFree.com plans and FrameUpNow.com plans are built around cold formed steel (CFS) framing and
             engineered to comply with International Building Code standards.
           </p>
         </div>

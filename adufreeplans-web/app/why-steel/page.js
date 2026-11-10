@@ -54,7 +54,7 @@ export default function WhySteelPage() {
       {/* ── Stats band (brand green) ─────────────────────────────────────── */}
       <section
         className="border-b border-forest-700/40 text-white"
-        style={{ background: "linear-gradient(100deg, #1b4677 0%, #2b6cb0 55%, #1b4677 100%)" }}
+        style={{ background: "linear-gradient(100deg, #01245a 0%, #023989 55%, #01245a 100%)" }}
       >
         <div className="container-x">
           <dl className="reveal-stagger grid grid-cols-2 divide-x divide-white/10 md:grid-cols-4">
@@ -124,7 +124,7 @@ export default function WhySteelPage() {
             Found a plan you love? Let FrameUpNow turn it into a steel frame package.
           </h2>
           <p className="relative mx-auto mt-4 max-w-xl text-white/75">
-            Find your perfect plan on ADUFreePlans.com — then have FrameUpNow precision-engineer it in
+            Find your perfect plan on HousePlansFree.com — then have FrameUpNow precision-engineer it in
             cold-formed steel so you can build stronger, smarter, and faster.
           </p>
           <div className="relative mt-8 flex flex-wrap justify-center gap-3">

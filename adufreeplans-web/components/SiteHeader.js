@@ -8,7 +8,7 @@ import { MenuIcon, CloseIcon } from "@/components/icons";
 
 const FUN = "https://www.frameupnow.com";
 
-// New adufreeplans.com nav (per the V1.2 mockup): How It Works · Why Steel ·
+// New houseplansfree.com nav (per the V1.2 mockup): How It Works · Why Steel ·
 // About Us · Blogs. Blogs is external (opens FrameUpNow's blog in a new tab);
 // the rest are pages on this site. "Contact Us" is the right-hand button.
 const NAV = [
@@ -72,18 +72,26 @@ export default function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-cream/90 backdrop-blur-md">
       <div className="container-x flex h-[4.75rem] items-center justify-between gap-4">
-        {/* Logo — pin + "adufreeplans.com / Powered by FrameUpNow" as text, so it
-            follows the theme colors in both light and dark mode. */}
-        <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="adufreeplans.com — Powered by FrameUpNow">
-          <Image src="/adu-logo.png" alt="" aria-hidden width={40} height={40} priority className="h-10 w-10 object-contain" />
-          <span className="flex flex-col leading-none">
-            <span className="font-sans text-[1.35rem] font-bold leading-none tracking-tight text-ink">
-              adufreeplans<span className="text-forest-600">.com</span>
-            </span>
-            <span className="mt-1 text-[11px] font-normal leading-none text-muted">
-              Powered by <span className="font-semibold text-ink-soft">FrameUpNow</span>
-            </span>
-          </span>
+        {/* Logo — the blue HousePlansFree wordmark on the light header, the white
+            one on the dark header. Toggled by data-theme in globals.css. */}
+        <Link href="/" className="flex shrink-0 items-center" aria-label="HousePlansFree.com — powered by FrameUpNow.com">
+          <Image
+            src="/logo-wordmark.png"
+            alt="HousePlansFree.com — powered by FrameUpNow.com"
+            width={1515}
+            height={264}
+            priority
+            className="header-logo-light h-10 w-auto md:h-11 xl:h-12 2xl:h-14"
+          />
+          <Image
+            src="/logo-wordmark-white.png"
+            alt=""
+            aria-hidden
+            width={1515}
+            height={264}
+            priority
+            className="header-logo-dark h-10 w-auto md:h-11 xl:h-12 2xl:h-14"
+          />
         </Link>
 
         {/* Desktop nav */}

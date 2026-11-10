@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-// Embeds the exact adufreeplans.com PRADU cost/financing/shipping estimator
+// Embeds the exact houseplansfree.com PRADU cost/financing/shipping estimator
 // (original HTML/CSS/JS + Google Maps) in an isolated iframe so it renders
 // 100% identically. The iframe auto-sizes to its content so there's no inner
 // scrollbar.

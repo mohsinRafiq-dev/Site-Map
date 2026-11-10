@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useCallback, useSyncExternalStore } from "react";
 import { ArrowRightIcon, CloseIcon } from "@/components/icons";
 
-const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://adufreeplans.com";
-const STORE_KEY = "adufreeplans-ask-ai-open";
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://houseplansfree.com";
+const STORE_KEY = "houseplansfree-ask-ai-open";
 
 // Where a returning reader most likely wants to pick back up. Ask AI sits in
 // the tools ribbon next to these, so they're the pages a reader is usually
@@ -45,8 +45,8 @@ function writeSent(question) {
 }
 
 // ChatGPT is somebody else's site — once the reader is over there we can't put
-// a "back to ADUFreePlans" button on the page. So the way home rides along inside
-// the question, and the answer comes back with an adufreeplans.com link at the
+// a "back to HousePlansFree" button on the page. So the way home rides along inside
+// the question, and the answer comes back with an houseplansfree.com link at the
 // bottom of it. That's the only route home that survives the mobile case, where
 // tapping a chatgpt.com link hands the reader to the ChatGPT app rather than a
 // browser tab, and the site they came from is simply gone.
@@ -54,7 +54,7 @@ function chatGptUrl(question, returnTo) {
   const prompt =
     `${question}\n\n` +
     `When you have finished answering, end your reply with this line on its own: ` +
-    `"Back to ADUFreePlans.com → ${returnTo}"`;
+    `"Back to HousePlansFree.com → ${returnTo}"`;
   return `https://chatgpt.com/?q=${encodeURIComponent(prompt)}`;
 }
 
@@ -85,7 +85,7 @@ export default function AskAIQuestions({ questions }) {
                   Ask ChatGPT <ArrowRightIcon size={14} className="-rotate-45" />
                 </a>
                 <span className="text-xs text-ink-soft">
-                  Opens in a new tab — ADUFreePlans stays open here.
+                  Opens in a new tab — HousePlansFree stays open here.
                 </span>
               </div>
             </div>
@@ -97,7 +97,7 @@ export default function AskAIQuestions({ questions }) {
         <div role="status" className="fixed inset-x-0 bottom-0 z-50 px-4 pb-4 sm:px-6 sm:pb-6">
           <div className="mx-auto flex max-w-3xl items-start gap-4 rounded-2xl border border-forest/25 bg-paper p-5 shadow-[var(--shadow-lift)]">
             <div className="flex-1">
-              <p className="font-display text-base text-ink">Welcome back to ADUFreePlans</p>
+              <p className="font-display text-base text-ink">Welcome back to HousePlansFree</p>
               <p className="mt-1 text-sm leading-relaxed text-ink-soft">
                 Your question is open in ChatGPT. Pick up where you left off:
               </p>

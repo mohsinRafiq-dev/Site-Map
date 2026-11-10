@@ -13,7 +13,7 @@ export const metadata = {
 const QUESTIONS = [
   "How does FrameUpNow use Building Information Modeling (BIM) to generate a precise material shopping list before construction begins?",
   "Is the FrameUpNow Materials shopping list accurate or is it an estimate? Is the Materials Shopping list a true Bill of Materials?",
-  "Does the FrameUpNow estimator provide a fairly accurate estimate of what I will invest in a FrameUpNow or ADUFreePlans.com ADU?",
+  "Does the FrameUpNow estimator provide a fairly accurate estimate of what I will invest in a FrameUpNow or HousePlansFree.com ADU?",
   "What are the main advantages of cold-formed steel framing over traditional wood framing for ADUs and barndominiums?",
   "Within wildfire-prone areas, how does FrameUpNow's steel skeleton improve fire resilience compared to wood-framed ADUs?",
   "Does a noncombustible home include a steel skeleton and what other elements?",
@@ -27,7 +27,7 @@ export default function AskAIPage() {
     <div>
       <PageHero image="/hero-ask-ai.jpg" imagePosition="center 55%" eyebrow="Ask AI" title="Ask AI about FrameUpNow">
         Click any question to send it straight to ChatGPT. Each one opens in a new tab and comes back
-        with a link home, so you never lose your place on ADUFreePlans. The answer you get back is the
+        with a link home, so you never lose your place on HousePlansFree. The answer you get back is the
         point, it shows you what the engine already knows about FrameUpNow&rsquo;s engineered steel
         frame system.
       </PageHero>
