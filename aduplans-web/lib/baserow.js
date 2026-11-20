@@ -45,6 +45,12 @@ function parseBedsBaths(label) {
   return { beds, baths, bedsLabel: beds != null ? `${beds} Bed` : "See plan" };
 }
 
+// "10/07/2026" → "2026-10-07". The column is a text field typed mm/dd/yyyy.
+function parseUsDate(v) {
+  const m = String(v ?? "").trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  return m ? `${m[3]}-${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}` : "";
+}
+
 const sel = (v) => (v && typeof v === "object" ? v.value : v);
 const fileUrl = (arr) => (arr && arr[0] ? arr[0].url : null);
 const fileName = (arr) => (arr && arr[0] ? arr[0].visible_name || arr[0].name : null);
@@ -86,6 +92,7 @@ function normalize(row) {
     architect: row["Architect/Designer"] || "",
     payment: sel(row["Payment-to-Acquire-Plan"]) || "",
     status: sel(row["Status"]) || "", // Baserow Active/Inactive flag
+    dateUpdated: parseUsDate(row["Date Last Updated (mm/dd/yyyy)"]), // "YYYY-MM-DD" or ""
     sectionCode: row["Section code"] || "",
     pradUrl: row["PRADU Jurisdiction URL"] || "",
     elevationImage: fileUrl(row["Elevation image"]),
@@ -225,6 +232,18 @@ export async function getPlanById(id) {
   const target = String(id).trim();
   const plans = await getAllPlans();
   return plans.find((p) => p.id === target) || null;
+}
+
+// Plans added in the previous calendar month, by Baserow's "Date Last Updated"
+// column (the date the team enters when a plan goes in). Months roll over on
+// FrameUpNow's Arizona time.
+export function countAddedLastMonth(plans, now = new Date()) {
+  const [y, m] = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Phoenix", year: "numeric", month: "2-digit" })
+    .format(now)
+    .split("-")
+    .map(Number);
+  const prev = m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, "0")}`;
+  return plans.filter((p) => p.dateUpdated?.startsWith(prev)).length;
 }
 
 // ── Facets + filtering (in memory) ───────────────────────────────────────────
