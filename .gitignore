@@ -1,2 +1,10 @@
 # Claude Code local files (settings, agents, session data)
 .claude/
+
+# Every app's dependencies, build output, secrets and generated plan data.
+# Ignored repo-wide so they stay out of git even when an app's own .gitignore
+# isn't checked out (adufreeplans-web only exists on its own branch).
+**/node_modules/
+**/.next/
+**/.env*
+**/lib/plans-snapshot.json.gz
