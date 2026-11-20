@@ -52,6 +52,10 @@ function parseBedsBaths(label) {
   const beds = bed ? parseInt(bed[1], 10) : null;
   return { beds, baths, bedsLabel: beds != null ? `${beds} Bed` : "See plan" };
 }
+function parseUsDate(v) {
+  const m = String(v ?? "").trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  return m ? `${m[3]}-${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}` : "";
+}
 const sel = (v) => (v && typeof v === "object" ? v.value : v);
 const fileUrl = (arr) => (arr && arr[0] ? arr[0].url : null);
 const fileName = (arr) => (arr && arr[0] ? arr[0].visible_name || arr[0].name : null);
@@ -86,6 +90,7 @@ function normalize(row) {
     architect: row["Architect/Designer"] || "",
     payment: sel(row["Payment-to-Acquire-Plan"]) || "",
     status: sel(row["Status"]) || "", // Baserow Active/Inactive flag
+    dateUpdated: parseUsDate(row["Date Last Updated (mm/dd/yyyy)"]),
     sectionCode: row["Section code"] || "",
     pradUrl: row["PRADU Jurisdiction URL"] || "",
     elevationImage: fileUrl(row["Elevation image"]),

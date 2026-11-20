@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Suspense } from "react";
-import { getAllPlans, buildFacets } from "@/lib/baserow";
+import { getAllPlans, buildFacets, countAddedLastMonth } from "@/lib/baserow";
 import USAMap from "@/components/USAMap";
 import StateSelector from "@/components/StateSelector";
 import StatCounters from "@/components/StatCounters";
@@ -125,7 +125,7 @@ async function ExploreSection() {
 
           {/* Counters */}
           <div className="mt-8">
-            <StatCounters total={plans.length} lastMonth={122} />
+            <StatCounters total={plans.length} lastMonth={countAddedLastMonth(plans)} />
           </div>
         </div>
 
