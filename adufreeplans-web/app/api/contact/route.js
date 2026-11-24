@@ -6,6 +6,8 @@ import {
   splitName,
   validateContact,
 } from "@/lib/contactValidation";
+import { getPlanById } from "@/lib/baserow";
+import { planPageUrl } from "@/lib/site";
 
 // Creates a Salesforce Lead from the contact form via Web-to-Lead.
 //
@@ -118,6 +120,11 @@ export async function POST(request) {
 
   const phone = normalizePhone(data.phone).slice(0, LIMITS.phone);
 
+  // Sent from a plan page's "Ask us about this plan"? Look the plan up here
+  // rather than trusting a name or link from the browser.
+  const plan = typeof data.planId === "string" && data.planId ? await getPlanById(data.planId) : null;
+  const planLine = plan ? `Plan: ${plan.displayName} (Plan ${plan.id}) — ${planPageUrl(plan.id)}\n` : "";
+
   const params = new URLSearchParams({
     oid: orgId,
     encoding: "UTF-8",
@@ -131,7 +138,7 @@ export async function POST(request) {
     // "aduplans.com" until FrameUpNow adds "houseplansfree.com" to the picklist.
     lead_source: "aduplans.com",
     // Lead has no Subject field, so it goes at the top of the description.
-    description: `Subject: ${subject}\n\n${message}`,
+    description: `${planLine}Subject: ${subject}\n\n${message}`,
   });
 
   // Web-to-Lead answers 200 whether it created the Lead or binned it, so a

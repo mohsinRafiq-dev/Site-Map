@@ -1,19 +1,20 @@
 "use client";
 
-const TOOL_URL = process.env.NEXT_PUBLIC_TOOL_URL || "http://localhost:5173";
+import { planPageUrl, toolUrl } from "@/lib/site";
 
 export default function PlaceOnLotButton({ plan, large = false }) {
   // Pass the plan's data in the URL so the tool doesn't need to re-fetch it
-  // from Baserow (no token/CORS/env dependency — it just works).
-  const q = new URLSearchParams();
-  q.set("plan", plan.id);
-  if (plan.lotImage) q.set("img", plan.lotImage);
-  if (plan.width) q.set("w", String(plan.width));
-  if (plan.depth) q.set("d", String(plan.depth));
-  if (plan.sqft) q.set("sqft", String(plan.sqft));
-  if (plan.displayName) q.set("name", plan.displayName);
-  if (plan.jurisdiction) q.set("series", plan.jurisdiction);
-  const href = `${TOOL_URL}/?${q.toString()}`;
+  // from Baserow (no token/CORS/env dependency — it just works). "from" is
+  // this plan's page, which the lead email links back to.
+  const q = { plan: plan.id };
+  if (plan.lotImage) q.img = plan.lotImage;
+  if (plan.width) q.w = String(plan.width);
+  if (plan.depth) q.d = String(plan.depth);
+  if (plan.sqft) q.sqft = String(plan.sqft);
+  if (plan.displayName) q.name = plan.displayName;
+  if (plan.jurisdiction) q.series = plan.jurisdiction;
+  q.from = planPageUrl(plan.id);
+  const href = toolUrl(q);
   return (
     <a
       href={href}

@@ -14,7 +14,9 @@ import { sendContactEmail } from "@/lib/contactEmail";
 //   · a toast — the submit itself failed (Salesforce unreachable, throttled,
 //     misconfigured). Nothing the person can fix by editing a field, so it
 //     belongs outside the field list.
-export default function ContactForm() {
+// `plan` is set when the visitor came from a plan page's "Ask us about this
+// plan" link — the form shows it and the team's email links straight to it.
+export default function ContactForm({ plan = null }) {
   const [status, setStatus] = useState("idle"); // idle | sending | sent
   const [errors, setErrors] = useState({});
   const [toast, setToast] = useState("");
@@ -76,7 +78,7 @@ export default function ContactForm() {
     // 5xx), so a real message still reaches someone. It doesn't go out for
     // rejected input (4xx) — the person is about to fix and resend it.
     const emailWorthy = !res || res.ok || res.status >= 500;
-    const emailed = emailWorthy && (await sendContactEmail(data, { savedToSalesforce: !!res?.ok }));
+    const emailed = emailWorthy && (await sendContactEmail(data, { savedToSalesforce: !!res?.ok, plan }));
 
     if (res?.ok || emailed) {
       form.reset();
@@ -125,6 +127,16 @@ export default function ContactForm() {
   return (
     <>
       <form onSubmit={handleSubmit} noValidate className="grid gap-4">
+        {plan && (
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-forest/30 bg-mist/50 px-4 py-3 text-sm">
+            <span className="text-ink-soft">
+              Asking about <strong className="text-ink">{plan.name}</strong>
+              <span className="text-muted"> · Plan {plan.id}{plan.jurisdiction ? ` · ${plan.jurisdiction}` : ""}</span>
+            </span>
+            <a href={plan.url} className="shrink-0 font-semibold text-forest hover:text-forest-600">View plan</a>
+            <input type="hidden" name="planId" value={plan.id} />
+          </div>
+        )}
         <Field
           label="Full Name"
           name="fullName"
@@ -156,6 +168,7 @@ export default function ContactForm() {
           name="subject"
           type="text"
           placeholder="Question about the Absolute model"
+          defaultValue={plan ? `Question about the ${plan.name} plan (Plan ${plan.id})` : undefined}
           {...fieldProps}
         />
 
@@ -250,7 +263,7 @@ function FieldError({ id, message }) {
   );
 }
 
-function Field({ label, name, type = "text", autoComplete, placeholder, errors, onInput, onBlur }) {
+function Field({ label, name, type = "text", autoComplete, placeholder, defaultValue, errors, onInput, onBlur }) {
   const error = errors[name];
   return (
     <div>
@@ -264,6 +277,7 @@ function Field({ label, name, type = "text", autoComplete, placeholder, errors, 
         required
         autoComplete={autoComplete}
         placeholder={placeholder}
+        defaultValue={defaultValue}
         aria-invalid={error ? "true" : undefined}
         aria-describedby={error ? `${name}-error` : undefined}
         onInput={() => onInput(name)}
