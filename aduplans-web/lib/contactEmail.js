@@ -1,4 +1,5 @@
 import { normalizePhone } from "@/lib/contactValidation";
+import { SITE_URL } from "@/lib/site";
 
 // Emails the team a copy of each contact-form message via EmailJS
 // (https://www.emailjs.com), alongside the Salesforce Lead that /api/contact
@@ -15,8 +16,14 @@ const PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY;
 
 // Returns true if the email was sent. Never throws — the form decides what a
 // failure means. `savedToSalesforce` is false when the email is the only copy,
-// so the team knows to enter the lead by hand.
-export async function sendContactEmail(data, { savedToSalesforce }) {
+// so the team knows to enter the lead by hand. `plan` is the plan they asked
+// about (from a plan page's "Ask us about this plan"), or null.
+//
+// aduplans.com and houseplansfree.com share one template, so the site name is
+// a variable rather than written into it.
+const SITE_NAME = new URL(SITE_URL).host.replace(/^www\./, "");
+
+export async function sendContactEmail(data, { savedToSalesforce, plan = null }) {
   if (!SERVICE_ID || !TEMPLATE_ID || !PUBLIC_KEY) return false;
   // Honeypot filled → a bot. /api/contact quietly drops these; so do we.
   if (typeof data.website === "string" && data.website.trim() !== "") return false;
@@ -33,7 +40,14 @@ export async function sendContactEmail(data, { savedToSalesforce }) {
         template_id: TEMPLATE_ID,
         user_id: PUBLIC_KEY,
         template_params: {
-          email_subject: `aduplans.com · New Message — ${name || "Unknown"}`,
+          email_subject: `${SITE_NAME} · New Message${plan ? ` about ${plan.name}` : ""} — ${name || "Unknown"}`,
+          site_name: SITE_NAME,
+          site_url: SITE_URL,
+          plan_name: plan ? `${plan.name} · Plan ${plan.id}` : "No specific plan",
+          plan_details: plan ? plan.jurisdiction || "—" : "They wrote from the general Contact page",
+          plan_url: plan ? plan.url : `${SITE_URL}/plans`,
+          plan_url_text: plan ? plan.url : "—",
+          plan_link_label: plan ? "View this plan" : "Browse all plans",
           reply_to: email,
           name: name || "—",
           first_name: name.split(/\s+/)[0] || "this visitor",

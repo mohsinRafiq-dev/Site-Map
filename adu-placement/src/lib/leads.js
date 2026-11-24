@@ -1,5 +1,23 @@
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "./firebase";
+import { SITES } from "./entrySource";
+
+// The page the sales team should open to see the exact plan the customer
+// wants: the website page they clicked from (if they kept that plan), else the
+// plan's page on aduplans.com / houseplansfree.com (5-digit Baserow Plan IDs
+// have one there — FrameUpNow's plans included), else the floor plan drawing
+// for plans picked from the tool's own library, which have no web page.
+function planLink({ planId, planImage, entry }) {
+  if (entry?.page && entry.plan === planId && SITES[entry.site]) {
+    return { url: entry.page, label: `View on ${SITES[entry.site].label}` };
+  }
+  if (/^\d{5}$/.test(planId || "")) {
+    const host = entry?.site === "houseplansfree" ? "houseplansfree.com" : "aduplans.com";
+    return { url: `https://${host}/plans/${planId}`, label: `View on ${host}` };
+  }
+  if (planImage) return { url: new URL(planImage, window.location.origin).href, label: "View the floor plan" };
+  return { url: null, label: null };
+}
 
 // Save a Build-Ready ADU Placement Request (lead) to Firestore.
 // `form` is the customer's answers; `context` is what they were placing
@@ -7,6 +25,7 @@ import { db } from "./firebase";
 //
 // Returns the new lead's document ID.
 export async function saveLead(form, context) {
+  const link = planLink(context);
   const payload = {
     // ---- Customer answers ----
     name:            form.name?.trim() || "",
@@ -30,10 +49,16 @@ export async function saveLead(form, context) {
     planName:   context.planName || null,
     planSeries: context.planSeries || null,
     planSqft:   context.planSqft || null,
+    planUrl:    link.url,
+    planUrlLabel: link.label,
     address:    context.address || null,
     coordinates: context.coordinates || null,
     lot:        context.lot || null,
     setbacks:   context.setbacks || null,
+
+    // ---- Where they came from (frameupnow / aduplans / houseplansfree / direct) ----
+    site:      context.entry?.site || "direct",
+    sitePage:  context.entry?.page || null,
 
     // ---- Meta ----
     status:    "new",
@@ -102,8 +127,18 @@ function leadTemplateParams(lead) {
     ? `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lead.address || "")}`;
 
+  const site = SITES[lead.site]?.label;
+
   return {
-    subject:      `ADU Plan Fit Visualizer · New Lead — ${name || "Unknown"}${lead.state ? ` (${lead.state})` : ""}`,
+    subject:      `ADU Plan Fit Visualizer · New Lead via ${site || "direct visit"} — ${name || "Unknown"}${lead.state ? ` (${lead.state})` : ""}`,
+    source_site:  site || "Direct visit",
+    source_badge: site ? `VIA ${site.toUpperCase()}` : "DIRECT VISIT",
+    source_line:  site
+      ? `They opened the visualizer from ${site}`
+      : "They opened the visualizer directly, not from one of our websites",
+    plan_url:      lead.planUrl || "https://planfitvisualizer.netlify.app",
+    plan_url_text: lead.planUrl || "This plan isn’t listed on a website",
+    plan_link_label: lead.planUrlLabel || "Open the visualizer",
     reply_to:     lead.email || "",
     name:         dash(name),
     first_name:   name.split(/\s+/)[0] || "This customer",

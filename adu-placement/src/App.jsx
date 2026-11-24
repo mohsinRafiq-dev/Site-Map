@@ -32,6 +32,7 @@ import {
 } from "./lib/geometry";
 import { usePlansCatalog } from "./lib/plansCatalog";
 import { fetchPlanById } from "./lib/baserow";
+import { readEntrySource } from "./lib/entrySource";
 import { useAuth } from "./lib/auth";
 import "./App.css";
 
@@ -96,6 +97,9 @@ export default function App() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [projectsOpen, setProjectsOpen] = useState(false);
   const [currentProjectId, setCurrentProjectId] = useState(null);
+
+  // ---- Which website sent them (frameupnow.com / aduplans.com / …) ----
+  const [entry] = useState(readEntrySource);
 
   // ---- Session restore ----
   // Restore the last session on first mount. The initializer runs synchronously
@@ -853,6 +857,8 @@ export default function App() {
     planName: floorPlan?.name ?? null,
     planSeries: floorPlan?.series ?? null,
     planSqft: floorPlan?.sqft ?? null,
+    planImage: floorPlan?.image ?? null,
+    entry,
     address: location?.placeName ?? null,
     coordinates: location ? { lng: location.lng, lat: location.lat } : null,
     lot: { width: lot.width, length: lot.length, rotation: lot.rotation },

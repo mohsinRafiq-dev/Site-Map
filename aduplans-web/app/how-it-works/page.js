@@ -2,6 +2,7 @@ import Link from "next/link";
 import PageHero from "@/components/PageHero";
 import ShowcaseBand from "@/components/ShowcaseBand";
 import FeatureSplit from "@/components/FeatureSplit";
+import { toolUrl } from "@/lib/site";
 
 export const metadata = {
   title: "How It Works | Find, Plan and Build Your ADU",
@@ -9,7 +10,7 @@ export const metadata = {
     "Learn how to find a Permit-Ready ADU plan, visualize it on your property, estimate construction and financing costs, and convert it to steel with FrameUpNow.",
 };
 
-const TOOL_URL = process.env.NEXT_PUBLIC_TOOL_URL || "https://www.frameupnow.com";
+const TOOL_URL = toolUrl();
 const FUN = "https://www.frameupnow.com";
 
 const STEPS = [

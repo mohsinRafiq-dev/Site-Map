@@ -81,6 +81,14 @@ export default async function PlanDetailPage({ params }) {
                 </Link>
               </>
             )}
+            {/* Opens the contact form with this plan attached, so the team's
+                email says exactly which plan the visitor is asking about. */}
+            <Link
+              href={`/contact?plan=${encodeURIComponent(plan.id)}#contact-form`}
+              className="mt-4 flex items-center justify-center gap-1.5 text-sm font-semibold text-forest hover:text-forest-600 sm:justify-start"
+            >
+              Have a question? Ask us about this plan →
+            </Link>
           </div>
 
           {/* Multi-level disclaimer (per Rodger's universal wording) */}
