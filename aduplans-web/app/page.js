@@ -8,13 +8,14 @@ import StatCounters from "@/components/StatCounters";
 import QuickSearch from "@/components/QuickSearch";
 import PlanCard from "@/components/PlanCard";
 import { ArrowRightIcon } from "@/components/icons";
+import { toolUrl } from "@/lib/site";
 
 // Serve a cached, statically-rendered shell and refresh the catalog snapshot
 // every 5 minutes in the background (ISR) — visitors never wait on Baserow.
 export const revalidate = 300;
 
 const FUN = "https://www.frameupnow.com";
-const TOOL_URL = process.env.NEXT_PUBLIC_TOOL_URL || "http://localhost:5173";
+const TOOL_URL = toolUrl();
 
 export default function HomePage() {
   return (

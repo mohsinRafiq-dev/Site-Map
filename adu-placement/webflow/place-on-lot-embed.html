@@ -68,7 +68,7 @@
   };
 
   function clean(s) {
-    return (s || "").replace(/‍/g, "").replace(/\s+/g, " ").trim();
+    return (s || "").replace(/\u200D/g, "").replace(/\s+/g, " ").trim();
   }
 
   // "47'-8\"" -> 47.67   |   "18'" -> 18
@@ -165,9 +165,11 @@
     var q      = new URLSearchParams();
 
     // ── Preferred: the plan's database record does all the work ──────────────
+    // "from" = the page they're on, so the lead email links straight back to it.
     if (planId) {
       q.set("plan", planId);
       q.set("src", "frameupnow");
+      q.set("from", location.origin + location.pathname);
       btn.href = TOOL + "/?" + q.toString();
       btn.classList.add("is-ready");
       return;
@@ -196,6 +198,7 @@
     q.set("name", readName());
     q.set("series", SERIES[seg[0]] || "FrameUpNow");
     q.set("src", "frameupnow");
+    q.set("from", location.origin + location.pathname);
 
     btn.href = TOOL + "/?" + q.toString();
     btn.classList.add("is-ready");

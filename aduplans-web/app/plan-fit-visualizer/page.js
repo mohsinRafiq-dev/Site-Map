@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import PageHero from "@/components/PageHero";
+import { toolUrl } from "@/lib/site";
 
 export const metadata = {
   title: "Plan Fit Visualizer",
@@ -8,7 +9,7 @@ export const metadata = {
     "The ADU Property Fit Visualizer shows you exactly what fits on your specific property in a few minutes. Enter your address, and the tool places a real ADU footprint on your real lot, checked against setback rules and available space.",
 };
 
-const TOOL_URL = process.env.NEXT_PUBLIC_TOOL_URL || "http://localhost:5173";
+const TOOL_URL = toolUrl();
 const FUN = "https://www.frameupnow.com";
 
 // All copy below is verbatim from the ADU Property Fit Visualizer instructions.

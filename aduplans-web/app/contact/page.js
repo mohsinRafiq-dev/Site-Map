@@ -1,12 +1,21 @@
 import Image from "next/image";
 import ContactForm from "@/components/ContactForm";
+import { getPlanById } from "@/lib/baserow";
+import { planPageUrl } from "@/lib/site";
 
 export const metadata = {
   title: "Contact Us",
   description: "Get in touch with the FrameUpNow team about ADU plans, steel framing, and your project.",
 };
 
-export default function ContactPage() {
+export default async function ContactPage({ searchParams }) {
+  // A plan page's "Ask us about this plan" link lands here with ?plan=<id>.
+  const { plan: planId } = await searchParams;
+  const found = typeof planId === "string" && planId ? await getPlanById(planId) : null;
+  const plan = found
+    ? { id: found.id, name: found.displayName, jurisdiction: found.jurisdiction, url: planPageUrl(found.id) }
+    : null;
+
   return (
     <div>
       {/* ── Split hero — content left (brand green), image right ─────────── */}
@@ -70,7 +79,7 @@ export default function ContactPage() {
             <h2 className="font-display text-2xl text-ink">Send us a message</h2>
             <p className="mt-1.5 text-sm text-ink-soft">We typically reply within one business day.</p>
             <div className="mt-6">
-              <ContactForm />
+              <ContactForm plan={plan} />
             </div>
           </div>
 
