@@ -31,7 +31,7 @@ export default function HomePage() {
             Explore 4,000+ Free ADU Plans
           </h1>
           <p className="rise-in delay-1 mt-2 font-display text-xl italic text-white/95 md:text-2xl">
-            &amp; See Any Floor Plan on Your Property for FREE
+            See Any Floor Plan on Your Property for FREE
           </p>
         </div>
       </section>
